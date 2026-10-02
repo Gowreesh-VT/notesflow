@@ -15,6 +15,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 
 ## Next up
 
+- [ ] [BIG] Wiki links between notes: typing `[[Note title]]` in a note links to that note (clickable in the preview, with autocomplete while typing), each note shows a "Linked from" backlinks panel, links to missing notes offer to create them, and renaming a note keeps its links working. This is a major feature: deliver it as a reviewed pull request, built in coherent slices if needed.
 - [x] Interactive checkboxes in the Markdown preview: clicking a task-list item toggles it in the note
 - [x] Keyboard shortcut help dialog, opened with `?` and listed in the command palette
 - [ ] Highlight search matches in the note list snippets and in the preview
@@ -24,7 +25,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 ## Ideas (not started — move up to "Next up" to approve)
 
 - Note templates (meeting notes, daily journal)
-- Task and note linking with `[[wiki links]]`
+- Linking tasks to notes
 - Drag-and-drop ordering for tasks
 - Focus mode (hide chrome while writing)
 - Print-friendly note export
