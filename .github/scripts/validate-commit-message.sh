@@ -17,9 +17,9 @@ fi
 
 subject="$(head -n 1 "$file")"
 pattern='^(feat|fix|refactor|perf|test|docs|style|chore|a11y)(\([a-z0-9-]+\))?: [^ ].{2,}[^.]$'
-if [ "${#subject}" -gt 72 ] || ! [[ "$subject" =~ $pattern ]]; then
+if [ "${#subject}" -gt 64 ] || ! [[ "$subject" =~ $pattern ]]; then
   echo "::error::Invalid commit subject: $subject"
-  echo "Expected '<type>(<scope>): <summary>' (<= 72 chars, no trailing period)."
+  echo "Expected '<type>(<scope>): <summary>' (<= 64 chars, no trailing period)."
   exit 1
 fi
 

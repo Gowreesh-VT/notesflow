@@ -49,6 +49,7 @@ Every change must pass the protected-path guard, lint, type check, tests and bui
 - **Major changes** (big features, new dependencies, config, database or auth paths) are opened as a pull request
   with a summary, rationale, test steps and risks. Nothing is merged until the owner approves it.
 
+Changes are committed in batches of at most 5 files (`(1/3)`, `(2/3)`, …) and pushed together.
 If nothing worthwhile is found, no commit is made.
 
 One-time setup in **Settings → Secrets and variables → Actions**:

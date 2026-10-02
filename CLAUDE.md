@@ -78,15 +78,16 @@ prompt tells you the count), do not start another major change; do a minor one o
 `.daily-commit-message` — required for every change:
 
 ```
-<type>(<scope>): <imperative summary, at most 72 chars total on line 1>
+<type>(<scope>): <imperative summary, at most 64 chars total on line 1>
 
 <optional body: what and why, wrapped at ~72 chars>
 ```
 
 `type` is one of `feat fix refactor perf test docs style chore a11y`; `scope` is optional, lowercase, e.g. `notes`,
 `tasks`, `editor`, `sidebar`. Describe the real change. No emoji, no trailing period, no trailers, no references to AI
-or automation. For a slice of a larger roadmap item add `Roadmap: <item>, part N` in the body. For a pull request this
-subject becomes the PR title.
+or automation. For a slice of a larger roadmap item add `Roadmap: <item>, part N` in the body. The workflow commits large changes in batches of 5 files and appends ` (i/n)` to each subject, which is why
+the limit is 64; for a pull request the plain subject becomes the PR title. Because batches are cut by file path,
+keep each change coherent so every batch tells a reasonable story.
 
 `.daily-pr-body.md` — required for `major` changes; becomes the pull request description. It must contain exactly
 these `##` headings, each with real content:
