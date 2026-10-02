@@ -10,7 +10,9 @@ const port = Number(process.env.DEV_DB_PORT ?? 54329);
 const dataDir = process.env.DEV_DB_MEMORY === "1" ? undefined : ".pglite";
 
 const client = await PGlite.create(dataDir);
-await migrate(drizzle(client), { migrationsFolder: "./drizzle" });
+if (process.env.DEV_DB_MIGRATE !== "0") {
+  await migrate(drizzle(client), { migrationsFolder: "./drizzle" });
+}
 
 const server = new PGLiteSocketServer({ db: client, port, host: "127.0.0.1", maxConnections: 10 });
 await server.start();

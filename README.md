@@ -63,8 +63,8 @@ npm run dev                          # terminal 2
    `AUTH_GOOGLE_SECRET` (Google Cloud Console → OAuth client; authorised redirect URI
    `https://<your-domain>/api/auth/callback/google`).
 4. Create the tables once, from your machine, with the production connection string (use Neon's _direct_,
-   non-pooled string for migrations): `DATABASE_URL="…" npm run db:migrate`. Re-run it after pulling any change
-   that adds a file under `drizzle/`.
+   non-pooled string for migrations): `npm run db:migrate` (it asks for the connection string and hides what you type). Re-run it after pulling
+   any change that adds a file under `drizzle/`.
 5. Deploy. Open the site on your phone and use "Install app" / "Add to Home Screen".
 
 ## Autonomous daily improvements
