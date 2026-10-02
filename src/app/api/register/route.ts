@@ -19,17 +19,25 @@ export async function POST(request: Request) {
   const body = await readJson(request, 4_000);
   if (!body.ok) return NextResponse.json({ error: "Invalid request." }, { status: body.status });
 
-  const allowed = await withinRateLimit(
-    db,
-    `register:ip:${clientIp(request.headers)}`,
-    10,
-    60 * 60 * 1000,
-  );
-  if (!allowed) {
-    return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
-  }
+  try {
+    const allowed = await withinRateLimit(
+      db,
+      `register:ip:${clientIp(request.headers)}`,
+      10,
+      60 * 60 * 1000,
+    );
+    if (!allowed) {
+      return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
+    }
 
-  const result = await registerUser(db, body.value);
-  if (!result.ok) return NextResponse.json({ error: result.message }, { status: result.status });
-  return NextResponse.json({ ok: true }, { status: 201 });
+    const result = await registerUser(db, body.value);
+    if (!result.ok) return NextResponse.json({ error: result.message }, { status: result.status });
+    return NextResponse.json({ ok: true }, { status: 201 });
+  } catch (error) {
+    console.error("register failed:", error instanceof Error ? error.message : "unknown error");
+    return NextResponse.json(
+      { error: "Accounts are temporarily unavailable. Please try again later." },
+      { status: 503 },
+    );
+  }
 }
