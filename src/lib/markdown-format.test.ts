@@ -1,5 +1,23 @@
 import { describe, expect, it } from "vitest";
-import { applyFormat, continueList } from "./markdown-format";
+import { applyFormat, continueList, toggleTaskLine } from "./markdown-format";
+
+describe("toggleTaskLine", () => {
+  it("checks and unchecks the given line", () => {
+    expect(toggleTaskLine("a\n- [ ] one\n- [ ] two", 3)).toBe("a\n- [ ] one\n- [x] two");
+    expect(toggleTaskLine("- [x] one", 1)).toBe("- [ ] one");
+    expect(toggleTaskLine("- [X] one", 1)).toBe("- [ ] one");
+  });
+
+  it("handles indentation and other markers", () => {
+    expect(toggleTaskLine("  * [ ] nested", 1)).toBe("  * [x] nested");
+    expect(toggleTaskLine("1. [ ] first", 1)).toBe("1. [x] first");
+  });
+
+  it("returns null for non-task or missing lines", () => {
+    expect(toggleTaskLine("- plain", 1)).toBeNull();
+    expect(toggleTaskLine("- [ ] one", 2)).toBeNull();
+  });
+});
 
 describe("continueList", () => {
   const at = (text: string) => continueList(text, text.length, text.length);

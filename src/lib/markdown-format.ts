@@ -146,3 +146,19 @@ export function continueList(
     selectionEnd: caret,
   };
 }
+
+const TASK_LINE = /^(\s*(?:[-*+]|\d+\.) \[)([ xX])\]/;
+
+/**
+ * Flips the checkbox on a 1-based source line. Returns null when the line is
+ * not a task-list item.
+ */
+export function toggleTaskLine(value: string, line: number): string | null {
+  const lines = value.split("\n");
+  const text = lines[line - 1];
+  if (text === undefined) return null;
+  const match = TASK_LINE.exec(text);
+  if (!match) return null;
+  lines[line - 1] = match[1] + (match[2] === " " ? "x" : " ") + text.slice(match[0].length - 1);
+  return lines.join("\n");
+}

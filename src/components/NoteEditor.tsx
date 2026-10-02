@@ -29,6 +29,7 @@ import { exportNoteMarkdown } from "@/lib/data-actions";
 import {
   applyFormat,
   continueList,
+  toggleTaskLine,
   type FormatKind,
   type FormatResult,
 } from "@/lib/markdown-format";
@@ -89,6 +90,11 @@ export function NoteEditor({ note }: { note: Note }) {
     const el = textarea.current;
     if (!el) return;
     apply(el, applyFormat(note.body, el.selectionStart, el.selectionEnd, kind));
+  };
+
+  const toggleTask = (line: number) => {
+    const body = toggleTaskLine(note.body, line);
+    if (body !== null) updateNote(note.id, { body });
   };
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -275,7 +281,7 @@ export function NoteEditor({ note }: { note: Note }) {
               mode === "split" ? "w-1/2 max-lg:hidden" : "w-full",
             )}
           >
-            <MarkdownPreview source={note.body} />
+            <MarkdownPreview source={note.body} onToggleTask={trashed ? undefined : toggleTask} />
           </div>
         )}
       </div>
