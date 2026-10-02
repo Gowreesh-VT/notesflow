@@ -56,7 +56,13 @@ describe("migrateLegacyData", () => {
   it("moves archived notes into an Archived list instead of losing the distinction", () => {
     const { items, lists } = migrateLegacyData([note("n1", { archived: true })], [], 100);
     expect(lists).toEqual([
-      { id: LEGACY_ARCHIVE_LIST_ID, name: "Archived", folderId: null, createdAt: 100 },
+      {
+        id: LEGACY_ARCHIVE_LIST_ID,
+        name: "Archived",
+        folderId: null,
+        createdAt: 100,
+        updatedAt: 100,
+      },
     ]);
     expect(items[0].listId).toBe(LEGACY_ARCHIVE_LIST_ID);
   });

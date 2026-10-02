@@ -9,6 +9,7 @@ import {
   type Priority,
   type TaskList,
   type TaskStatus,
+  type Tombstone,
 } from "@/lib/types";
 import { createId } from "@/lib/utils";
 
@@ -27,11 +28,14 @@ type NewItem = {
 
 type ItemPatch = Partial<Pick<Item, "title" | "body" | "listId" | "priority" | "due">>;
 
-type WorkspaceState = {
+export type WorkspaceData = {
   items: Item[];
   lists: TaskList[];
   folders: Folder[];
+  tombstones: Tombstone[];
+};
 
+type WorkspaceState = WorkspaceData & {
   addItem: (input: NewItem) => string;
   updateItem: (id: string, patch: ItemPatch) => void;
   setStatus: (id: string, status: TaskStatus) => void;
@@ -59,6 +63,11 @@ type WorkspaceState = {
     items: number;
     lists: number;
   };
+
+  /** Replaces the synced collections (used by sync and when signing out). */
+  setData: (data: Partial<WorkspaceData>) => void;
+  /** Forgets tombstones the server has acknowledged. */
+  dropTombstones: (acknowledged: Tombstone[]) => void;
 };
 
 const mapItem = (items: Item[], id: string, fn: (item: Item) => Item): Item[] =>
@@ -76,6 +85,7 @@ export const useWorkspace = create<WorkspaceState>()(
       items: [],
       lists: [],
       folders: [],
+      tombstones: [],
 
       addItem: ({
         kind,
@@ -137,9 +147,24 @@ export const useWorkspace = create<WorkspaceState>()(
       restoreItem: (id) =>
         set((s) => ({ items: mapItem(s.items, id, (item) => touch(item, { deletedAt: null })) })),
 
-      deleteForever: (id) => set((s) => ({ items: s.items.filter((item) => item.id !== id) })),
+      deleteForever: (id) =>
+        set((s) => ({
+          items: s.items.filter((item) => item.id !== id),
+          tombstones: [...s.tombstones, { collection: "item", id, at: Date.now() }],
+        })),
 
-      emptyTrash: () => set((s) => ({ items: s.items.filter((item) => item.deletedAt === null) })),
+      emptyTrash: () =>
+        set((s) => {
+          const at = Date.now();
+          const removed = s.items.filter((item) => item.deletedAt !== null);
+          return {
+            items: s.items.filter((item) => item.deletedAt === null),
+            tombstones: [
+              ...s.tombstones,
+              ...removed.map((item) => ({ collection: "item" as const, id: item.id, at })),
+            ],
+          };
+        }),
 
       duplicateItem: (id) => {
         const source = get().items.find((item) => item.id === id);
@@ -196,7 +221,14 @@ export const useWorkspace = create<WorkspaceState>()(
       addList: (name, folderId = null) => {
         const trimmed = name.trim();
         if (!trimmed) return null;
-        const list: TaskList = { id: createId(), name: trimmed, folderId, createdAt: Date.now() };
+        const now = Date.now();
+        const list: TaskList = {
+          id: createId(),
+          name: trimmed,
+          folderId,
+          createdAt: now,
+          updatedAt: now,
+        };
         set((s) => ({ lists: [...s.lists, list] }));
         return list.id;
       },
@@ -204,23 +236,36 @@ export const useWorkspace = create<WorkspaceState>()(
       renameList: (id, name) => {
         const trimmed = name.trim();
         if (!trimmed) return;
-        set((s) => ({ lists: s.lists.map((l) => (l.id === id ? { ...l, name: trimmed } : l)) }));
+        set((s) => ({
+          lists: s.lists.map((l) =>
+            l.id === id ? { ...l, name: trimmed, updatedAt: Date.now() } : l,
+          ),
+        }));
       },
 
       moveList: (id, folderId) =>
-        set((s) => ({ lists: s.lists.map((l) => (l.id === id ? { ...l, folderId } : l)) })),
+        set((s) => ({
+          lists: s.lists.map((l) => (l.id === id ? { ...l, folderId, updatedAt: Date.now() } : l)),
+        })),
 
       // Items in a deleted list are kept and moved to the Inbox.
       deleteList: (id) =>
-        set((s) => ({
-          lists: s.lists.filter((l) => l.id !== id),
-          items: s.items.map((item) => (item.listId === id ? { ...item, listId: INBOX_ID } : item)),
-        })),
+        set((s) => {
+          const now = Date.now();
+          return {
+            lists: s.lists.filter((l) => l.id !== id),
+            items: s.items.map((item) =>
+              item.listId === id ? { ...item, listId: INBOX_ID, updatedAt: now } : item,
+            ),
+            tombstones: [...s.tombstones, { collection: "list" as const, id, at: now }],
+          };
+        }),
 
       addFolder: (name) => {
         const trimmed = name.trim();
         if (!trimmed) return null;
-        const folder: Folder = { id: createId(), name: trimmed, createdAt: Date.now() };
+        const now = Date.now();
+        const folder: Folder = { id: createId(), name: trimmed, createdAt: now, updatedAt: now };
         set((s) => ({ folders: [...s.folders, folder] }));
         return folder.id;
       },
@@ -235,10 +280,16 @@ export const useWorkspace = create<WorkspaceState>()(
 
       // Lists in a deleted folder are kept and moved to the top level.
       deleteFolder: (id) =>
-        set((s) => ({
-          folders: s.folders.filter((f) => f.id !== id),
-          lists: s.lists.map((l) => (l.folderId === id ? { ...l, folderId: null } : l)),
-        })),
+        set((s) => {
+          const now = Date.now();
+          return {
+            folders: s.folders.filter((f) => f.id !== id),
+            lists: s.lists.map((l) =>
+              l.folderId === id ? { ...l, folderId: null, updatedAt: now } : l,
+            ),
+            tombstones: [...s.tombstones, { collection: "folder" as const, id, at: now }],
+          };
+        }),
 
       mergeData: (incoming) => {
         const { items, lists, folders } = get();
@@ -258,12 +309,44 @@ export const useWorkspace = create<WorkspaceState>()(
         });
         return { items: newItems.length, lists: newLists.length };
       },
+
+      setData: (data) => set(data),
+
+      dropTombstones: (acknowledged) =>
+        set((s) => {
+          const remaining = s.tombstones.filter(
+            (t) =>
+              !acknowledged.some(
+                (a) => a.collection === t.collection && a.id === t.id && a.at === t.at,
+              ),
+          );
+          return remaining.length === s.tombstones.length ? s : { tombstones: remaining };
+        }),
     }),
     {
       name: WORKSPACE_KEY,
-      version: 1,
+      version: 2,
       skipHydration: true,
-      partialize: (s) => ({ items: s.items, lists: s.lists, folders: s.folders }),
+      partialize: (s) => ({
+        items: s.items,
+        lists: s.lists,
+        folders: s.folders,
+        tombstones: s.tombstones,
+      }),
+      // v1 lists and folders had no updatedAt; v1 had no tombstones.
+      migrate: (persisted) => {
+        const old = (persisted ?? {}) as Partial<WorkspaceData>;
+        const stamp = <T extends { createdAt: number; updatedAt?: number }>(x: T) => ({
+          ...x,
+          updatedAt: x.updatedAt ?? x.createdAt,
+        });
+        return {
+          items: old.items ?? [],
+          lists: (old.lists ?? []).map(stamp),
+          folders: (old.folders ?? []).map(stamp),
+          tombstones: old.tombstones ?? [],
+        };
+      },
     },
   ),
 );
@@ -293,7 +376,7 @@ export function upgradeLegacyStorage(storage: Pick<Storage, "getItem" | "setItem
   const { items, lists } = migrateLegacyData(notes, tasks);
   storage.setItem(
     WORKSPACE_KEY,
-    JSON.stringify({ state: { items, lists, folders: [] }, version: 1 }),
+    JSON.stringify({ state: { items, lists, folders: [], tombstones: [] }, version: 2 }),
   );
   return true;
 }

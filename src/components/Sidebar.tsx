@@ -31,6 +31,7 @@ import { exportBackup, importBackupFile, importMarkdownFiles } from "@/lib/data-
 import { useToday } from "@/lib/hooks";
 import { INBOX_ID, type SmartViewId, type View } from "@/lib/types";
 import { useUi, type Theme } from "@/store/ui";
+import { AccountMenu } from "./AccountMenu";
 import { InstallButton } from "./InstallButton";
 import { useWorkspace } from "@/store/workspace";
 
@@ -398,6 +399,7 @@ export function Sidebar() {
               <FileText size={14} aria-hidden /> Import .md
             </button>
           </div>
+          <AccountMenu />
           <InstallButton />
           <input
             ref={backupInput}

@@ -75,7 +75,15 @@ export function migrateLegacyData(
   }
 
   const lists: TaskList[] = usesArchive
-    ? [{ id: LEGACY_ARCHIVE_LIST_ID, name: "Archived", folderId: null, createdAt: now }]
+    ? [
+        {
+          id: LEGACY_ARCHIVE_LIST_ID,
+          name: "Archived",
+          folderId: null,
+          createdAt: now,
+          updatedAt: now,
+        },
+      ]
     : [];
 
   return { items, lists };

@@ -23,8 +23,8 @@ describe("backup", () => {
   it("round-trips items, lists and folders", () => {
     const data = {
       items: [item],
-      lists: [{ id: "work", name: "Work", folderId: "f", createdAt: 1 }],
-      folders: [{ id: "f", name: "Life", createdAt: 1 }],
+      lists: [{ id: "work", name: "Work", folderId: "f", createdAt: 1, updatedAt: 2 }],
+      folders: [{ id: "f", name: "Life", createdAt: 1, updatedAt: 2 }],
     };
     expect(parseBackup(JSON.stringify(createBackup(data, 5)))).toEqual(data);
   });
@@ -83,7 +83,9 @@ describe("backup", () => {
       listId: INBOX_ID,
     });
     expect(result.items[1]).toMatchObject({ kind: "note", pinned: false, createdAt: 7 });
-    expect(result.lists).toEqual([{ id: "l2", name: "Real", folderId: null, createdAt: 7 }]);
+    expect(result.lists).toEqual([
+      { id: "l2", name: "Real", folderId: null, createdAt: 7, updatedAt: 7 },
+    ]);
     expect(result.folders).toEqual([]);
   });
 });

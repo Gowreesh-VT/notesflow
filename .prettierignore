@@ -3,3 +3,4 @@ node_modules
 package-lock.json
 coverage
 next-env.d.ts
+drizzle/meta

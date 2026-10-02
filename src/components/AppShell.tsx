@@ -5,6 +5,7 @@ import { Menu } from "lucide-react";
 import { SMART_VIEWS } from "@/lib/items-logic";
 import { INBOX_ID } from "@/lib/types";
 import { useUi } from "@/store/ui";
+import { useSyncStore } from "@/store/sync";
 import { upgradeLegacyStorage, useWorkspace } from "@/store/workspace";
 import { CommandPalette } from "./CommandPalette";
 import { ShortcutHelp } from "./ShortcutHelp";
@@ -28,7 +29,11 @@ export function AppShell() {
     } catch {
       // Storage unavailable: start with an empty workspace.
     }
-    Promise.all([useUi.persist.rehydrate(), useWorkspace.persist.rehydrate()]).then(() => {
+    Promise.all([
+      useUi.persist.rehydrate(),
+      useWorkspace.persist.rehydrate(),
+      useSyncStore.persist.rehydrate(),
+    ]).then(() => {
       if (!active) return;
       // Home-screen shortcuts open a specific smart view, e.g. /?view=today
       const requested = new URLSearchParams(window.location.search).get("view");

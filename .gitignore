@@ -45,3 +45,8 @@ next-env.d.ts
 .daily-commit-message
 .daily-change-class
 .daily-pr-body.md
+
+# local development database
+.pglite/
+.env
+.env.local

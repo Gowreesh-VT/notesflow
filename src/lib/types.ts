@@ -37,12 +37,23 @@ export type TaskList = {
   name: string;
   folderId: string | null;
   createdAt: number;
+  updatedAt: number;
 };
 
 export type Folder = {
   id: string;
   name: string;
   createdAt: number;
+  updatedAt: number;
+};
+
+export type SyncCollection = "item" | "list" | "folder";
+
+/** Records that something was permanently deleted, so the deletion can reach other devices. */
+export type Tombstone = {
+  collection: SyncCollection;
+  id: string;
+  at: number;
 };
 
 export type SmartViewId =

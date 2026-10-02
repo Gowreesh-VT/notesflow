@@ -5,7 +5,7 @@ import { upgradeLegacyStorage, useWorkspace, WORKSPACE_KEY } from "./workspace";
 const state = () => useWorkspace.getState();
 
 beforeEach(() => {
-  useWorkspace.setState({ items: [], lists: [], folders: [] });
+  useWorkspace.setState({ items: [], lists: [], folders: [], tombstones: [] });
 });
 
 describe("items", () => {
@@ -53,9 +53,11 @@ describe("items", () => {
     state().trashItem(id);
     state().emptyTrash();
     expect(state().items).toHaveLength(0);
+    expect(state().tombstones).toEqual([{ collection: "item", id, at: expect.any(Number) }]);
     const other = state().addItem({ kind: "task", title: "x" });
     state().deleteForever(other);
     expect(state().items).toHaveLength(0);
+    expect(state().tombstones.map((t) => t.id)).toEqual([id, other]);
   });
 
   it("duplicates items with fresh, unchecked subtasks", () => {
@@ -100,6 +102,9 @@ describe("lists and folders", () => {
     expect(state().lists[0].folderId).toBe(folder);
     state().deleteFolder(folder);
     expect(state().lists.find((l) => l.id === list)?.folderId).toBeNull();
+    expect(state().tombstones).toEqual([
+      { collection: "folder", id: folder, at: expect.any(Number) },
+    ]);
     state().moveList(list, null);
     expect(state().folders).toHaveLength(0);
   });
@@ -110,6 +115,23 @@ describe("lists and folders", () => {
     state().deleteList(list);
     expect(state().lists).toHaveLength(0);
     expect(state().items.find((i) => i.id === id)?.listId).toBe(INBOX_ID);
+    expect(state().tombstones.map((t) => t.collection)).toEqual(["list"]);
+  });
+
+  it("bumps updatedAt on lists and on items moved out of a deleted list", () => {
+    const list = state().addList("Work")!;
+    const id = state().addItem({ kind: "task", title: "T", listId: list });
+    state().updateItem(id, {});
+    const before = state().items[0].updatedAt;
+    useWorkspace.setState({
+      lists: state().lists.map((l) => ({ ...l, updatedAt: 1 })),
+      items: state().items.map((i) => ({ ...i, updatedAt: 1 })),
+    });
+    state().renameList(list, "Work 2");
+    expect(state().lists[0].updatedAt).toBeGreaterThan(1);
+    state().deleteList(list);
+    expect(state().items[0].updatedAt).toBeGreaterThan(1);
+    expect(before).toBeGreaterThan(0);
   });
 });
 
@@ -119,7 +141,7 @@ describe("mergeData", () => {
     const mine = state().items[0];
     const added = state().mergeData({
       items: [mine, { ...mine, id: "new" }, { ...mine, id: "orphan", listId: "nope" }],
-      lists: [{ id: "l", name: "L", folderId: null, createdAt: 1 }],
+      lists: [{ id: "l", name: "L", folderId: null, createdAt: 1, updatedAt: 1 }],
       folders: [],
     });
     expect(added).toEqual({ items: 2, lists: 1 });

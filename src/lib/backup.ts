@@ -35,7 +35,7 @@ function parseSubtasks(raw: unknown) {
   });
 }
 
-function parseItem(raw: unknown, now: number): Item | null {
+export function parseItem(raw: unknown, now: number): Item | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
   const kind = r.kind === "note" ? "note" : r.kind === "task" ? "task" : null;
@@ -60,7 +60,7 @@ function parseItem(raw: unknown, now: number): Item | null {
   };
 }
 
-function parseList(raw: unknown, now: number): TaskList | null {
+export function parseList(raw: unknown, now: number): TaskList | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
   const name = asString(r.name).trim();
@@ -70,15 +70,21 @@ function parseList(raw: unknown, now: number): TaskList | null {
     name,
     folderId: asString(r.folderId) || null,
     createdAt: asTime(r.createdAt, now),
+    updatedAt: asTime(r.updatedAt, asTime(r.createdAt, now)),
   };
 }
 
-function parseFolder(raw: unknown, now: number): Folder | null {
+export function parseFolder(raw: unknown, now: number): Folder | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
   const name = asString(r.name).trim();
   if (!name || !asString(r.id)) return null;
-  return { id: asString(r.id), name, createdAt: asTime(r.createdAt, now) };
+  return {
+    id: asString(r.id),
+    name,
+    createdAt: asTime(r.createdAt, now),
+    updatedAt: asTime(r.updatedAt, asTime(r.createdAt, now)),
+  };
 }
 
 function parseArray<T>(raw: unknown, parse: (value: unknown) => T | null): T[] {
