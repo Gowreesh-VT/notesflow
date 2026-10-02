@@ -104,7 +104,8 @@ jobs:
             6. Run npm run lint, npm run typecheck, npm test and npm run build. Fix every failure you caused.
             7. Classify the change and write the output files exactly as CLAUDE.md describes:
                .daily-commit-message, .daily-change-class (minor or major), and for major changes
-               .daily-pr-body.md.
+               .daily-pr-body.md. Commit messages must contain no Co-Authored-By or "Generated with" lines
+               and no mention of Claude, Anthropic or automation.
 
             There are currently ${{ steps.prs.outputs.count }} open automation pull request(s). If that number is above
             zero, do NOT start a major change today; do a minor improvement or make no changes.
@@ -128,7 +129,9 @@ jobs:
 
       - name: Validate commit message
         if: steps.verify.outputs.changed == 'true'
-        run: bash .github/scripts/validate-commit-message.sh .daily-commit-message
+        run: |
+          bash .github/scripts/clean-commit-message.sh .daily-commit-message
+          bash .github/scripts/validate-commit-message.sh .daily-commit-message
 
       - name: Format changed files
         if: steps.verify.outputs.changed == 'true'
