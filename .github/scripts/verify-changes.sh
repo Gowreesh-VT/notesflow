@@ -42,6 +42,20 @@ if [ "$file_count" -gt "$MAX_FILES" ]; then
   exit 1
 fi
 
+# ROADMAP.md is owner-curated: the only allowed edit is ticking items off ("[ ]" -> "[x]").
+if git diff --cached --name-only --no-renames | grep -qx 'ROADMAP.md'; then
+  roadmap_diff="$(git diff --cached -U0 --no-renames -- ROADMAP.md | sed '1,/^+++ /d')"
+  normalize() { sed -E 's/\[[ xX]\]/[ ]/' | sort; }
+  removed="$(grep -E '^-' <<< "$roadmap_diff" | sed 's/^-//' | normalize || true)"
+  added_raw="$(grep -E '^\+' <<< "$roadmap_diff" | sed 's/^+//' || true)"
+  added="$(normalize <<< "$added_raw")"
+  all_ticks="$(grep -v -E '^- \[[xX]\] ' <<< "$added_raw" || true)"
+  if [ "$removed" != "$added" ] || [ -n "$all_ticks" ]; then
+    echo "::error::ROADMAP.md may only have items ticked off; other edits are not allowed."
+    exit 1
+  fi
+fi
+
 # Reject symlinks, newly executable files, submodules and binary files.
 while read -r _src_mode dst_mode _src_sha _dst_sha status path; do
   case "$dst_mode" in

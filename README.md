@@ -42,7 +42,7 @@ Built with Next.js (App Router), React, TypeScript, Tailwind CSS v4, Zustand and
 ## Autonomous daily improvements
 
 `.github/workflows/daily-improvement.yml` runs every day at 09:00 Asia/Kolkata (and on demand from the Actions tab).
-Claude makes one small improvement following [CLAUDE.md](CLAUDE.md); the change is committed and pushed only after
+Claude makes one small improvement following [CLAUDE.md](CLAUDE.md) and the maintainer's [ROADMAP.md](ROADMAP.md); the change is committed and pushed only after
 the protected-path guard, lint, type check, tests and build all pass. If nothing worthwhile is found, no commit is made.
 
 One-time setup in **Settings → Secrets and variables → Actions**:

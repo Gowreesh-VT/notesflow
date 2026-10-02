@@ -31,9 +31,10 @@ You may be started by the scheduled workflow (`.github/workflows/daily-improveme
 watching. On each run:
 
 1. Read this file.
-2. Inspect the repository and recent history (`git log --stat -n 20`) so you do not keep touching the same component.
-3. Understand the current app.
-4. Pick exactly ONE meaningful, small improvement (see priority order).
+2. Read `ROADMAP.md` (the owner's plan; see "Roadmap" below).
+3. Inspect the repository and recent history (`git log --stat -n 20`) so you do not keep touching the same component.
+4. Pick exactly ONE meaningful, small improvement: a real bug or accessibility blocker if you find one, otherwise
+   the next roadmap item, otherwise the general priority order.
 5. Implement it completely, with tests where the change is testable logic.
 6. Run `npm run lint`, `npm run typecheck`, `npm test` and `npm run build`; fix every failure you caused.
 7. Write the commit message (see below) and stop.
@@ -57,6 +58,23 @@ Write the message to `.daily-commit-message` in the repository root (it is git-i
 `tasks`, `editor`, `sidebar`. Describe the real change. No emoji, no trailing period, no references to AI or
 automation. Examples: `fix(editor): keep cursor position after toggling a checklist`,
 `feat(tasks): add empty state for the Today view`, `a11y(palette): announce result count to screen readers`.
+
+### Roadmap
+
+`ROADMAP.md` is owned by the maintainer and decides what to build.
+
+- First, fix any real bug, broken behaviour or accessibility blocker you find (priorities 1–3 below). These always win.
+- Otherwise take the **first unchecked item under "Next up"**, top to bottom. If it is too big for one run, implement
+  the first coherent slice that leaves the app working, and say so in the commit body (`Roadmap: <item>, part 1`).
+  The next run continues it — check `git log` for earlier parts and for whether the item is already done.
+- When an item is fully complete, tick it in `ROADMAP.md` (`- [ ]` → `- [x]`) in the same change. That is the
+  only edit you may make to `ROADMAP.md`; the workflow rejects any other change (rewording, adding, removing,
+  reordering). Never tick an item that is only partly done.
+- Never start anything under "Ideas" and never build anything under "Not wanted".
+- If "Next up" is empty or fully ticked, fall back to the priority order below.
+- Implement roadmap items in the spirit of the existing app (UI rules, scope limit, no new dependencies). If an item
+  cannot be done within the rules (it would need a protected area or a new dependency), skip to the next item and
+  leave it unticked.
 
 ### Priority order
 
@@ -88,7 +106,7 @@ speculative features, and anything needing a product or business decision.
 
 The workflow fails (and discards the change) if any of these are touched:
 
-- `.github/**` (workflows and scripts), `CLAUDE.md`, `AGENTS.md`, `.claude/**`
+- `.github/**` (workflows and scripts), `CLAUDE.md`, `AGENTS.md`, `.claude/**`; `ROADMAP.md` except ticking items off
 - Dependency and tooling config: `package.json`, `package-lock.json`, `.npmrc`, `next.config.*`,
   `tsconfig.json`, `eslint.config.*`, `vitest.config.*`, `postcss.config.*`, `.prettierrc*`, `.prettierignore`,
   `.gitignore`

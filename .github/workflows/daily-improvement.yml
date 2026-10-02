@@ -77,15 +77,19 @@ jobs:
 
             1. Read CLAUDE.md first and follow it exactly. It defines the priorities, UI rules, protected areas,
                scope limits and the commit message format.
-            2. Inspect the repository and recent history (git log --stat -n 20) so you understand what changed
-               recently and do not keep editing the same component.
-            3. Choose exactly ONE small, meaningful, safe improvement. Prefer fixing or improving existing
-               functionality over adding features. Read the surrounding code before changing anything and follow
-               the existing design system and architecture.
-            4. Implement it completely, adding or updating tests when you change logic in src/lib or src/store.
+            2. Read ROADMAP.md. It is the maintainer's plan and decides what to build.
+            3. Inspect the repository and recent history (git log --stat -n 20) so you understand what changed
+               recently, which roadmap items are already done or partly done, and do not keep editing the same
+               component.
+            4. Choose exactly ONE small, meaningful, safe improvement: a real bug or accessibility blocker if you
+               find one; otherwise the first unchecked item under "Next up" in ROADMAP.md; otherwise the priority
+               order in CLAUDE.md. Never start "Ideas" or anything under "Not wanted". When a roadmap item is fully
+               complete, tick it (- [ ] to - [x]) in ROADMAP.md; make no other edit to that file. Read the
+               surrounding code before changing anything and follow the existing design system and architecture.
+            5. Implement it completely, adding or updating tests when you change logic in src/lib or src/store.
                Keep the scope small (a handful of files).
-            5. Run npm run lint, npm run typecheck, npm test and npm run build. Fix every failure you caused.
-            6. Write the commit message to .daily-commit-message as described in CLAUDE.md.
+            6. Run npm run lint, npm run typecheck, npm test and npm run build. Fix every failure you caused.
+            7. Write the commit message to .daily-commit-message as described in CLAUDE.md.
 
             Hard rules: never modify protected areas (.github/, CLAUDE.md, AGENTS.md, package.json, lockfile, config
             files, env files, anything about auth, secrets, databases, deployment or infrastructure). Do not add
