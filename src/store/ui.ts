@@ -16,6 +16,7 @@ type UiState = {
   query: string;
   selectedNoteId: string | null;
   paletteOpen: boolean;
+  helpOpen: boolean;
   sidebarOpen: boolean;
   setTheme: (theme: Theme) => void;
   setEditorMode: (mode: EditorMode) => void;
@@ -26,6 +27,7 @@ type UiState = {
   setQuery: (query: string) => void;
   selectNote: (id: string | null) => void;
   setPaletteOpen: (open: boolean) => void;
+  setHelpOpen: (open: boolean) => void;
   setSidebarOpen: (open: boolean) => void;
 };
 
@@ -41,6 +43,7 @@ export const useUi = create<UiState>()(
       query: "",
       selectedNoteId: null,
       paletteOpen: false,
+      helpOpen: false,
       sidebarOpen: false,
       setTheme: (theme) => set({ theme }),
       setEditorMode: (editorMode) => set({ editorMode }),
@@ -53,6 +56,7 @@ export const useUi = create<UiState>()(
       setQuery: (query) => set({ query }),
       selectNote: (selectedNoteId) => set({ selectedNoteId }),
       setPaletteOpen: (paletteOpen) => set({ paletteOpen }),
+      setHelpOpen: (helpOpen) => set({ helpOpen }),
       setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
     }),
     {

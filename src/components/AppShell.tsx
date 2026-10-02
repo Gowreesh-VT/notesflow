@@ -6,6 +6,7 @@ import { useNotes } from "@/store/notes";
 import { useTasks } from "@/store/tasks";
 import { useUi } from "@/store/ui";
 import { CommandPalette } from "./CommandPalette";
+import { ShortcutHelp } from "./ShortcutHelp";
 import { NotesView } from "./NotesView";
 import { Sidebar } from "./Sidebar";
 import { TasksView } from "./TasksView";
@@ -52,6 +53,9 @@ export function AppShell() {
       } else if (event.key === "/" && !isTypingTarget(event.target)) {
         event.preventDefault();
         document.getElementById("list-search")?.focus();
+      } else if (event.key === "?" && !isTypingTarget(event.target) && !ui.paletteOpen) {
+        event.preventDefault();
+        ui.setHelpOpen(!ui.helpOpen);
       }
     };
     window.addEventListener("keydown", onKeyDown);
@@ -93,6 +97,7 @@ export function AppShell() {
         </main>
       </div>
       {ready && <CommandPalette />}
+      {ready && <ShortcutHelp />}
     </div>
   );
 }

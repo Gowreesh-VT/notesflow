@@ -16,7 +16,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 ## Next up
 
 - [x] Interactive checkboxes in the Markdown preview: clicking a task-list item toggles it in the note
-- [ ] Keyboard shortcut help dialog, opened with `?` and listed in the command palette
+- [x] Keyboard shortcut help dialog, opened with `?` and listed in the command palette
 - [ ] Highlight search matches in the note list snippets and in the preview
 - [ ] Rename a tag across all notes from the sidebar
 - [ ] Recurring tasks (daily, weekly, monthly) that reappear when completed

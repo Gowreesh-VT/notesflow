@@ -45,6 +45,12 @@ function PaletteDialog({ onClose }: { onClose: () => void }) {
       { id: "view-edit", label: "Editor: edit only", run: () => ui.setEditorMode("edit") },
       { id: "view-split", label: "Editor: split view", run: () => ui.setEditorMode("split") },
       { id: "view-preview", label: "Editor: preview only", run: () => ui.setEditorMode("preview") },
+      {
+        id: "shortcuts",
+        label: "Keyboard shortcuts",
+        hint: "?",
+        run: () => ui.setHelpOpen(true),
+      },
       { id: "backup", label: "Download backup", run: () => exportBackup() },
     ];
     const q = query.trim().toLowerCase();
