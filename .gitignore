@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# autonomous daily run scratch file (never committed)
+.daily-commit-message
