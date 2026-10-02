@@ -26,7 +26,12 @@ import {
 } from "lucide-react";
 import clsx from "clsx";
 import { exportNoteMarkdown } from "@/lib/data-actions";
-import { applyFormat, type FormatKind } from "@/lib/markdown-format";
+import {
+  applyFormat,
+  continueList,
+  type FormatKind,
+  type FormatResult,
+} from "@/lib/markdown-format";
 import type { Note } from "@/lib/types";
 import { displayTitle, readingMinutes, wordCount } from "@/lib/utils";
 import { useNotes } from "@/store/notes";
@@ -72,10 +77,7 @@ export function NoteEditor({ note }: { note: Note }) {
   const trashed = note.deletedAt !== null;
   const mode: EditorMode = trashed ? "preview" : editorMode;
 
-  const format = (kind: FormatKind) => {
-    const el = textarea.current;
-    if (!el) return;
-    const result = applyFormat(note.body, el.selectionStart, el.selectionEnd, kind);
+  const apply = (el: HTMLTextAreaElement, result: FormatResult) => {
     updateNote(note.id, { body: result.value });
     window.requestAnimationFrame(() => {
       el.focus();
@@ -83,7 +85,26 @@ export function NoteEditor({ note }: { note: Note }) {
     });
   };
 
+  const format = (kind: FormatKind) => {
+    const el = textarea.current;
+    if (!el) return;
+    apply(el, applyFormat(note.body, el.selectionStart, el.selectionEnd, kind));
+  };
+
   const onKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (
+      event.key === "Enter" &&
+      !(event.shiftKey || event.metaKey || event.ctrlKey || event.altKey) &&
+      !event.nativeEvent.isComposing
+    ) {
+      const el = event.currentTarget;
+      const result = continueList(note.body, el.selectionStart, el.selectionEnd);
+      if (result) {
+        event.preventDefault();
+        apply(el, result);
+      }
+      return;
+    }
     if (!(event.metaKey || event.ctrlKey) || event.altKey) return;
     const key = event.key.toLowerCase();
     if (key === "b") {

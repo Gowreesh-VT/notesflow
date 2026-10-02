@@ -101,3 +101,48 @@ export function applyFormat(
     selectionEnd: lineStart + replaced.length,
   };
 }
+
+const LIST_LINE = /^(\s*)(- \[[ xX]\] |[-*+] |(\d+)\. |> )(.*)$/;
+
+/**
+ * Handles Enter inside a list or quote: continues the marker on the next line,
+ * or removes an empty marker to end the list. Returns null when the default
+ * Enter behaviour should apply.
+ */
+export function continueList(
+  value: string,
+  selectionStart: number,
+  selectionEnd: number,
+): FormatResult | null {
+  if (selectionStart !== selectionEnd) return null;
+
+  const lineStart = value.lastIndexOf("\n", selectionStart - 1) + 1;
+  const match = LIST_LINE.exec(value.slice(lineStart, selectionStart));
+  if (!match) return null;
+
+  const [, indent, marker, number, content] = match;
+  const markerEnd = lineStart + indent.length + marker.length;
+
+  if (content === "") {
+    const nextBreak = value.indexOf("\n", selectionStart);
+    const lineEnd = nextBreak === -1 ? value.length : nextBreak;
+    if (value.slice(selectionStart, lineEnd).trim() !== "") return null;
+    return {
+      value: value.slice(0, lineStart) + value.slice(lineEnd),
+      selectionStart: lineStart,
+      selectionEnd: lineStart,
+    };
+  }
+
+  if (selectionStart < markerEnd) return null;
+
+  const nextMarker =
+    number !== undefined ? `${Number(number) + 1}. ` : marker.replace(/\[[xX]\]/, "[ ]");
+  const insert = `\n${indent}${nextMarker}`;
+  const caret = selectionStart + insert.length;
+  return {
+    value: value.slice(0, selectionStart) + insert + value.slice(selectionEnd),
+    selectionStart: caret,
+    selectionEnd: caret,
+  };
+}
