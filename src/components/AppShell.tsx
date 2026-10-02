@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Menu } from "lucide-react";
+import { SMART_VIEWS } from "@/lib/items-logic";
 import { INBOX_ID } from "@/lib/types";
 import { useUi } from "@/store/ui";
 import { upgradeLegacyStorage, useWorkspace } from "@/store/workspace";
@@ -28,7 +29,12 @@ export function AppShell() {
       // Storage unavailable: start with an empty workspace.
     }
     Promise.all([useUi.persist.rehydrate(), useWorkspace.persist.rehydrate()]).then(() => {
-      if (active) setReady(true);
+      if (!active) return;
+      // Home-screen shortcuts open a specific smart view, e.g. /?view=today
+      const requested = new URLSearchParams(window.location.search).get("view");
+      const smart = SMART_VIEWS.find((v) => v.id === requested);
+      if (smart) useUi.getState().setView({ kind: "smart", id: smart.id });
+      setReady(true);
     });
     return () => {
       active = false;

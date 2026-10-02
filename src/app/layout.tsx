@@ -1,3 +1,4 @@
+import { SerwistProvider } from "@serwist/turbopack/react";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -13,8 +14,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  applicationName: "Notesflow",
   title: "Notesflow",
-  description: "Markdown notes and tasks in one fast, private, local-first workspace.",
+  description: "To-do lists and Markdown notes in one fast, private workspace.",
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "Notesflow" },
+  formatDetection: { telephone: false },
+  icons: { apple: "/icons/apple-touch" },
 };
 
 export const viewport: Viewport = {
@@ -37,7 +42,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        <SerwistProvider swUrl="/serwist/sw.js" disable={process.env.NODE_ENV === "development"}>
+          {children}
+        </SerwistProvider>
+      </body>
     </html>
   );
 }
