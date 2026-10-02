@@ -28,7 +28,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
       process.env.NODE_ENV !== "production" ||
       process.env.VERCEL === "1" ||
       process.env.AUTH_TRUST_HOST === "true",
-    pages: { signIn: "/", error: "/" },
+    pages: { signIn: "/app", error: "/app" },
     providers: [
       ...(isGoogleConfigured() ? [Google] : []),
       Credentials({

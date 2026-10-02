@@ -121,7 +121,7 @@ function PaletteDialog({ onClose }: { onClose: () => void }) {
         aria-label="Command palette"
         onMouseDown={(e) => e.stopPropagation()}
         onKeyDown={onKeyDown}
-        className="w-full max-w-lg overflow-hidden rounded-xl border border-stone-200 bg-white shadow-2xl dark:border-stone-700 dark:bg-stone-900"
+        className="w-full max-w-lg overflow-hidden rounded-xl border border-stone-200 bg-white shadow-lift dark:border-stone-700 dark:bg-stone-900"
       >
         <input
           ref={input}
@@ -149,7 +149,7 @@ function PaletteDialog({ onClose }: { onClose: () => void }) {
               onClick={() => choose(command)}
               className={
                 "flex cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-sm " +
-                (index === active ? "bg-indigo-100 dark:bg-indigo-950" : "")
+                (index === active ? "bg-accent-100 dark:bg-accent-950" : "")
               }
             >
               <span className="truncate">{command.label}</span>

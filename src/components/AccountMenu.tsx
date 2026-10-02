@@ -14,17 +14,25 @@ type CloudStatus = { configured: boolean; google: boolean };
 function AccountPanel({ google }: { google: boolean }) {
   const { data, status: authStatus } = useSession();
   const sync = useSyncStore();
-  // Sign-in failures from the Google redirect come back as ?error=...
+  // Sign-in failures from the Google redirect come back as ?error=..., and the landing page links with ?signin=1.
   const [initialError] = useState<string | null>(() =>
     typeof window === "undefined"
       ? null
       : authErrorMessage(new URLSearchParams(window.location.search).get("error")),
   );
-  const [open, setOpen] = useState(initialError !== null);
+  const [open, setOpen] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      (initialError !== null || new URLSearchParams(window.location.search).has("signin")),
+  );
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).has("error")) {
-      window.history.replaceState(null, "", window.location.pathname);
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("error") || params.has("signin")) {
+      params.delete("error");
+      params.delete("signin");
+      const rest = params.toString();
+      window.history.replaceState(null, "", window.location.pathname + (rest ? `?${rest}` : ""));
     }
   }, []);
 

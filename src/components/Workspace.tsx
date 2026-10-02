@@ -24,7 +24,10 @@ export function Workspace() {
       </div>
       <section
         aria-label="Details"
-        className={selected ? "min-w-0 flex-1" : "hidden min-w-0 flex-1 md:block"}
+        className={
+          (selected ? "min-w-0 flex-1" : "hidden min-w-0 flex-1 md:block") +
+          " overflow-hidden bg-white dark:bg-stone-900 md:m-3 md:ml-0 md:rounded-2xl md:border md:border-stone-200 md:shadow-soft dark:md:border-stone-800"
+        }
       >
         {selected ? (
           selected.kind === "task" ? (
@@ -33,8 +36,13 @@ export function Workspace() {
             <NoteDetail key={selected.id} item={selected} />
           )
         ) : (
-          <div className="flex h-full items-center justify-center p-6 text-center text-sm text-stone-500 dark:text-stone-400">
-            Select a task or note to see its details, or press Alt+T to add a task.
+          <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center text-stone-500 dark:text-stone-400">
+            <p className="heading-display text-xl text-stone-700 dark:text-stone-200">
+              Nothing selected
+            </p>
+            <p className="max-w-xs text-sm">
+              Pick a task or note to see its details, or press Alt+T to add a task.
+            </p>
           </div>
         )}
       </section>

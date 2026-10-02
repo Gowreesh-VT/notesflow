@@ -83,7 +83,7 @@ export function AuthDialog({
         onKeyDown={(e) => {
           if (e.key === "Escape") onClose();
         }}
-        className="w-full max-w-sm rounded-xl border border-stone-200 bg-white p-5 shadow-2xl dark:border-stone-700 dark:bg-stone-900"
+        className="w-full max-w-sm rounded-xl border border-stone-200 bg-white p-5 shadow-lift dark:border-stone-700 dark:bg-stone-900"
       >
         <h2 id="auth-title" className="text-lg font-semibold">
           {mode === "signin" ? "Sign in to sync" : "Create your account"}
@@ -97,7 +97,7 @@ export function AuthDialog({
             <button
               type="button"
               className="btn mt-4 w-full border border-stone-300 dark:border-stone-700"
-              onClick={() => void signIn("google", { callbackUrl: "/" })}
+              onClick={() => void signIn("google", { callbackUrl: "/app" })}
             >
               Continue with Google
             </button>
@@ -163,7 +163,7 @@ export function AuthDialog({
         <div className="mt-3 flex items-center justify-between text-sm">
           <button
             type="button"
-            className="text-indigo-600 hover:underline dark:text-indigo-400"
+            className="text-accent-600 hover:underline dark:text-accent-400"
             onClick={() => {
               setMode(mode === "signin" ? "signup" : "signin");
               setError(null);

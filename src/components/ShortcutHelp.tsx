@@ -37,7 +37,7 @@ function HelpDialog({ onClose }: { onClose: () => void }) {
             onClose();
           }
         }}
-        className="w-full max-w-md rounded-xl border border-stone-200 bg-white p-4 shadow-2xl outline-none dark:border-stone-700 dark:bg-stone-900"
+        className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-4 shadow-lift outline-none dark:border-stone-700 dark:bg-stone-900"
       >
         <h2 id="shortcut-help-title" className="mb-3 text-base font-semibold">
           Keyboard shortcuts

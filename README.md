@@ -27,6 +27,7 @@ Everything works offline and is stored on your device; sign in to sync across de
 - Command palette (Ctrl/⌘+K), `/` to search, `?` for shortcuts, Alt+T new task, Alt+N new note
 - Light, dark and system themes; responsive layout; keyboard and screen-reader friendly
 - Full JSON backup and restore (older backups still import)
+- Public landing page at `/`, with the app at `/app`
 - Installable PWA (Serwist): works offline, home-screen icon, Today and Inbox shortcuts
 - Optional accounts (email + password or Google) with sync across devices; last edit wins per item
 

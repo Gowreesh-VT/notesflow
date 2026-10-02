@@ -29,6 +29,10 @@ npm run build        # production build
 npm run format       # prettier --write (format:check verifies)
 ```
 
+Routes: `/` is the public landing page (`src/app/page.tsx`, static, with the decorative `AppPreview`), `/app` is the
+app itself (the PWA `start_url`), `/~offline` is the offline fallback. Keep the landing page honest: only describe
+features that exist; upcoming ones belong in its "Growing steadily" list.
+
 Layout: `src/app` (route + layout), `src/components` (UI: `Sidebar`, `ItemList`, `TaskDetail`, `NoteDetail`,
 `MarkdownEditor`, `CommandPalette`), `src/store` (`workspace.ts` holds items, lists and folders; `ui.ts` holds view
 state), `src/lib` (pure logic: `items-logic.ts` views/filtering/sorting/quick-add, `migrate.ts`, `backup.ts`,
@@ -160,9 +164,14 @@ product or business decision the roadmap does not already make.
 
 ### UI rules
 
-- Preserve the existing design language: stone neutrals, indigo accent, rounded corners, Geist font, the
-  `btn` / `btn-primary` / `btn-ghost` / `btn-danger` / `field` classes in `src/app/globals.css`.
-- Preserve colours and typography unless fixing a real contrast/accessibility problem.
+- Preserve the existing design language, "warm minimal": sand neutrals (the `stone-*` scale is overridden with warm
+  tones in `src/app/globals.css`), a terracotta accent (`accent-*` scale), rounded-xl controls and rounded-2xl panels,
+  soft shadows (`shadow-soft`, `shadow-lift`), Geist for UI text and Fraunces for headings (`heading-display`), and
+  the `btn` / `btn-primary` / `btn-ghost` / `btn-danger` / `field` classes. Use the scales and classes, never raw hex
+  colours; there is no `indigo`.
+- Surfaces: the app has a sidebar, an item list on the page background, and the detail panel as a white card.
+  Rows are rounded and borderless; selected rows use `accent-50` with an `accent-200` ring.
+- Preserve colours and typography unless fixing a real contrast/accessibility problem (keep text at 4.5:1 or better).
 - Everything must work on desktop and mobile, in light and dark mode, and with the keyboard.
 - Read the neighbouring components before changing UI and stay consistent with them.
 - Prefer subtle polish. No random gradients, no gratuitous animation, no replacing working components because

@@ -6,6 +6,40 @@
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+}
+
+/*
+ * Warm minimal palette. "stone" is overridden with warm sand neutrals (the same scale is used in light and dark
+ * mode, with dark: variants picking the deep end), and "accent" is a terracotta scale.
+ */
+@theme {
+  --color-stone-50: #faf7f2;
+  --color-stone-100: #f4efe6;
+  --color-stone-200: #e9e1d3;
+  --color-stone-300: #d9cebb;
+  --color-stone-400: #a99d88;
+  --color-stone-500: #766a58;
+  --color-stone-600: #5f5446;
+  --color-stone-700: #4a4136;
+  --color-stone-800: #352e26;
+  --color-stone-900: #231e19;
+  --color-stone-950: #171310;
+
+  --color-accent-50: #fdf3ef;
+  --color-accent-100: #fbe5dc;
+  --color-accent-200: #f6c9b8;
+  --color-accent-300: #efa58b;
+  --color-accent-400: #e57c5c;
+  --color-accent-500: #d95f3b;
+  --color-accent-600: #c24a2a;
+  --color-accent-700: #a13b22;
+  --color-accent-800: #84321f;
+  --color-accent-900: #6c2d1e;
+  --color-accent-950: #3b150d;
+
+  --shadow-soft: 0 1px 2px rgb(60 40 20 / 0.05), 0 4px 16px rgb(60 40 20 / 0.06);
+  --shadow-lift: 0 2px 4px rgb(60 40 20 / 0.06), 0 12px 32px rgb(60 40 20 / 0.12);
 }
 
 html {
@@ -23,21 +57,25 @@ body {
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors
-      focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium transition-colors
+      focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500 disabled:opacity-50;
   }
   .btn-primary {
-    @apply bg-indigo-600 text-white hover:bg-indigo-700;
+    @apply bg-accent-600 text-white shadow-sm hover:bg-accent-700 dark:bg-accent-500 dark:hover:bg-accent-400;
   }
   .btn-ghost {
     @apply text-stone-600 hover:bg-stone-200/70 dark:text-stone-300 dark:hover:bg-stone-800;
   }
   .btn-danger {
-    @apply text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40;
+    @apply text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40;
   }
   .field {
-    @apply w-full rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-sm placeholder:text-stone-400
-      focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-indigo-500
+    @apply w-full rounded-xl border border-stone-300 bg-white/80 px-3 py-1.5 text-sm placeholder:text-stone-400
+      focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-accent-500
       dark:border-stone-700 dark:bg-stone-900 dark:placeholder:text-stone-500;
+  }
+  .heading-display {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
   }
 }

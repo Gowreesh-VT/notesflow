@@ -100,12 +100,12 @@ export function TaskDetail({ item }: { item: Item }) {
           onClick={() => toggleDone(item.id)}
           className={clsx(
             "mt-1.5 flex size-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
-            "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500",
+            "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500",
             item.status === "done"
-              ? "border-indigo-600 bg-indigo-600 text-white"
+              ? "border-accent-600 bg-accent-600 text-white"
               : item.status === "wontdo"
                 ? "border-stone-400 bg-stone-300 text-white dark:bg-stone-600"
-                : "border-stone-400 hover:border-indigo-500",
+                : "border-stone-400 hover:border-accent-500",
           )}
         >
           {item.status === "done" && <Check size={14} strokeWidth={3} aria-hidden />}
@@ -121,7 +121,7 @@ export function TaskDetail({ item }: { item: Item }) {
           aria-label="Task title"
           placeholder="Task title"
           className={clsx(
-            "min-w-0 flex-1 bg-transparent text-xl font-semibold outline-none placeholder:text-stone-400",
+            "heading-display min-w-0 flex-1 bg-transparent text-2xl font-semibold outline-none placeholder:text-stone-400",
             item.status !== "open" && "text-stone-400 line-through",
           )}
         />
@@ -147,7 +147,7 @@ export function TaskDetail({ item }: { item: Item }) {
                 className={clsx(
                   "btn px-2 py-1 text-xs",
                   item.due === d.value
-                    ? "bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200"
+                    ? "bg-accent-100 text-accent-800 dark:bg-accent-950 dark:text-accent-200"
                     : "btn-ghost",
                 )}
               >
@@ -231,7 +231,7 @@ export function TaskDetail({ item }: { item: Item }) {
                 disabled={trashed}
                 onChange={() => toggleSubtask(item.id, sub.id)}
                 aria-label={`Subtask: ${sub.title}`}
-                className="size-4 accent-indigo-600"
+                className="size-4 accent-accent-600"
               />
               <span
                 className={clsx("flex-1 break-words", sub.done && "text-stone-400 line-through")}

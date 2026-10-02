@@ -28,7 +28,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ nam
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#4f46e5",
+        background: "#c24a2a",
         borderRadius: maskable ? 0 : Math.round(size * 0.22),
       }}
     >

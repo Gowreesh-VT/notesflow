@@ -76,7 +76,7 @@ export function NoteDetail({ item }: { item: Item }) {
           placeholder="Untitled note"
           aria-label="Note title"
           readOnly={trashed}
-          className="min-w-0 flex-1 bg-transparent text-xl font-semibold outline-none placeholder:text-stone-400"
+          className="heading-display min-w-0 flex-1 bg-transparent text-2xl font-semibold outline-none placeholder:text-stone-400"
         />
         {!trashed && (
           <div className="flex shrink-0 items-center">

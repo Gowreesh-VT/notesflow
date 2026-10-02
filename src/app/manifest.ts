@@ -6,12 +6,12 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "Notesflow",
     description: "To-do lists and Markdown notes in one fast, private workspace.",
     id: "/",
-    start_url: "/",
+    start_url: "/app",
     scope: "/",
     display: "standalone",
     orientation: "any",
-    background_color: "#fafaf9",
-    theme_color: "#4f46e5",
+    background_color: "#faf7f2",
+    theme_color: "#faf7f2",
     categories: ["productivity"],
     icons: [
       { src: "/icons/icon-192", sizes: "192x192", type: "image/png", purpose: "any" },
@@ -19,8 +19,8 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: "/icons/maskable-512", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
     shortcuts: [
-      { name: "Today", url: "/?view=today", description: "Tasks due today" },
-      { name: "Inbox", url: "/?view=inbox", description: "Your inbox" },
+      { name: "Today", url: "/app?view=today", description: "Tasks due today" },
+      { name: "Inbox", url: "/app?view=inbox", description: "Your inbox" },
     ],
   };
 }

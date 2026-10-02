@@ -51,9 +51,9 @@ function ItemRow({
   return (
     <li
       className={clsx(
-        "flex items-start gap-2 border-b border-stone-200 px-3 py-2.5 dark:border-stone-800",
+        "flex items-start gap-2.5 rounded-xl px-3 py-2.5 transition-colors",
         selected
-          ? "bg-indigo-50 dark:bg-indigo-950/40"
+          ? "bg-accent-50 ring-1 ring-accent-200 dark:bg-accent-950/40 dark:ring-accent-900"
           : "hover:bg-stone-100 dark:hover:bg-stone-900",
       )}
     >
@@ -67,12 +67,12 @@ function ItemRow({
           onClick={() => toggleDone(item.id)}
           className={clsx(
             "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
-            "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500",
+            "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500",
             item.status === "done"
-              ? "border-indigo-600 bg-indigo-600 text-white"
+              ? "border-accent-600 bg-accent-600 text-white"
               : item.status === "wontdo"
                 ? "border-stone-400 bg-stone-300 text-white dark:bg-stone-600"
-                : "border-stone-400 hover:border-indigo-500",
+                : "border-stone-400 hover:border-accent-500",
           )}
         >
           {item.status === "done" && <Check size={12} strokeWidth={3} aria-hidden />}
@@ -86,7 +86,7 @@ function ItemRow({
         type="button"
         onClick={() => selectItem(item.id)}
         aria-current={selected ? "true" : undefined}
-        className="min-w-0 flex-1 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+        className="min-w-0 flex-1 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
       >
         <span
           className={clsx(
@@ -108,7 +108,7 @@ function ItemRow({
                 bucket === "overdue" && !closed
                   ? "font-medium text-red-600 dark:text-red-400"
                   : bucket === "today" && !closed
-                    ? "font-medium text-indigo-600 dark:text-indigo-400"
+                    ? "font-medium text-accent-600 dark:text-accent-400"
                     : "text-stone-500 dark:text-stone-400",
               )}
             >
@@ -128,7 +128,7 @@ function ItemRow({
               {progress.done}/{progress.total}
             </span>
           )}
-          {item.pinned && <span className="text-indigo-600">Pinned</span>}
+          {item.pinned && <span className="text-accent-600">Pinned</span>}
           {tags.slice(0, 2).map((tag) => (
             <span key={tag} className="text-stone-500 dark:text-stone-400">
               #{tag}
@@ -229,10 +229,10 @@ export function ItemList() {
             : "Nothing here yet. Add a task or note above.";
 
   return (
-    <div className="flex h-full flex-col border-r border-stone-200 dark:border-stone-800">
-      <div className="space-y-2 p-3">
+    <div className="flex h-full flex-col">
+      <div className="space-y-2.5 px-4 pb-2 pt-4">
         <div className="flex items-center justify-between gap-2">
-          <h1 className="truncate text-lg font-semibold">{title}</h1>
+          <h1 className="heading-display truncate text-2xl font-semibold">{title}</h1>
           {view.kind === "smart" && view.id === "trash" && (
             <button
               type="button"
@@ -369,8 +369,8 @@ export function ItemList() {
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto border-t border-stone-200 dark:border-stone-800">
-        <ul>
+      <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-4">
+        <ul className="space-y-0.5 pt-1">
           {main.map((item) => (
             <ItemRow
               key={item.id}
@@ -382,9 +382,20 @@ export function ItemList() {
           ))}
         </ul>
         {main.length === 0 && finished.length === 0 && (
-          <p className="p-6 text-center text-sm text-stone-500 dark:text-stone-400">
-            {emptyMessage}
-          </p>
+          <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
+            <svg width="64" height="64" viewBox="0 0 64 64" fill="none" aria-hidden>
+              <circle cx="32" cy="32" r="30" className="fill-stone-100 dark:fill-stone-800" />
+              <circle cx="32" cy="32" r="14" className="stroke-accent-400" strokeWidth="2.5" />
+              <path
+                d="M25.5 32.5l4.5 4.5 9-10"
+                className="stroke-accent-600 dark:stroke-accent-400"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <p className="text-sm text-stone-500 dark:text-stone-400">{emptyMessage}</p>
+          </div>
         )}
         {finished.length > 0 && (
           <section aria-label="Finished tasks">

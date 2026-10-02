@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import {
   Ban,
   CalendarClock,
   CalendarDays,
   CalendarRange,
+  Check,
   CheckCheck,
   ChevronRight,
   Download,
@@ -70,10 +72,10 @@ function NavItem({
       aria-current={active ? "page" : undefined}
       className={clsx(
         "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors",
-        "focus-visible:outline-2 focus-visible:outline-indigo-500",
+        "focus-visible:outline-2 focus-visible:outline-accent-500",
         indent && "pl-7",
         active
-          ? "bg-indigo-100 font-medium text-indigo-900 dark:bg-indigo-950 dark:text-indigo-200"
+          ? "bg-accent-100 font-medium text-accent-900 dark:bg-accent-950 dark:text-accent-200"
           : "text-stone-600 hover:bg-stone-200/70 dark:text-stone-300 dark:hover:bg-stone-800",
       )}
     >
@@ -183,7 +185,15 @@ export function Sidebar() {
         )}
       >
         <div className="flex items-center justify-between px-4 pb-2 pt-4">
-          <span className="text-lg font-semibold tracking-tight">Notesflow</span>
+          <Link href="/" className="flex items-center gap-2" aria-label="Notesflow home">
+            <span
+              aria-hidden
+              className="flex size-7 items-center justify-center rounded-lg bg-accent-600 text-white dark:bg-accent-500"
+            >
+              <Check size={16} strokeWidth={3} />
+            </span>
+            <span className="heading-display text-xl font-semibold">Notesflow</span>
+          </Link>
           <button
             type="button"
             className="btn btn-ghost md:hidden"

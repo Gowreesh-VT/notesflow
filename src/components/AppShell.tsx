@@ -95,7 +95,7 @@ export function AppShell() {
           >
             <Menu size={20} />
           </button>
-          <span className="font-semibold">Notesflow</span>
+          <span className="heading-display text-lg font-semibold">Notesflow</span>
         </header>
         <main id="main" className="min-h-0 flex-1">
           {!ready ? (
