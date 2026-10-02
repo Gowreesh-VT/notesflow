@@ -2,74 +2,87 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { exportBackup } from "@/lib/data-actions";
-import { filterNotes } from "@/lib/notes-logic";
+import { filterItems, SMART_VIEWS } from "@/lib/items-logic";
+import { useToday } from "@/lib/hooks";
+import { INBOX_ID, type Item } from "@/lib/types";
 import { displayTitle } from "@/lib/utils";
-import { useNotes } from "@/store/notes";
 import { useUi, type Theme } from "@/store/ui";
+import { useWorkspace } from "@/store/workspace";
 
 type Command = { id: string; label: string; hint?: string; run: () => void };
 
 const NEXT_THEME: Record<Theme, Theme> = { system: "light", light: "dark", dark: "system" };
 
+function openItem(item: Item) {
+  const ui = useUi.getState();
+  ui.setView(
+    item.listId === INBOX_ID ? { kind: "smart", id: "inbox" } : { kind: "list", id: item.listId },
+  );
+  ui.selectItem(item.id);
+}
+
 function PaletteDialog({ onClose }: { onClose: () => void }) {
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const input = useRef<HTMLInputElement>(null);
-  const notes = useNotes((s) => s.notes);
+  const items = useWorkspace((s) => s.items);
+  const lists = useWorkspace((s) => s.lists);
+  const today = useToday();
 
   const commands = useMemo<Command[]>(() => {
     const ui = useUi.getState();
     const base: Command[] = [
       {
-        id: "new-note",
-        label: "New note",
-        hint: "Alt+N",
-        run: () => {
-          ui.setNoteFilter({ kind: "all" });
-          ui.selectNote(useNotes.getState().createNote());
-        },
-      },
-      {
         id: "new-task",
         label: "New task",
         hint: "Alt+T",
         run: () => {
-          ui.setSection("tasks");
+          if (ui.view.kind === "smart" && ["trash", "completed", "wontdo"].includes(ui.view.id)) {
+            ui.setView({ kind: "smart", id: "inbox" });
+          }
           window.setTimeout(() => document.getElementById("quick-add")?.focus(), 0);
         },
       },
-      { id: "go-notes", label: "Go to notes", run: () => ui.setNoteFilter({ kind: "all" }) },
-      { id: "go-today", label: "Go to today’s tasks", run: () => ui.setTaskFilter("today") },
-      { id: "go-inbox", label: "Go to task inbox", run: () => ui.setTaskFilter("inbox") },
+      {
+        id: "new-note",
+        label: "New note",
+        hint: "Alt+N",
+        run: () => {
+          const listId = ui.view.kind === "list" ? ui.view.id : INBOX_ID;
+          ui.selectItem(useWorkspace.getState().addItem({ kind: "note", listId }));
+        },
+      },
+      ...SMART_VIEWS.map((v) => ({
+        id: `go-${v.id}`,
+        label: `Go to ${v.label}`,
+        run: () => ui.setView({ kind: "smart", id: v.id }),
+      })),
+      ...lists.map((l) => ({
+        id: `list-${l.id}`,
+        label: `Open list: ${l.name}`,
+        run: () => ui.setView({ kind: "list", id: l.id }),
+      })),
       { id: "theme", label: "Cycle theme", run: () => ui.setTheme(NEXT_THEME[ui.theme]) },
       { id: "view-edit", label: "Editor: edit only", run: () => ui.setEditorMode("edit") },
       { id: "view-split", label: "Editor: split view", run: () => ui.setEditorMode("split") },
       { id: "view-preview", label: "Editor: preview only", run: () => ui.setEditorMode("preview") },
-      {
-        id: "shortcuts",
-        label: "Keyboard shortcuts",
-        hint: "?",
-        run: () => ui.setHelpOpen(true),
-      },
       { id: "backup", label: "Download backup", run: () => exportBackup() },
+      { id: "shortcuts", label: "Keyboard shortcuts", hint: "?", run: () => ui.setHelpOpen(true) },
     ];
     const q = query.trim().toLowerCase();
     const matchingCommands = q ? base.filter((c) => c.label.toLowerCase().includes(q)) : base;
-    const noteResults: Command[] = q
-      ? filterNotes(notes, { kind: "all" }, q, "updated")
+    const itemResults: Command[] = q
+      ? filterItems(items, { kind: "smart", id: "all" }, q, today)
           .slice(0, 8)
-          .map((note) => ({
-            id: `note-${note.id}`,
-            label: displayTitle(note),
-            hint: "Note",
-            run: () => {
-              ui.setNoteFilter({ kind: "all" });
-              ui.selectNote(note.id);
-            },
+          .map((item) => ({
+            id: `item-${item.id}`,
+            label: displayTitle(item),
+            hint: item.kind === "task" ? "Task" : "Note",
+            run: () => openItem(item),
           }))
       : [];
-    return [...matchingCommands, ...noteResults];
-  }, [query, notes]);
+    return [...matchingCommands, ...itemResults];
+  }, [query, items, lists, today]);
 
   useEffect(() => {
     input.current?.focus();
@@ -121,8 +134,8 @@ function PaletteDialog({ onClose }: { onClose: () => void }) {
           aria-expanded="true"
           aria-controls="palette-results"
           aria-activedescendant={commands[active] ? `palette-${commands[active].id}` : undefined}
-          placeholder="Type a command or search notes…"
-          aria-label="Command or note"
+          placeholder="Type a command or search tasks and notes…"
+          aria-label="Command, task or note"
           className="w-full border-b border-stone-200 bg-transparent px-4 py-3 text-sm outline-none dark:border-stone-700"
         />
         <ul id="palette-results" role="listbox" className="max-h-72 overflow-y-auto p-1">

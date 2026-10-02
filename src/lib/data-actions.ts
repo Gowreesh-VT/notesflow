@@ -1,30 +1,29 @@
 import { createBackup, parseBackup } from "./backup";
 import { downloadFile, slugify, toDateKey } from "./utils";
-import { useNotes } from "@/store/notes";
-import { useTasks } from "@/store/tasks";
+import { INBOX_ID } from "./types";
+import { useWorkspace } from "@/store/workspace";
 
 export function exportBackup(): string {
-  const backup = createBackup(useNotes.getState().notes, useTasks.getState().tasks);
+  const { items, lists, folders } = useWorkspace.getState();
   downloadFile(
     `notesflow-backup-${toDateKey(new Date())}.json`,
-    JSON.stringify(backup, null, 2),
+    JSON.stringify(createBackup({ items, lists, folders }), null, 2),
     "application/json",
   );
-  return `Exported ${backup.notes.length} notes and ${backup.tasks.length} tasks.`;
+  const tasks = items.filter((i) => i.kind === "task").length;
+  return `Exported ${items.length - tasks} notes and ${tasks} tasks.`;
 }
 
 export async function importBackupFile(file: File): Promise<string> {
-  const { notes, tasks } = parseBackup(await file.text());
-  const addedNotes = useNotes.getState().mergeNotes(notes);
-  const addedTasks = useTasks.getState().mergeTasks(tasks);
-  return `Imported ${addedNotes} new notes and ${addedTasks} new tasks.`;
+  const added = useWorkspace.getState().mergeData(parseBackup(await file.text()));
+  return `Imported ${added.items} new items and ${added.lists} new lists.`;
 }
 
-export async function importMarkdownFiles(files: File[]): Promise<string> {
+export async function importMarkdownFiles(files: File[], listId = INBOX_ID): Promise<string> {
   let count = 0;
   for (const file of files) {
     const title = file.name.replace(/\.(md|markdown|txt)$/i, "");
-    useNotes.getState().createNote({ title, body: await file.text() });
+    useWorkspace.getState().addItem({ kind: "note", title, body: await file.text(), listId });
     count += 1;
   }
   return `Imported ${count} markdown ${count === 1 ? "file" : "files"}.`;

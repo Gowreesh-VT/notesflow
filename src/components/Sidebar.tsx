@@ -2,17 +2,23 @@
 
 import { useMemo, useRef, useState } from "react";
 import {
-  Archive,
+  Ban,
   CalendarClock,
   CalendarDays,
+  CalendarRange,
   CheckCheck,
+  ChevronRight,
   Download,
   FileText,
+  Folder as FolderIcon,
   Hash,
   Inbox,
+  Layers,
+  ListTodo,
   Monitor,
   Moon,
-  Pin,
+  Pencil,
+  Plus,
   Search,
   Sun,
   Trash2,
@@ -20,24 +26,41 @@ import {
   X,
 } from "lucide-react";
 import clsx from "clsx";
-import { collectTags, countByFilter } from "@/lib/notes-logic";
-import { countTasks } from "@/lib/tasks-logic";
+import { collectTags, countInView, sameView, SMART_VIEWS } from "@/lib/items-logic";
 import { exportBackup, importBackupFile, importMarkdownFiles } from "@/lib/data-actions";
 import { useToday } from "@/lib/hooks";
-import type { NoteFilter, TaskFilter } from "@/lib/types";
-import { useNotes } from "@/store/notes";
-import { useTasks } from "@/store/tasks";
+import { INBOX_ID, type SmartViewId, type View } from "@/lib/types";
 import { useUi, type Theme } from "@/store/ui";
+import { useWorkspace } from "@/store/workspace";
 
-type NavItemProps = {
+const SMART_ICONS: Record<SmartViewId, React.ReactNode> = {
+  inbox: <Inbox size={16} />,
+  today: <CalendarDays size={16} />,
+  tomorrow: <CalendarClock size={16} />,
+  week: <CalendarRange size={16} />,
+  all: <Layers size={16} />,
+  completed: <CheckCheck size={16} />,
+  wontdo: <Ban size={16} />,
+  trash: <Trash2 size={16} />,
+};
+
+const COUNTED: SmartViewId[] = ["inbox", "today", "tomorrow", "week", "all"];
+
+function NavItem({
+  icon,
+  label,
+  count,
+  active,
+  onClick,
+  indent = false,
+}: {
   icon: React.ReactNode;
   label: string;
   count?: number;
   active: boolean;
   onClick: () => void;
-};
-
-function NavItem({ icon, label, count, active, onClick }: NavItemProps) {
+  indent?: boolean;
+}) {
   return (
     <button
       type="button"
@@ -46,6 +69,7 @@ function NavItem({ icon, label, count, active, onClick }: NavItemProps) {
       className={clsx(
         "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors",
         "focus-visible:outline-2 focus-visible:outline-indigo-500",
+        indent && "pl-7",
         active
           ? "bg-indigo-100 font-medium text-indigo-900 dark:bg-indigo-950 dark:text-indigo-200"
           : "text-stone-600 hover:bg-stone-200/70 dark:text-stone-300 dark:hover:bg-stone-800",
@@ -62,43 +86,47 @@ function NavItem({ icon, label, count, active, onClick }: NavItemProps) {
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="px-2.5 pb-1 pt-4 text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
-      {children}
-    </h2>
-  );
-}
-
 const THEMES: { value: Theme; label: string; icon: React.ReactNode }[] = [
   { value: "light", label: "Light", icon: <Sun size={16} /> },
   { value: "system", label: "System", icon: <Monitor size={16} /> },
   { value: "dark", label: "Dark", icon: <Moon size={16} /> },
 ];
 
-function sameFilter(a: NoteFilter, b: NoteFilter): boolean {
-  if (a.kind !== b.kind) return false;
-  return a.kind === "tag" && b.kind === "tag" ? a.tag === b.tag : true;
-}
-
 export function Sidebar() {
-  const notes = useNotes((s) => s.notes);
-  const tasks = useTasks((s) => s.tasks);
-  const { section, noteFilter, taskFilter, theme, sidebarOpen } = useUi();
-  const setNoteFilter = useUi((s) => s.setNoteFilter);
-  const setTaskFilter = useUi((s) => s.setTaskFilter);
+  const items = useWorkspace((s) => s.items);
+  const lists = useWorkspace((s) => s.lists);
+  const folders = useWorkspace((s) => s.folders);
+  const addList = useWorkspace((s) => s.addList);
+  const addFolder = useWorkspace((s) => s.addFolder);
+  const renameFolder = useWorkspace((s) => s.renameFolder);
+  const deleteFolder = useWorkspace((s) => s.deleteFolder);
+  const { view, theme, sidebarOpen } = useUi();
+  const setView = useUi((s) => s.setView);
   const setTheme = useUi((s) => s.setTheme);
   const setSidebarOpen = useUi((s) => s.setSidebarOpen);
   const setPaletteOpen = useUi((s) => s.setPaletteOpen);
   const today = useToday();
 
-  const noteCounts = useMemo(() => countByFilter(notes), [notes]);
-  const taskCounts = useMemo(() => countTasks(tasks, today), [tasks, today]);
-  const tags = useMemo(() => collectTags(notes), [notes]);
-
+  const [adding, setAdding] = useState<"list" | "folder" | null>(null);
+  const [addDraft, setAddDraft] = useState("");
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [status, setStatus] = useState("");
   const backupInput = useRef<HTMLInputElement>(null);
   const markdownInput = useRef<HTMLInputElement>(null);
+
+  const smartCounts = useMemo(
+    () =>
+      Object.fromEntries(
+        SMART_VIEWS.map((v) => [v.id, countInView(items, { kind: "smart", id: v.id }, today)]),
+      ) as Record<SmartViewId, number>,
+    [items, today],
+  );
+  const tags = useMemo(() => collectTags(items), [items]);
+
+  const listCount = (id: string) => countInView(items, { kind: "list", id }, today);
+  const topLevelLists = lists.filter(
+    (l) => !l.folderId || !folders.some((f) => f.id === l.folderId),
+  );
 
   const run = async (action: () => Promise<string> | string) => {
     try {
@@ -108,23 +136,29 @@ export function Sidebar() {
     }
   };
 
-  const noteItem = (filter: NoteFilter, label: string, icon: React.ReactNode, count?: number) => (
-    <NavItem
-      icon={icon}
-      label={label}
-      count={count}
-      active={section === "notes" && sameFilter(noteFilter, filter)}
-      onClick={() => setNoteFilter(filter)}
-    />
-  );
+  const goTo = (target: View) => setView(target);
 
-  const taskItem = (filter: TaskFilter, label: string, icon: React.ReactNode, count?: number) => (
+  const submitAdd = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (adding === "list") {
+      const id = addList(addDraft);
+      if (id) goTo({ kind: "list", id });
+    } else if (adding === "folder") {
+      addFolder(addDraft);
+    }
+    setAdding(null);
+    setAddDraft("");
+  };
+
+  const listItem = (id: string, name: string, indent = false) => (
     <NavItem
-      icon={icon}
-      label={label}
-      count={count}
-      active={section === "tasks" && taskFilter === filter}
-      onClick={() => setTaskFilter(filter)}
+      key={id}
+      icon={<ListTodo size={16} />}
+      label={name}
+      count={listCount(id)}
+      active={sameView(view, { kind: "list", id })}
+      onClick={() => goTo({ kind: "list", id })}
+      indent={indent}
     />
   );
 
@@ -172,25 +206,150 @@ export function Sidebar() {
           </button>
         </div>
 
-        <nav aria-label="Workspace" className="min-h-0 flex-1 overflow-y-auto px-2 pb-4">
-          <SectionLabel>Notes</SectionLabel>
-          {noteItem({ kind: "all" }, "All notes", <FileText size={16} />, noteCounts.all)}
-          {noteItem({ kind: "pinned" }, "Pinned", <Pin size={16} />, noteCounts.pinned)}
-          {noteItem({ kind: "archive" }, "Archive", <Archive size={16} />, noteCounts.archive)}
-          {noteItem({ kind: "trash" }, "Trash", <Trash2 size={16} />, noteCounts.trash)}
+        <nav aria-label="Workspace" className="min-h-0 flex-1 overflow-y-auto px-2 pb-4 pt-2">
+          {SMART_VIEWS.map((v) => (
+            <NavItem
+              key={v.id}
+              icon={SMART_ICONS[v.id]}
+              label={v.label}
+              count={COUNTED.includes(v.id) ? smartCounts[v.id] : undefined}
+              active={sameView(view, { kind: "smart", id: v.id })}
+              onClick={() => goTo({ kind: "smart", id: v.id })}
+            />
+          ))}
 
-          <SectionLabel>Tasks</SectionLabel>
-          {taskItem("inbox", "Inbox", <Inbox size={16} />, taskCounts.inbox)}
-          {taskItem("today", "Today", <CalendarDays size={16} />, taskCounts.today)}
-          {taskItem("upcoming", "Upcoming", <CalendarClock size={16} />, taskCounts.upcoming)}
-          {taskItem("completed", "Completed", <CheckCheck size={16} />, taskCounts.completed)}
+          <div className="flex items-center justify-between px-2.5 pb-1 pt-4">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
+              Lists
+            </h2>
+            <span className="flex">
+              <button
+                type="button"
+                className="btn btn-ghost px-1.5 py-0.5"
+                aria-label="New folder"
+                title="New folder"
+                onClick={() => {
+                  setAdding("folder");
+                  setAddDraft("");
+                }}
+              >
+                <FolderIcon size={14} />
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost px-1.5 py-0.5"
+                aria-label="New list"
+                title="New list"
+                onClick={() => {
+                  setAdding("list");
+                  setAddDraft("");
+                }}
+              >
+                <Plus size={14} />
+              </button>
+            </span>
+          </div>
+
+          {adding && (
+            <form onSubmit={submitAdd} className="px-1 pb-1">
+              <input
+                autoFocus
+                value={addDraft}
+                onChange={(e) => setAddDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") setAdding(null);
+                }}
+                onBlur={() => {
+                  if (!addDraft.trim()) setAdding(null);
+                }}
+                placeholder={adding === "list" ? "List name" : "Folder name"}
+                aria-label={adding === "list" ? "New list name" : "New folder name"}
+                className="field py-1"
+              />
+            </form>
+          )}
+
+          {topLevelLists.map((l) => listItem(l.id, l.name))}
+
+          {folders.map((folder) => {
+            const inFolder = lists.filter((l) => l.folderId === folder.id);
+            const open = !collapsed.has(folder.id);
+            return (
+              <div key={folder.id}>
+                <div className="group flex items-center">
+                  <button
+                    type="button"
+                    aria-expanded={open}
+                    onClick={() =>
+                      setCollapsed((prev) => {
+                        const next = new Set(prev);
+                        if (open) next.add(folder.id);
+                        else next.delete(folder.id);
+                        return next;
+                      })
+                    }
+                    className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm text-stone-600 hover:bg-stone-200/70 dark:text-stone-300 dark:hover:bg-stone-800"
+                  >
+                    <ChevronRight
+                      size={14}
+                      aria-hidden
+                      className={clsx("shrink-0", open && "rotate-90")}
+                    />
+                    <FolderIcon size={16} aria-hidden className="shrink-0" />
+                    <span className="truncate">{folder.name}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost px-1 py-0.5 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
+                    aria-label={`Rename folder ${folder.name}`}
+                    onClick={() => {
+                      const name = window.prompt("Rename folder", folder.name);
+                      if (name) renameFolder(folder.id, name);
+                    }}
+                  >
+                    <Pencil size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost px-1 py-0.5 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
+                    aria-label={`Delete folder ${folder.name}`}
+                    onClick={() => {
+                      if (
+                        window.confirm(`Delete the folder “${folder.name}”? Its lists are kept.`)
+                      ) {
+                        deleteFolder(folder.id);
+                      }
+                    }}
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+                {open && inFolder.map((l) => listItem(l.id, l.name, true))}
+              </div>
+            );
+          })}
+
+          {lists.length === 0 && folders.length === 0 && !adding && (
+            <p className="px-2.5 py-1 text-xs text-stone-500 dark:text-stone-400">
+              Create lists to organise tasks and notes.
+            </p>
+          )}
 
           {tags.length > 0 && (
             <>
-              <SectionLabel>Tags</SectionLabel>
-              {tags.map(({ tag, count }) =>
-                noteItem({ kind: "tag", tag }, tag, <Hash size={16} />, count),
-              )}
+              <h2 className="px-2.5 pb-1 pt-4 text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
+                Tags
+              </h2>
+              {tags.map(({ tag, count }) => (
+                <NavItem
+                  key={tag}
+                  icon={<Hash size={16} />}
+                  label={tag}
+                  count={count}
+                  active={sameView(view, { kind: "tag", tag })}
+                  onClick={() => goTo({ kind: "tag", tag })}
+                />
+              ))}
             </>
           )}
         </nav>
@@ -260,7 +419,8 @@ export function Sidebar() {
             onChange={(e) => {
               const files = [...(e.target.files ?? [])];
               e.target.value = "";
-              if (files.length) void run(() => importMarkdownFiles(files));
+              const listId = view.kind === "list" ? view.id : INBOX_ID;
+              if (files.length) void run(() => importMarkdownFiles(files, listId));
             }}
           />
           <p
