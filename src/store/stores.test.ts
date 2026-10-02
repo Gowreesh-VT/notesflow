@@ -29,6 +29,18 @@ describe("notes store", () => {
     expect(useNotes.getState().notes).toHaveLength(0);
   });
 
+  it("keeps wiki links working when a note is renamed", () => {
+    const { createNote, updateNote } = useNotes.getState();
+    const target = createNote({ title: "Plan" });
+    const linker = createNote({ title: "Index", body: "see [[Plan]]" });
+    updateNote(target, { title: "Roadmap" });
+    expect(useNotes.getState().notes.find((n) => n.id === linker)?.body).toBe("see [[Roadmap]]");
+
+    createNote({ title: "Roadmap" });
+    updateNote(target, { title: "Other" });
+    expect(useNotes.getState().notes.find((n) => n.id === linker)?.body).toBe("see [[Roadmap]]");
+  });
+
   it("unpins when archiving and duplicates notes", () => {
     const { createNote, togglePin, setArchived, duplicateNote } = useNotes.getState();
     const id = createNote({ title: "Keep", body: "x" });

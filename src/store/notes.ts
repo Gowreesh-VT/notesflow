@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Note } from "@/lib/types";
 import { createId } from "@/lib/utils";
+import { renameWikiLinks } from "@/lib/wiki-links";
 
 type NotesState = {
   notes: Note[];
@@ -46,7 +47,27 @@ export const useNotes = create<NotesState>()(
       },
 
       updateNote: (id, patch) =>
-        set((s) => ({ notes: s.notes.map((n) => (n.id === id ? touch(n, patch) : n)) })),
+        set((s) => {
+          const before = s.notes.find((n) => n.id === id);
+          const renamedFrom =
+            before && patch.title !== undefined && patch.title !== before.title
+              ? before.title.trim().toLowerCase()
+              : "";
+          // Links are only rewritten when the old title was unambiguous.
+          const rewrite =
+            renamedFrom !== "" &&
+            s.notes.filter(
+              (n) => n.deletedAt === null && n.title.trim().toLowerCase() === renamedFrom,
+            ).length === 1;
+          return {
+            notes: s.notes.map((n) => {
+              if (n.id === id) return touch(n, patch);
+              if (!rewrite || n.deletedAt !== null) return n;
+              const body = renameWikiLinks(n.body, renamedFrom, patch.title ?? "");
+              return body === n.body ? n : touch(n, { body });
+            }),
+          };
+        }),
 
       togglePin: (id) =>
         set((s) => ({

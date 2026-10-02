@@ -37,6 +37,7 @@ import type { Note } from "@/lib/types";
 import { displayTitle, readingMinutes, wordCount } from "@/lib/utils";
 import { useNotes } from "@/store/notes";
 import { useUi, type EditorMode } from "@/store/ui";
+import { findBacklinks, findNoteByTitle } from "@/lib/wiki-links";
 import { MarkdownPreview } from "./MarkdownPreview";
 
 const TOOLS: { kind: FormatKind; label: string; icon: React.ReactNode }[] = [
@@ -65,6 +66,7 @@ export function NoteEditor({ note }: { note: Note }) {
   const editorMode = useUi((s) => s.editorMode);
   const setEditorMode = useUi((s) => s.setEditorMode);
   const selectNote = useUi((s) => s.selectNote);
+  const notes = useNotes((s) => s.notes);
   const {
     updateNote,
     togglePin,
@@ -73,6 +75,7 @@ export function NoteEditor({ note }: { note: Note }) {
     restoreNote,
     deleteForever,
     duplicateNote,
+    createNote,
   } = useNotes.getState();
 
   const trashed = note.deletedAt !== null;
@@ -96,6 +99,17 @@ export function NoteEditor({ note }: { note: Note }) {
     const body = toggleTaskLine(note.body, line);
     if (body !== null) updateNote(note.id, { body });
   };
+
+  const openLink = (title: string) => {
+    const target = findNoteByTitle(notes, title);
+    if (target) {
+      selectNote(target.id);
+    } else if (!trashed && window.confirm(`“${title}” doesn’t exist yet. Create it?`)) {
+      selectNote(createNote({ title }));
+    }
+  };
+
+  const backlinks = findBacklinks(notes, note);
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (
@@ -281,10 +295,36 @@ export function NoteEditor({ note }: { note: Note }) {
               mode === "split" ? "w-1/2 max-lg:hidden" : "w-full",
             )}
           >
-            <MarkdownPreview source={note.body} onToggleTask={trashed ? undefined : toggleTask} />
+            <MarkdownPreview
+              source={note.body}
+              onToggleTask={trashed ? undefined : toggleTask}
+              onOpenLink={openLink}
+              isLinkMissing={(title) => !findNoteByTitle(notes, title)}
+            />
           </div>
         )}
       </div>
+
+      {backlinks.length > 0 && (
+        <nav
+          aria-label="Linked from"
+          className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-stone-200 px-4 py-2 text-sm dark:border-stone-800"
+        >
+          <span className="text-xs font-medium text-stone-500 dark:text-stone-400">
+            Linked from
+          </span>
+          {backlinks.map((n) => (
+            <button
+              key={n.id}
+              type="button"
+              className="text-indigo-600 hover:underline dark:text-indigo-400"
+              onClick={() => selectNote(n.id)}
+            >
+              {displayTitle(n)}
+            </button>
+          ))}
+        </nav>
+      )}
 
       <footer className="flex gap-4 border-t border-stone-200 px-4 py-1.5 text-xs text-stone-500 dark:border-stone-800 dark:text-stone-400">
         <span>{wordCount(note.body)} words</span>
