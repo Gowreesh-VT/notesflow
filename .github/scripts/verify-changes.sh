@@ -30,7 +30,7 @@ fi
 HARD='^(\.github/|\.claude/|\.husky/|\.vscode/|CLAUDE\.md$|AGENTS\.md$|\.npmrc$|\.nvmrc$|\.node-version$|\.gitignore$|\.gitattributes$|LICENSE|SECURITY\.md$|CODEOWNERS$)'
 HARD_ANYWHERE='(^|/)(\.aws|\.ssh)(/|$)|\.(pem|key|p12|pfx|crt|cer|jks|keystore)$|(^|/)(id_rsa|id_ed25519)'
 REVIEW='^(package\.json$|package-lock\.json$|npm-shrinkwrap\.json$|yarn\.lock$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.env|\.prettierrc|\.prettierignore$|next\.config\.|tsconfig[^/]*\.json$|eslint\.config\.|vitest\.config\.|postcss\.config\.|tailwind\.config\.|vercel\.json$|netlify\.toml$|Dockerfile|docker-compose|fly\.toml$|wrangler\.|firebase\.json$|\.firebaserc$)'
-REVIEW_ANYWHERE='(^|/)(auth|authentication|authorization|oauth|session|sessions|api|db|database|migrations|prisma|drizzle|supabase|terraform|infra|payments?|billing|middleware|proxy)(/|\.[a-z]+$|$)|(^|/)schema\.[a-z]+$'
+REVIEW_ANYWHERE='(^|/)(auth|authentication|authorization|oauth|session|sessions|api|db|database|migrations|prisma|drizzle|supabase|terraform|infra|payments?|billing|middleware|proxy|server|scripts|sync|sync-client)(/|\.[a-z]+$|$)|(^|/)schema\.[a-z]+$'
 
 violations=0
 file_count=0

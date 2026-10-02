@@ -6,9 +6,10 @@ Notesflow is a to-do list and notes app in the spirit of TickTick: **lists hold 
 views (Inbox, Today, Tomorrow, Next 7 Days, All, Completed, Won't Do, Trash), folders, tags, priorities, due dates,
 subtasks and Markdown notes. Tasks come first; notes are first-class but secondary.
 
-Today it is local-first: all data lives in the browser (`localStorage`), with no backend, database,
-authentication or environment variables. Larger features (accounts, sync, a database, push reminders) may be
-added over time through reviewed pull requests — see "Publishing tiers".
+The app is local-first and works fully offline as an installable PWA (Serwist). Data lives in the browser
+(`localStorage`); signed-in users (Auth.js: email + password, optional Google) also sync it to Postgres (Neon via
+Drizzle). Without `DATABASE_URL` and `AUTH_SECRET` the app simply stays local-only, and the build, tests and daily
+automation never need those variables.
 
 Product direction: build the ideas and UX patterns people know from TickTick-style apps (quick add, smart lists,
 calendar, board and matrix views, reminders, recurring tasks, Pomodoro, habits). Never copy TickTick's branding,
@@ -16,7 +17,8 @@ logo, icons, copy or assets, and do not mention it in the UI.
 
 ## Stack and commands
 
-Next.js (App Router) · React · TypeScript · Tailwind CSS v4 · Zustand · react-markdown · Vitest · npm.
+Next.js (App Router) · React · TypeScript · Tailwind CSS v4 · Zustand · react-markdown · Vitest · Serwist (PWA) ·
+Auth.js (next-auth v5, JWT sessions) · Drizzle ORM + Postgres (`pg`) · npm.
 
 ```bash
 npm ci               # install (use the lockfile)
@@ -32,9 +34,21 @@ Layout: `src/app` (route + layout), `src/components` (UI: `Sidebar`, `ItemList`,
 state), `src/lib` (pure logic: `items-logic.ts` views/filtering/sorting/quick-add, `migrate.ts`, `backup.ts`,
 Markdown formatting — all unit-tested).
 
+Server code lives in `src/server` (schema, db, password hashing, rate limiting, sync store, registration) and
+`src/app/api` (`/api/auth`, `/api/register`, `/api/sync`, `/api/cloud`). Client sync is `src/lib/sync.ts` (pure,
+last-write-wins merge) and `src/lib/sync-client.ts`. Database tests run against in-memory Postgres (PGlite) using
+the real migrations in `drizzle/`; `npm run db:dev` serves the same engine for local development.
+
 Data model: one `Item` type with `kind: "task" | "note"`, a `listId` (`inbox` is built in), a `status`
 (`open | done | wontdo`), `priority`, `due` (YYYY-MM-DD), subtasks and soft-delete (`deletedAt`). Tags are
 `#words` found in an item's title or body. Smart views are computed, never stored.
+
+**Sync rules for every new field.** Items, lists and folders are synced as JSON records, so a new field needs no
+database migration — but it must be added to (1) the types in `src/lib/types.ts`, (2) the sanitisers `parseItem`,
+`parseList`, `parseFolder` in `src/lib/backup.ts` (unknown fields are dropped there, on both backup import and
+sync), (3) the store's `addItem`/mutations, which must bump `updatedAt` (last write wins), and (4) a persisted-store
+`version` + `migrate` if existing local data needs a default. Add a test for each. Permanent deletions must create a
+tombstone. A feature that is not synced is incomplete.
 Keep logic in `src/lib` as pure functions with tests; keep components thin.
 
 The Next.js version in this repo has breaking changes. Before using a Next.js API you are unsure about,
@@ -78,7 +92,7 @@ Paths that always force the pull-request path (the workflow detects these itself
 `.env.example`, build/tooling config (`next.config.*`, `tsconfig*.json`, `eslint.config.*`, `vitest.config.*`,
 `postcss.config.*`, `.prettierrc*`), deploy config (`vercel.json`, `Dockerfile*`, …), and anything under or named
 `auth`, `api`, `db`, `database`, `migrations`, `prisma`, `drizzle`, `supabase`, `session(s)`, `middleware`, `proxy`,
-`payments`, `billing`, `infra`, `terraform`, or a `schema.*` file. Changes above the minor size limit also go to a PR.
+`server`, `sync`, `scripts`, `payments`, `billing`, `infra`, `terraform`, or a `schema.*` file. Changes above the minor size limit also go to a PR.
 The absolute limit is 50 files and 10,000 changed lines; beyond that the run fails and nothing is published.
 
 Prefer several small, reviewable pull requests over one giant one: build large features in slices (for example
@@ -176,20 +190,23 @@ Explain every new dependency in the PR's "What changed" and "Risks" sections.
 
 ### Databases, authentication and secrets
 
-These are allowed only as major changes (pull requests), built so the owner can review before anything is live:
+These exist already and are security-sensitive, so any change to them is a major change (pull request):
 
-- Never hard-code or commit a secret. Read configuration from environment variables, list each one with a
-  placeholder in `.env.example`, and document in the PR's "How to test" what the owner must create and where.
-- The app, tests and `npm run build` must succeed with none of those variables set. Read them lazily at request
-  time, not at import time, and keep the existing local-only mode working when no backend is configured.
-- Authentication and authorisation: use a well-established library, never custom crypto, never weaken a check to
-  make something work, enforce authorisation on the server for every data access, validate all input.
-- Databases: provide schema and migrations as files; migrations must be additive and non-destructive. Never write
-  code that drops or rewrites user data without an explicit, reversible migration path. Describe data migration
-  from the browser's `localStorage` in the PR.
+- Never hard-code or commit a secret. Configuration comes from environment variables (`DATABASE_URL`, `AUTH_SECRET`,
+  `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`); list any new one with a placeholder in `.env.example` and document in the
+  PR's "How to test" what the owner must create and where.
+- The app, tests and `npm run build` must succeed with none of those variables set; read them lazily at request
+  time, and keep the local-only mode working when no backend is configured.
+- Authentication and authorisation: every API route takes the user id from the session, never from the request;
+  every query is scoped by that user id; validate all input; keep rate limits; never weaken a check to make
+  something work; never custom crypto beyond the existing scrypt helper.
+- Database changes: edit `src/server/schema.ts`, generate a migration with `npm run db:generate`, commit the
+  files in `drizzle/`, and make migrations additive and non-destructive. Never write code that drops or rewrites
+  user data without an explicit, reversible migration path. Tests use the real migrations (PGlite).
 - You cannot create accounts, projects or credentials. Do not attempt to; list them as steps for the owner.
 
-Persistent data contracts: the `localStorage` keys `notesflow:workspace` and `notesflow:ui`, the backup file format
+Persistent data contracts: the `localStorage` keys `notesflow:workspace`, `notesflow:ui` and `notesflow:sync`, the
+sync wire format (`SyncRecord` in `src/lib/sync.ts`) and `sync_record` table, the backup file format
 (`src/lib/backup.ts`, version 2, which also imports the original notes+tasks format) and the one-time upgrade from
 the legacy `notesflow:notes` / `notesflow:tasks` keys (`upgradeLegacyStorage`; never delete those keys) are user data. Never change them in a way that loses or invalidates
 existing data; if a shape must change, add a store `version` + `migrate` and a test.

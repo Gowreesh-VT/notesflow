@@ -1,7 +1,7 @@
 # Notesflow
 
-A fast, private to-do list and notes app in the spirit of TickTick. Lists hold tasks and Markdown notes, and
-everything is stored in your browser; nothing is sent to a server.
+A fast, private to-do list and notes app in the spirit of TickTick. Lists hold tasks and Markdown notes.
+Everything works offline and is stored on your device; sign in to sync across devices.
 
 ## Features
 
@@ -27,19 +27,44 @@ everything is stored in your browser; nothing is sent to a server.
 - Command palette (Ctrl/⌘+K), `/` to search, `?` for shortcuts, Alt+T new task, Alt+N new note
 - Light, dark and system themes; responsive layout; keyboard and screen-reader friendly
 - Full JSON backup and restore (older backups still import)
+- Installable PWA (Serwist): works offline, home-screen icon, Today and Inbox shortcuts
+- Optional accounts (email + password or Google) with sync across devices; last edit wins per item
 
 ## Development
 
 ```bash
 npm ci
-npm run dev        # http://localhost:3000
+npm run dev        # http://localhost:3000 (local-only mode, no setup needed)
 npm run lint
 npm run typecheck
 npm test
 npm run build
 ```
 
-Built with Next.js (App Router), React, TypeScript, Tailwind CSS v4, Zustand and Vitest.
+Built with Next.js (App Router), React, TypeScript, Tailwind CSS v4, Zustand, Vitest, Serwist (PWA),
+Auth.js (next-auth v5), Drizzle ORM and Postgres.
+
+### Accounts and sync (optional)
+
+Without configuration the app is local-only. To try accounts and sync locally:
+
+```bash
+npm run db:dev                       # terminal 1: local Postgres (PGlite), prints a DATABASE_URL
+cp .env.example .env.local           # then fill in DATABASE_URL and AUTH_SECRET (openssl rand -base64 32)
+npm run dev                          # terminal 2
+```
+
+### Deploying on Vercel with Neon
+
+1. Import the repository in Vercel.
+2. Add a Neon Postgres database (Vercel → Storage → Neon). It sets `DATABASE_URL` for you.
+3. Add environment variables: `AUTH_SECRET` (`openssl rand -base64 32`); for Google sign-in also `AUTH_GOOGLE_ID` and
+   `AUTH_GOOGLE_SECRET` (Google Cloud Console → OAuth client; authorised redirect URI
+   `https://<your-domain>/api/auth/callback/google`).
+4. Create the tables once, from your machine, with the production connection string (use Neon's _direct_,
+   non-pooled string for migrations): `DATABASE_URL="…" npm run db:migrate`. Re-run it after pulling any change
+   that adds a file under `drizzle/`.
+5. Deploy. Open the site on your phone and use "Install app" / "Add to Home Screen".
 
 ## Autonomous daily improvements
 
@@ -60,3 +85,5 @@ One-time setup in **Settings → Secrets and variables → Actions**:
 | -------- | ------------------------- | ---------------------------------------------------- |
 | Secret   | `CLAUDE_CODE_OAUTH_TOKEN` | Output of `claude setup-token` (Claude subscription) |
 | Variable | `GIT_AUTHOR_EMAIL`        | The GitHub noreply email that receives commit credit |
+
+The workflow never needs `DATABASE_URL` or any auth secret: the build and tests run without them.

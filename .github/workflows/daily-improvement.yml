@@ -120,7 +120,7 @@ jobs:
           claude_args: |
             --model claude-sonnet-5-5
             --max-turns 60
-            --allowedTools "Read,Glob,Grep,Edit,Write,Bash(npm run lint),Bash(npm run typecheck),Bash(npm run test),Bash(npm test),Bash(npm run build),Bash(npm install --ignore-scripts:*),Bash(npx prettier --write:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(ls:*)"
+            --allowedTools "Read,Glob,Grep,Edit,Write,Bash(npm run lint),Bash(npm run typecheck),Bash(npm run test),Bash(npm test),Bash(npm run build),Bash(npm install --ignore-scripts:*),Bash(npm run db:generate),Bash(npx prettier --write:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(ls:*)"
             --disallowedTools "WebFetch,WebSearch,Edit(.github/**),Write(.github/**),Edit(CLAUDE.md),Write(CLAUDE.md),Edit(AGENTS.md),Write(AGENTS.md),Edit(.gitignore),Write(.gitignore),Edit(.npmrc),Write(.npmrc),Read(.env),Read(.env.*),Read(**/.env),Read(**/.env.*),Read(**/*.pem),Read(**/*.key),Read(/proc/**),Read(~/.ssh/**),Read(~/.aws/**),Read(~/.npmrc),Bash(git push:*),Bash(git commit:*),Bash(git remote:*),Bash(git config:*),Bash(git reset:*),Bash(git checkout:*),Bash(git switch:*),Bash(git branch:*),Bash(git tag:*),Bash(git rebase:*),Bash(git merge:*),Bash(git clean:*),Bash(git stash:*),Bash(env:*),Bash(printenv:*),Bash(export:*),Bash(set:*),Bash(curl:*),Bash(wget:*),Bash(gh:*),Bash(ssh:*),Bash(rm:*),Bash(npm ci:*),Bash(npm publish:*),Bash(sudo:*)"
 
       - name: Verify the change is allowed
