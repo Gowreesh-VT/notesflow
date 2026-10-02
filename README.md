@@ -47,7 +47,7 @@ the protected-path guard, lint, type check, tests and build all pass. If nothing
 
 One-time setup in **Settings → Secrets and variables → Actions**:
 
-| Kind     | Name                | Value                                                |
-| -------- | ------------------- | ---------------------------------------------------- |
-| Secret   | `ANTHROPIC_API_KEY` | An Anthropic API key                                 |
-| Variable | `GIT_AUTHOR_EMAIL`  | The GitHub noreply email that receives commit credit |
+| Kind     | Name                      | Value                                                |
+| -------- | ------------------------- | ---------------------------------------------------- |
+| Secret   | `CLAUDE_CODE_OAUTH_TOKEN` | Output of `claude setup-token` (Claude subscription) |
+| Variable | `GIT_AUTHOR_EMAIL`        | The GitHub noreply email that receives commit credit |
