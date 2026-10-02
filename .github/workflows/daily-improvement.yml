@@ -71,7 +71,6 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          show_full_output: true
           prompt: |
             You are today's autonomous maintainer for this project (Notesflow, a Markdown notes + tasks app).
 
