@@ -1,8 +1,11 @@
 name: Daily improvement
 
-# Every day at 09:00 India time Claude picks ONE small, useful improvement, the change is validated, and only
-# then committed and pushed to the default branch under the repository owner's identity.
-# Policy for the agent lives in CLAUDE.md. Protected paths are enforced by .github/scripts/verify-changes.sh.
+# Every day at 09:00 India time Claude picks ONE improvement and implements it. The change is validated, then:
+#   - small, low-risk changes are committed straight to the default branch;
+#   - big changes, or any that touch dependencies, config, database or auth paths, are opened as a pull request
+#     for the owner to review and merge.
+# Either way it is committed under the repository owner's identity.
+# Policy for the agent lives in CLAUDE.md. Guards live in .github/scripts/ and are enforced here, not by Claude.
 
 on:
   schedule:
@@ -19,7 +22,7 @@ permissions:
 
 env:
   AUTHOR_NAME: Gowreesh V T
-  # Repository Actions variable (or secret) holding the GitHub noreply address of the account that should
+  # Repository Actions variable (or secret) holding the GitHub noreply email of the account that should
   # receive contribution credit, e.g. 135145326+Gowreesh-VT@users.noreply.github.com
   AUTHOR_EMAIL: ${{ vars.GIT_AUTHOR_EMAIL || secrets.GIT_AUTHOR_EMAIL }}
 
@@ -27,9 +30,10 @@ jobs:
   improve:
     name: Claude improves, workflow validates
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
     permissions:
       contents: read # Claude and the validation steps never receive a write token
+      pull-requests: read
     outputs:
       changed: ${{ steps.verify.outputs.changed }}
     steps:
@@ -67,6 +71,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Count open automation pull requests
+        id: prs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          count="$(gh pr list --state open --json headRefName --jq '[.[] | select(.headRefName | startswith("auto/"))] | length')"
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+
       - name: Claude picks and implements one improvement
         uses: anthropics/claude-code-action@v1
         with:
@@ -75,35 +87,38 @@ jobs:
           prompt: |
             You are today's autonomous maintainer for this project (Notesflow, a Markdown notes + tasks app).
 
-            1. Read CLAUDE.md first and follow it exactly. It defines the priorities, UI rules, protected areas,
-               scope limits and the commit message format.
+            1. Read CLAUDE.md first and follow it exactly. It defines the two publishing tiers, priorities, UI rules,
+               protected areas, scope limits, the commit message format and the pull request description format.
             2. Read ROADMAP.md. It is the maintainer's plan and decides what to build.
             3. Inspect the repository and recent history (git log --stat -n 20) so you understand what changed
                recently, which roadmap items are already done or partly done, and do not keep editing the same
                component.
-            4. Choose exactly ONE small, meaningful, safe improvement: a real bug or accessibility blocker if you
-               find one; otherwise the first unchecked item under "Next up" in ROADMAP.md; otherwise the priority
-               order in CLAUDE.md. Never start "Ideas" or anything under "Not wanted". When a roadmap item is fully
-               complete, tick it (- [ ] to - [x]) in ROADMAP.md; make no other edit to that file. Read the
-               surrounding code before changing anything and follow the existing design system and architecture.
+            4. Choose exactly ONE improvement: a real bug or accessibility blocker if you find one; otherwise the
+               first unchecked item under "Next up" in ROADMAP.md; otherwise the priority order in CLAUDE.md. Never
+               start "Ideas" or anything under "Not wanted". When a roadmap item is fully complete, tick it
+               (- [ ] to - [x]) in ROADMAP.md; make no other edit to that file. Read the surrounding code before
+               changing anything and follow the existing design system and architecture.
             5. Implement it completely, adding or updating tests when you change logic in src/lib or src/store.
-               Keep the scope small (a handful of files).
             6. Run npm run lint, npm run typecheck, npm test and npm run build. Fix every failure you caused.
-            7. Write the commit message to .daily-commit-message as described in CLAUDE.md.
+            7. Classify the change and write the output files exactly as CLAUDE.md describes:
+               .daily-commit-message, .daily-change-class (minor or major), and for major changes
+               .daily-pr-body.md.
 
-            Hard rules: never modify protected areas (.github/, CLAUDE.md, AGENTS.md, package.json, lockfile, config
-            files, env files, anything about auth, secrets, databases, deployment or infrastructure). Do not add
-            dependencies. Do not run git commit/push/checkout/reset or touch git config or remotes. Do not print or
-            read environment variables or credentials. Do not make a change solely so that a commit exists. Leave
-            the finished change in the working tree; the workflow validates, commits and pushes it.
+            There are currently ${{ steps.prs.outputs.count }} open automation pull request(s). If that number is above
+            zero, do NOT start a major change today; do a minor improvement or make no changes.
 
-            If you cannot find a safe, genuinely useful improvement, make no changes and do not write
-            .daily-commit-message.
+            Hard rules: never modify .github/, CLAUDE.md, AGENTS.md, .gitignore, .npmrc, env files (except
+            .env.example), keys or certificates. Never print or read environment variables or credentials. Do not run
+            git commit/push/checkout/reset or touch git config or remotes. Do not make a change solely so that a
+            commit exists. Leave the finished change in the working tree; the workflow validates it and publishes it.
+
+            If you cannot find a safe, genuinely useful improvement, make no changes and write none of the output
+            files.
           claude_args: |
             --model claude-sonnet-5-5
-            --max-turns 30
-            --allowedTools "Read,Glob,Grep,Edit,Write,Bash(npm run lint),Bash(npm run typecheck),Bash(npm run test),Bash(npm test),Bash(npm run build),Bash(npx prettier --write:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(ls:*)"
-            --disallowedTools "WebFetch,WebSearch,Edit(.github/**),Write(.github/**),Edit(CLAUDE.md),Write(CLAUDE.md),Edit(AGENTS.md),Write(AGENTS.md),Edit(package.json),Write(package.json),Edit(package-lock.json),Write(package-lock.json),Read(.env*),Read(**/.env*),Read(**/*.pem),Read(**/*.key),Read(/proc/**),Read(~/.ssh/**),Read(~/.aws/**),Read(~/.npmrc),Bash(git push:*),Bash(git commit:*),Bash(git remote:*),Bash(git config:*),Bash(git reset:*),Bash(git checkout:*),Bash(git switch:*),Bash(git branch:*),Bash(git tag:*),Bash(git rebase:*),Bash(git merge:*),Bash(git clean:*),Bash(git stash:*),Bash(env:*),Bash(printenv:*),Bash(export:*),Bash(set:*),Bash(curl:*),Bash(wget:*),Bash(gh:*),Bash(ssh:*),Bash(rm:*),Bash(npm install:*),Bash(npm i:*),Bash(npm ci:*),Bash(npm publish:*),Bash(sudo:*)"
+            --max-turns 60
+            --allowedTools "Read,Glob,Grep,Edit,Write,Bash(npm run lint),Bash(npm run typecheck),Bash(npm run test),Bash(npm test),Bash(npm run build),Bash(npm install --ignore-scripts:*),Bash(npx prettier --write:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(ls:*)"
+            --disallowedTools "WebFetch,WebSearch,Edit(.github/**),Write(.github/**),Edit(CLAUDE.md),Write(CLAUDE.md),Edit(AGENTS.md),Write(AGENTS.md),Edit(.gitignore),Write(.gitignore),Edit(.npmrc),Write(.npmrc),Read(.env),Read(.env.*),Read(**/.env),Read(**/.env.*),Read(**/*.pem),Read(**/*.key),Read(/proc/**),Read(~/.ssh/**),Read(~/.aws/**),Read(~/.npmrc),Bash(git push:*),Bash(git commit:*),Bash(git remote:*),Bash(git config:*),Bash(git reset:*),Bash(git checkout:*),Bash(git switch:*),Bash(git branch:*),Bash(git tag:*),Bash(git rebase:*),Bash(git merge:*),Bash(git clean:*),Bash(git stash:*),Bash(env:*),Bash(printenv:*),Bash(export:*),Bash(set:*),Bash(curl:*),Bash(wget:*),Bash(gh:*),Bash(ssh:*),Bash(rm:*),Bash(npm ci:*),Bash(npm publish:*),Bash(sudo:*)"
 
       - name: Verify the change is allowed
         id: verify
@@ -136,13 +151,50 @@ jobs:
         if: steps.verify.outputs.changed == 'true'
         run: npm run build
 
-      - name: Re-verify the final change and create the hand-off patch
+      - name: Re-verify the final change
+        id: final
         if: steps.verify.outputs.changed == 'true'
+        run: bash .github/scripts/verify-changes.sh
+
+      - name: Decide how to publish
+        id: mode
+        if: steps.verify.outputs.changed == 'true'
+        env:
+          NEEDS_REVIEW: ${{ steps.final.outputs.needs_review }}
+          REVIEW_REASONS: ${{ steps.final.outputs.review_reasons }}
+          OPEN_PRS: ${{ steps.prs.outputs.count }}
         run: |
-          bash .github/scripts/verify-changes.sh
+          class="$(tr -d '[:space:]' < .daily-change-class 2>/dev/null || true)"
+          reasons="$REVIEW_REASONS"
+          if [ "$class" != "minor" ]; then
+            # "major", missing or unrecognised all fail safe to review.
+            [ -n "$reasons" ] && reasons="$reasons; "
+            reasons="${reasons}classified as ${class:-unclassified}"
+            NEEDS_REVIEW=true
+          fi
+          if [ "$NEEDS_REVIEW" = "true" ]; then
+            if [ "$OPEN_PRS" != "0" ]; then
+              echo "::error::This change needs review but $OPEN_PRS automation pull request(s) are still open. Merge or close them first."
+              exit 1
+            fi
+            bash .github/scripts/validate-pr-body.sh .daily-pr-body.md
+            echo "mode=review" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=direct" >> "$GITHUB_OUTPUT"
+          fi
+          echo "reasons=$reasons" >> "$GITHUB_OUTPUT"
+
+      - name: Create the hand-off
+        if: steps.verify.outputs.changed == 'true'
+        env:
+          MODE: ${{ steps.mode.outputs.mode }}
+        run: |
           mkdir -p "$RUNNER_TEMP/handoff"
           git diff --cached --binary --no-renames > "$RUNNER_TEMP/handoff/change.patch"
           cp .daily-commit-message "$RUNNER_TEMP/handoff/commit-message.txt"
+          if [ "$MODE" = "review" ]; then
+            cp .daily-pr-body.md "$RUNNER_TEMP/handoff/pr-body.md"
+          fi
 
       - name: Upload hand-off
         if: steps.verify.outputs.changed == 'true'
@@ -155,22 +207,26 @@ jobs:
 
       - name: Summary
         if: always()
+        env:
+          CHANGED: ${{ steps.verify.outputs.changed }}
+          MODE: ${{ steps.mode.outputs.mode }}
         run: |
-          if [ "${{ steps.verify.outputs.changed }}" = "true" ]; then
-            echo "Validated change ready to publish:" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$CHANGED" = "true" ]; then
+            echo "Validated change ($MODE):" >> "$GITHUB_STEP_SUMMARY"
             head -n 1 .daily-commit-message >> "$GITHUB_STEP_SUMMARY" || true
           else
             echo "No changes today — nothing to commit." >> "$GITHUB_STEP_SUMMARY"
           fi
 
   publish:
-    name: Commit and push
+    name: Publish
     needs: improve
     if: needs.improve.outputs.changed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: write # only this job can push; it never runs Claude or project code
+      pull-requests: write
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -185,6 +241,7 @@ jobs:
           path: ${{ runner.temp }}/handoff
 
       - name: Apply and re-verify
+        id: verify
         env:
           HANDOFF: ${{ runner.temp }}/handoff
         run: |
@@ -192,9 +249,33 @@ jobs:
           bash .github/scripts/verify-changes.sh
           bash .github/scripts/validate-commit-message.sh "$HANDOFF/commit-message.txt"
 
+      - name: Decide publish mode
+        id: mode
+        env:
+          HANDOFF: ${{ runner.temp }}/handoff
+          NEEDS_REVIEW: ${{ steps.verify.outputs.needs_review }}
+          REVIEW_REASONS: ${{ steps.verify.outputs.review_reasons }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # The improve job decided too; publishing to the default branch requires both to agree it is safe.
+          if [ -f "$HANDOFF/pr-body.md" ]; then NEEDS_REVIEW=true; fi
+          if [ "$NEEDS_REVIEW" = "true" ]; then
+            bash .github/scripts/validate-pr-body.sh "$HANDOFF/pr-body.md"
+            open="$(gh pr list --state open --json headRefName --jq '[.[] | select(.headRefName | startswith("auto/"))] | length')"
+            if [ "$open" != "0" ]; then
+              echo "::error::An automation pull request is already open; refusing to open another."
+              exit 1
+            fi
+            echo "mode=review" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=direct" >> "$GITHUB_OUTPUT"
+          fi
+          echo "reasons=$REVIEW_REASONS" >> "$GITHUB_OUTPUT"
+
       - name: Commit
         env:
           HANDOFF: ${{ runner.temp }}/handoff
+          MODE: ${{ steps.mode.outputs.mode }}
           GIT_AUTHOR_NAME: ${{ env.AUTHOR_NAME }}
           GIT_AUTHOR_EMAIL: ${{ env.AUTHOR_EMAIL }}
           GIT_COMMITTER_NAME: ${{ env.AUTHOR_NAME }}
@@ -202,10 +283,14 @@ jobs:
         run: |
           git config user.name "$AUTHOR_NAME"
           git config user.email "$AUTHOR_EMAIL"
+          if [ "$MODE" = "review" ]; then
+            git switch -c "auto/$(date -u +%Y%m%d)-$GITHUB_RUN_ID"
+          fi
           git commit --file "$HANDOFF/commit-message.txt"
           git log -1 --format='Committed %h by %an <%ae>: %s'
 
-      - name: Push to the default branch
+      - name: Push the default branch (direct commits)
+        if: steps.mode.outputs.mode == 'direct'
         env:
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           GH_TOKEN: ${{ github.token }}
@@ -218,3 +303,29 @@ jobs:
           echo "::add-mask::$auth"
           git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" \
             push origin "HEAD:refs/heads/$DEFAULT_BRANCH"
+
+      - name: Push a branch and open a pull request (changes that need review)
+        if: steps.mode.outputs.mode == 'review'
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GH_TOKEN: ${{ github.token }}
+          HANDOFF: ${{ runner.temp }}/handoff
+          REASONS: ${{ steps.mode.outputs.reasons }}
+        run: |
+          branch="$(git rev-parse --abbrev-ref HEAD)"
+          case "$branch" in auto/*) ;; *) echo "::error::Unexpected branch $branch"; exit 1 ;; esac
+          auth="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          echo "::add-mask::$auth"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" \
+            push origin "HEAD:refs/heads/$branch"
+
+          title="$(head -n 1 "$HANDOFF/commit-message.txt")"
+          {
+            cat "$HANDOFF/pr-body.md"
+            printf '\n---\n'
+            printf '_Opened automatically by the daily improvement workflow because: %s._\n' "${REASONS:-it needs review}"
+            printf '_Validated before opening (guards, lint, type check, tests, build). Nothing here has been merged to `%s`; review and merge it yourself._\n' "$DEFAULT_BRANCH"
+          } > "$RUNNER_TEMP/pr-description.md"
+
+          gh pr create --base "$DEFAULT_BRANCH" --head "$branch" \
+            --title "$title" --body-file "$RUNNER_TEMP/pr-description.md"
