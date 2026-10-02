@@ -1,30 +1,32 @@
 # Notesflow
 
-A fast, private, local-first workspace for Markdown notes and tasks. Everything is stored in your browser;
-nothing is sent to a server.
+A fast, private to-do list and notes app in the spirit of TickTick. Lists hold tasks and Markdown notes, and
+everything is stored in your browser; nothing is sent to a server.
 
 ## Features
 
-**Notes**
+**Organise**
 
-- Markdown editor with live split preview (GitHub-flavoured: tables, task lists, strikethrough)
-- Formatting toolbar and shortcuts (Ctrl/⌘+B, Ctrl/⌘+I)
-- `#tags` found automatically in your text, with a tag browser
-- Pin, archive, duplicate, trash with restore, search, and sorting
-- Word count, character count, reading time
-- Export a note as `.md`; import `.md` / `.txt` files
+- Smart views: Inbox, Today (with overdue), Tomorrow, Next 7 Days, All, Completed, Won't Do, Trash
+- Your own lists, grouped into folders; `#tags` found automatically in titles and notes
+- Search and sort (smart order, due date, priority, title, last edited) in every view
 
 **Tasks**
 
-- Quick add with natural shortcuts: `Pay rent tomorrow !high`
-- Priorities, due dates, details, subtasks and progress
-- Inbox, Today (including overdue), Upcoming and Completed views, search
+- Quick add with shortcuts: `Pay rent tomorrow !high #bills`
+- Priorities, due dates, subtasks with progress, descriptions in Markdown
+- Complete, mark Won't Do, duplicate, move to trash and restore
+
+**Notes**
+
+- Markdown editor with live split preview, formatting toolbar, list continuation, clickable checklists
+- Pin, duplicate, export as `.md`, import `.md` / `.txt` files; word count and reading time
 
 **Everywhere**
 
-- Command palette (Ctrl/⌘+K), `/` to search, Alt+N new note, Alt+T new task
+- Command palette (Ctrl/⌘+K), `/` to search, `?` for shortcuts, Alt+T new task, Alt+N new note
 - Light, dark and system themes; responsive layout; keyboard and screen-reader friendly
-- Full JSON backup and restore
+- Full JSON backup and restore (older backups still import)
 
 ## Development
 

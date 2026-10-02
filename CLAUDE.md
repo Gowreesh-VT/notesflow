@@ -2,9 +2,17 @@
 
 # Notesflow — project guide and autonomous development policy
 
-Notesflow is a Markdown notes + tasks app. Today it is local-first: all data lives in the browser
-(`localStorage`), with no backend, database, authentication or environment variables. Larger features
-(accounts, sync, a database) may be added over time through reviewed pull requests — see "Publishing tiers".
+Notesflow is a to-do list and notes app in the spirit of TickTick: **lists hold tasks and notes**, with smart
+views (Inbox, Today, Tomorrow, Next 7 Days, All, Completed, Won't Do, Trash), folders, tags, priorities, due dates,
+subtasks and Markdown notes. Tasks come first; notes are first-class but secondary.
+
+Today it is local-first: all data lives in the browser (`localStorage`), with no backend, database,
+authentication or environment variables. Larger features (accounts, sync, a database, push reminders) may be
+added over time through reviewed pull requests — see "Publishing tiers".
+
+Product direction: build the ideas and UX patterns people know from TickTick-style apps (quick add, smart lists,
+calendar, board and matrix views, reminders, recurring tasks, Pomodoro, habits). Never copy TickTick's branding,
+logo, icons, copy or assets, and do not mention it in the UI.
 
 ## Stack and commands
 
@@ -19,8 +27,14 @@ npm run build        # production build
 npm run format       # prettier --write (format:check verifies)
 ```
 
-Layout: `src/app` (route + layout), `src/components` (UI), `src/store` (Zustand stores, persisted),
-`src/lib` (pure logic: filtering, parsing, Markdown formatting, backup — all unit-tested).
+Layout: `src/app` (route + layout), `src/components` (UI: `Sidebar`, `ItemList`, `TaskDetail`, `NoteDetail`,
+`MarkdownEditor`, `CommandPalette`), `src/store` (`workspace.ts` holds items, lists and folders; `ui.ts` holds view
+state), `src/lib` (pure logic: `items-logic.ts` views/filtering/sorting/quick-add, `migrate.ts`, `backup.ts`,
+Markdown formatting — all unit-tested).
+
+Data model: one `Item` type with `kind: "task" | "note"`, a `listId` (`inbox` is built in), a `status`
+(`open | done | wontdo`), `priority`, `due` (YYYY-MM-DD), subtasks and soft-delete (`deletedAt`). Tags are
+`#words` found in an item's title or body. Smart views are computed, never stored.
 Keep logic in `src/lib` as pure functions with tests; keep components thin.
 
 The Next.js version in this repo has breaking changes. Before using a Next.js API you are unsure about,
@@ -175,8 +189,9 @@ These are allowed only as major changes (pull requests), built so the owner can 
   from the browser's `localStorage` in the PR.
 - You cannot create accounts, projects or credentials. Do not attempt to; list them as steps for the owner.
 
-Persistent data contracts: the `localStorage` keys (`notesflow:notes`, `notesflow:tasks`, `notesflow:ui`) and the
-backup file format (`src/lib/backup.ts`) are user data. Never change them in a way that loses or invalidates
+Persistent data contracts: the `localStorage` keys `notesflow:workspace` and `notesflow:ui`, the backup file format
+(`src/lib/backup.ts`, version 2, which also imports the original notes+tasks format) and the one-time upgrade from
+the legacy `notesflow:notes` / `notesflow:tasks` keys (`upgradeLegacyStorage`; never delete those keys) are user data. Never change them in a way that loses or invalidates
 existing data; if a shape must change, add a store `version` + `migrate` and a test.
 
 ### Quality bar
