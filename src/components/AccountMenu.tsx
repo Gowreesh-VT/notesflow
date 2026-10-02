@@ -9,7 +9,11 @@ import { useSyncStore } from "@/store/sync";
 import { AuthDialog, authErrorMessage } from "./AuthDialog";
 import { SyncRunner } from "./SyncRunner";
 
-type CloudStatus = { configured: boolean; google: boolean };
+type CloudStatus = {
+  configured: boolean;
+  google: boolean;
+  database: "ok" | "missing-tables" | "unreachable" | null;
+};
 
 function AccountPanel({ google }: { google: boolean }) {
   const { data, status: authStatus } = useSession();
@@ -141,6 +145,14 @@ export function AccountMenu() {
   }, []);
 
   if (!cloud?.configured) return null;
+
+  if (cloud.database !== "ok") {
+    return (
+      <p role="status" className="px-2 text-xs text-stone-500 dark:text-stone-400">
+        Sync is not available yet: the account database is still being set up.
+      </p>
+    );
+  }
 
   return (
     <SessionProvider>

@@ -45,7 +45,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
             (await withinRateLimit(db, `login:email:${email}`, 10, WINDOW_MS));
           if (!allowed) return null;
 
-          const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+          const [user] = await db
+            .select()
+            .from(users)
+            .where(eq(users.email, email))
+            .limit(1)
+            .catch((error: unknown) => {
+              console.error(
+                "sign-in lookup failed:",
+                error instanceof Error ? error.message : "unknown error",
+              );
+              throw error;
+            });
           if (!user?.passwordHash) {
             await verifyAgainstDummy(password);
             return null;

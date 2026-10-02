@@ -31,6 +31,11 @@ export async function POST(request: Request) {
   const parsed = bodySchema.safeParse(body.value);
   if (!parsed.success) return NextResponse.json({ error: "Invalid request." }, { status: 400 });
 
-  const result = await syncForUser(db, userId, parsed.data);
-  return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
+  try {
+    const result = await syncForUser(db, userId, parsed.data);
+    return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
+  } catch (error) {
+    console.error("sync failed:", error instanceof Error ? error.message : "unknown error");
+    return NextResponse.json({ error: "Sync is temporarily unavailable." }, { status: 503 });
+  }
 }
