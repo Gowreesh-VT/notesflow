@@ -1,0 +1,214 @@
+name: Daily improvement
+
+# Every day at 09:00 India time Claude picks ONE small, useful improvement, the change is validated, and only
+# then committed and pushed to the default branch under the repository owner's identity.
+# Policy for the agent lives in CLAUDE.md. Protected paths are enforced by .github/scripts/verify-changes.sh.
+
+on:
+  schedule:
+    - cron: "0 9 * * *"
+      timezone: "Asia/Kolkata"
+  workflow_dispatch:
+
+concurrency:
+  group: daily-improvement
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  AUTHOR_NAME: Gowreesh V T
+  # Repository Actions variable (or secret) holding the GitHub noreply address of the account that should
+  # receive contribution credit, e.g. 135145326+Gowreesh-VT@users.noreply.github.com
+  AUTHOR_EMAIL: ${{ vars.GIT_AUTHOR_EMAIL || secrets.GIT_AUTHOR_EMAIL }}
+
+jobs:
+  improve:
+    name: Claude improves, workflow validates
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read # Claude and the validation steps never receive a write token
+    outputs:
+      changed: ${{ steps.verify.outputs.changed }}
+    steps:
+      - name: Check configuration
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::error::Repository secret ANTHROPIC_API_KEY is not set."
+            exit 1
+          fi
+          if ! [[ "$AUTHOR_EMAIL" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; then
+            echo "::error::Set the GIT_AUTHOR_EMAIL repository variable to your GitHub noreply email."
+            exit 1
+          fi
+          if [ "$GITHUB_REF_NAME" != "$DEFAULT_BRANCH" ]; then
+            echo "::error::Run this workflow from the default branch ($DEFAULT_BRANCH), not $GITHUB_REF_NAME."
+            exit 1
+          fi
+
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 50
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Claude picks and implements one improvement
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: |
+            You are today's autonomous maintainer for this project (Notesflow, a Markdown notes + tasks app).
+
+            1. Read CLAUDE.md first and follow it exactly. It defines the priorities, UI rules, protected areas,
+               scope limits and the commit message format.
+            2. Inspect the repository and recent history (git log --stat -n 20) so you understand what changed
+               recently and do not keep editing the same component.
+            3. Choose exactly ONE small, meaningful, safe improvement. Prefer fixing or improving existing
+               functionality over adding features. Read the surrounding code before changing anything and follow
+               the existing design system and architecture.
+            4. Implement it completely, adding or updating tests when you change logic in src/lib or src/store.
+               Keep the scope small (a handful of files).
+            5. Run npm run lint, npm run typecheck, npm test and npm run build. Fix every failure you caused.
+            6. Write the commit message to .daily-commit-message as described in CLAUDE.md.
+
+            Hard rules: never modify protected areas (.github/, CLAUDE.md, AGENTS.md, package.json, lockfile, config
+            files, env files, anything about auth, secrets, databases, deployment or infrastructure). Do not add
+            dependencies. Do not run git commit/push/checkout/reset or touch git config or remotes. Do not print or
+            read environment variables or credentials. Do not make a change solely so that a commit exists. Leave
+            the finished change in the working tree; the workflow validates, commits and pushes it.
+
+            If you cannot find a safe, genuinely useful improvement, make no changes and do not write
+            .daily-commit-message.
+          claude_args: |
+            --model claude-sonnet-5-5
+            --max-turns 30
+            --allowedTools "Read,Glob,Grep,Edit,Write,Bash(npm run lint),Bash(npm run typecheck),Bash(npm run test),Bash(npm test),Bash(npm run build),Bash(npx prettier --write:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(ls:*)"
+            --disallowedTools "WebFetch,WebSearch,Edit(.github/**),Write(.github/**),Edit(CLAUDE.md),Write(CLAUDE.md),Edit(AGENTS.md),Write(AGENTS.md),Edit(package.json),Write(package.json),Edit(package-lock.json),Write(package-lock.json),Read(.env*),Read(**/.env*),Read(**/*.pem),Read(**/*.key),Read(/proc/**),Read(~/.ssh/**),Read(~/.aws/**),Read(~/.npmrc),Bash(git push:*),Bash(git commit:*),Bash(git remote:*),Bash(git config:*),Bash(git reset:*),Bash(git checkout:*),Bash(git switch:*),Bash(git branch:*),Bash(git tag:*),Bash(git rebase:*),Bash(git merge:*),Bash(git clean:*),Bash(git stash:*),Bash(env:*),Bash(printenv:*),Bash(export:*),Bash(set:*),Bash(curl:*),Bash(wget:*),Bash(gh:*),Bash(ssh:*),Bash(rm:*),Bash(npm install:*),Bash(npm i:*),Bash(npm ci:*),Bash(npm publish:*),Bash(sudo:*)"
+
+      - name: Verify the change is allowed
+        id: verify
+        run: bash .github/scripts/verify-changes.sh
+
+      - name: Validate commit message
+        if: steps.verify.outputs.changed == 'true'
+        run: bash .github/scripts/validate-commit-message.sh .daily-commit-message
+
+      - name: Format changed files
+        if: steps.verify.outputs.changed == 'true'
+        run: |
+          git diff --cached --name-only --diff-filter=AM -z \
+            | { grep -z -E '\.(ts|tsx|js|jsx|mjs|json|css|md)$' || true; } \
+            | xargs -0 -r npx prettier --write
+
+      - name: Lint
+        if: steps.verify.outputs.changed == 'true'
+        run: npm run lint
+
+      - name: Type check
+        if: steps.verify.outputs.changed == 'true'
+        run: npm run typecheck
+
+      - name: Test
+        if: steps.verify.outputs.changed == 'true'
+        run: npm test
+
+      - name: Build
+        if: steps.verify.outputs.changed == 'true'
+        run: npm run build
+
+      - name: Re-verify the final change and create the hand-off patch
+        if: steps.verify.outputs.changed == 'true'
+        run: |
+          bash .github/scripts/verify-changes.sh
+          mkdir -p "$RUNNER_TEMP/handoff"
+          git diff --cached --binary --no-renames > "$RUNNER_TEMP/handoff/change.patch"
+          cp .daily-commit-message "$RUNNER_TEMP/handoff/commit-message.txt"
+
+      - name: Upload hand-off
+        if: steps.verify.outputs.changed == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: daily-change
+          path: ${{ runner.temp }}/handoff
+          retention-days: 3
+          if-no-files-found: error
+
+      - name: Summary
+        if: always()
+        run: |
+          if [ "${{ steps.verify.outputs.changed }}" = "true" ]; then
+            echo "Validated change ready to publish:" >> "$GITHUB_STEP_SUMMARY"
+            head -n 1 .daily-commit-message >> "$GITHUB_STEP_SUMMARY" || true
+          else
+            echo "No changes today — nothing to commit." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  publish:
+    name: Commit and push
+    needs: improve
+    if: needs.improve.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # only this job can push; it never runs Claude or project code
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Download validated change
+        uses: actions/download-artifact@v8
+        with:
+          name: daily-change
+          path: ${{ runner.temp }}/handoff
+
+      - name: Apply and re-verify
+        env:
+          HANDOFF: ${{ runner.temp }}/handoff
+        run: |
+          git apply --index --whitespace=nowarn "$HANDOFF/change.patch"
+          bash .github/scripts/verify-changes.sh
+          bash .github/scripts/validate-commit-message.sh "$HANDOFF/commit-message.txt"
+
+      - name: Commit
+        env:
+          HANDOFF: ${{ runner.temp }}/handoff
+          GIT_AUTHOR_NAME: ${{ env.AUTHOR_NAME }}
+          GIT_AUTHOR_EMAIL: ${{ env.AUTHOR_EMAIL }}
+          GIT_COMMITTER_NAME: ${{ env.AUTHOR_NAME }}
+          GIT_COMMITTER_EMAIL: ${{ env.AUTHOR_EMAIL }}
+        run: |
+          git config user.name "$AUTHOR_NAME"
+          git config user.email "$AUTHOR_EMAIL"
+          git commit --file "$HANDOFF/commit-message.txt"
+          git log -1 --format='Committed %h by %an <%ae>: %s'
+
+      - name: Push to the default branch
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$GITHUB_REF_NAME" != "$DEFAULT_BRANCH" ]; then
+            echo "::error::Refusing to push: $GITHUB_REF_NAME is not the default branch ($DEFAULT_BRANCH)."
+            exit 1
+          fi
+          auth="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          echo "::add-mask::$auth"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" \
+            push origin "HEAD:refs/heads/$DEFAULT_BRANCH"
