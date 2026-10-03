@@ -4,6 +4,8 @@ import {
   countInView,
   dueBucket,
   filterItems,
+  groupBySections,
+  moveSectionBy,
   parseQuickAdd,
   subtaskProgress,
 } from "./items-logic";
@@ -27,6 +29,7 @@ const make = (id: string, patch: Partial<Item> = {}): Item => ({
   priority: "none",
   due: null,
   subtasks: [],
+  sectionId: null,
   ...patch,
 });
 
@@ -148,6 +151,32 @@ describe("counts, tags, progress", () => {
       done: 2,
       total: 3,
     });
+  });
+});
+
+describe("sections", () => {
+  const sections = [
+    { id: "a", name: "A" },
+    { id: "b", name: "B" },
+  ];
+
+  it("groups items by section, with orphans and unsectioned items first", () => {
+    const groups = groupBySections(
+      [make("x", { sectionId: "b" }), make("y"), make("z", { sectionId: "gone" })],
+      sections,
+    );
+    expect(groups.map((g) => [g.section?.id ?? null, g.items.map((i) => i.id)])).toEqual([
+      [null, ["y", "z"]],
+      ["a", []],
+      ["b", ["x"]],
+    ]);
+  });
+
+  it("moves a section up or down and ignores moves past the ends", () => {
+    expect(moveSectionBy(sections, "b", -1).map((s) => s.id)).toEqual(["b", "a"]);
+    expect(moveSectionBy(sections, "a", 1).map((s) => s.id)).toEqual(["b", "a"]);
+    expect(moveSectionBy(sections, "a", -1)).toBe(sections);
+    expect(moveSectionBy(sections, "nope", 1)).toBe(sections);
   });
 });
 

@@ -59,6 +59,7 @@ describe("migrateLegacyData", () => {
       {
         id: LEGACY_ARCHIVE_LIST_ID,
         name: "Archived",
+        sections: [],
         folderId: null,
         createdAt: 100,
         updatedAt: 100,

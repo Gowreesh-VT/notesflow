@@ -2,6 +2,7 @@ import {
   INBOX_ID,
   type Item,
   type ItemSort,
+  type ListSection,
   type Priority,
   type SmartViewId,
   type TaskList,
@@ -196,4 +197,32 @@ export function parseQuickAdd(
   }
 
   return { title: kept.join(" ").trim() || input.trim(), priority, due };
+}
+
+export type SectionGroup = { section: ListSection | null; items: Item[] };
+
+/**
+ * Splits a list's items into its sections, keeping the incoming order inside each group. The unsectioned group
+ * (section null) comes first and also holds items whose section no longer exists. Empty sections are kept so they
+ * can be shown and filled.
+ */
+export function groupBySections(items: Item[], sections: ListSection[]): SectionGroup[] {
+  const known = new Set(sections.map((s) => s.id));
+  return [
+    { section: null, items: items.filter((i) => !i.sectionId || !known.has(i.sectionId)) },
+    ...sections.map((section) => ({
+      section,
+      items: items.filter((i) => i.sectionId === section.id),
+    })),
+  ];
+}
+
+/** Moves the section with `id` one place up (-1) or down (1); returns the same array when it cannot move. */
+export function moveSectionBy(sections: ListSection[], id: string, delta: -1 | 1): ListSection[] {
+  const from = sections.findIndex((s) => s.id === id);
+  const to = from + delta;
+  if (from < 0 || to < 0 || to >= sections.length) return sections;
+  const next = [...sections];
+  [next[from], next[to]] = [next[to], next[from]];
+  return next;
 }
