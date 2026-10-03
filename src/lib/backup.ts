@@ -4,6 +4,7 @@ import {
   type Backup,
   type Folder,
   type Item,
+  type ListSection,
   type Priority,
   type TaskList,
   type TaskStatus,
@@ -35,6 +36,20 @@ function parseSubtasks(raw: unknown) {
   });
 }
 
+function parseSections(raw: unknown): ListSection[] {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
+  return raw.flatMap((s: unknown) => {
+    if (!s || typeof s !== "object") return [];
+    const sec = s as Record<string, unknown>;
+    const id = asString(sec.id);
+    const name = asString(sec.name).trim();
+    if (!id || !name || seen.has(id)) return [];
+    seen.add(id);
+    return [{ id, name }];
+  });
+}
+
 export function parseItem(raw: unknown, now: number): Item | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
@@ -57,6 +72,7 @@ export function parseItem(raw: unknown, now: number): Item | null {
     priority: PRIORITIES.includes(r.priority as Priority) ? (r.priority as Priority) : "none",
     due: asDue(r.due),
     subtasks: parseSubtasks(r.subtasks),
+    sectionId: asString(r.sectionId) || null,
   };
 }
 
@@ -68,6 +84,7 @@ export function parseList(raw: unknown, now: number): TaskList | null {
   return {
     id: asString(r.id),
     name,
+    sections: parseSections(r.sections),
     folderId: asString(r.folderId) || null,
     createdAt: asTime(r.createdAt, now),
     updatedAt: asTime(r.updatedAt, asTime(r.createdAt, now)),

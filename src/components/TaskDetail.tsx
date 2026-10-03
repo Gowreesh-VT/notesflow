@@ -49,6 +49,7 @@ export function TaskDetail({ item }: { item: Item }) {
     deleteSubtask,
   } = useWorkspace.getState();
 
+  const sections = useWorkspace((s) => s.lists.find((l) => l.id === item.listId)?.sections) ?? [];
   const trashed = item.deletedAt !== null;
   const tags = itemTags(item);
   const quickDates = [
@@ -200,6 +201,27 @@ export function TaskDetail({ item }: { item: Item }) {
             className="field w-auto max-w-full"
           />
         </dd>
+
+        {sections.length > 0 && (
+          <>
+            <dt className="text-stone-500 dark:text-stone-400">Section</dt>
+            <dd>
+              <select
+                aria-label="Section"
+                value={sections.some((s) => s.id === item.sectionId) ? item.sectionId! : ""}
+                onChange={(e) => updateItem(item.id, { sectionId: e.target.value || null })}
+                className="field w-auto max-w-full"
+              >
+                <option value="">None</option>
+                {sections.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </dd>
+          </>
+        )}
 
         {tags.length > 0 && (
           <>
