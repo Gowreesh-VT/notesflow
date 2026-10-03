@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { moveSectionBy } from "@/lib/items-logic";
 import { migrateLegacyData, type LegacyNote, type LegacyTask } from "@/lib/migrate";
 import {
   INBOX_ID,
@@ -26,7 +27,9 @@ type NewItem = {
   due?: string | null;
 };
 
-type ItemPatch = Partial<Pick<Item, "title" | "body" | "listId" | "priority" | "due">>;
+type ItemPatch = Partial<
+  Pick<Item, "title" | "body" | "listId" | "priority" | "due" | "sectionId">
+>;
 
 export type WorkspaceData = {
   items: Item[];
@@ -55,6 +58,11 @@ type WorkspaceState = WorkspaceData & {
   renameList: (id: string, name: string) => void;
   moveList: (id: string, folderId: string | null) => void;
   deleteList: (id: string) => void;
+  addSection: (listId: string, name: string) => string | null;
+  renameSection: (listId: string, sectionId: string, name: string) => void;
+  /** Items in a deleted section stay in the list, unsectioned. */
+  deleteSection: (listId: string, sectionId: string) => void;
+  moveSection: (listId: string, sectionId: string, delta: -1 | 1) => void;
   addFolder: (name: string) => string | null;
   renameFolder: (id: string, name: string) => void;
   deleteFolder: (id: string) => void;
@@ -112,13 +120,29 @@ export const useWorkspace = create<WorkspaceState>()(
           priority: kind === "task" ? priority : "none",
           due: kind === "task" ? due : null,
           subtasks: [],
+          sectionId: null,
         };
         set((s) => ({ items: [item, ...s.items] }));
         return item.id;
       },
 
+      // Moving an item to another list takes it out of its section, unless a section is given.
       updateItem: (id, patch) =>
-        set((s) => ({ items: mapItem(s.items, id, (item) => touch(item, patch)) })),
+        set((s) => ({
+          items: mapItem(s.items, id, (item) => {
+            const moved = patch.listId !== undefined && patch.listId !== item.listId;
+            const sections = s.lists.find((l) => l.id === (patch.listId ?? item.listId))?.sections;
+            const sectionId =
+              patch.sectionId !== undefined
+                ? patch.sectionId !== null && sections?.some((x) => x.id === patch.sectionId)
+                  ? patch.sectionId
+                  : null
+                : moved
+                  ? null
+                  : item.sectionId;
+            return touch(item, { ...patch, sectionId });
+          }),
+        })),
 
       setStatus: (id, status) =>
         set((s) => ({
@@ -177,14 +201,13 @@ export const useWorkspace = create<WorkspaceState>()(
           priority: source.priority,
           due: source.due,
         });
-        if (source.subtasks.length) {
-          set((s) => ({
-            items: mapItem(s.items, newId, (item) => ({
-              ...item,
-              subtasks: source.subtasks.map((st) => ({ ...st, id: createId(), done: false })),
-            })),
-          }));
-        }
+        set((s) => ({
+          items: mapItem(s.items, newId, (item) => ({
+            ...item,
+            sectionId: source.sectionId,
+            subtasks: source.subtasks.map((st) => ({ ...st, id: createId(), done: false })),
+          })),
+        }));
         return newId;
       },
 
@@ -225,6 +248,7 @@ export const useWorkspace = create<WorkspaceState>()(
         const list: TaskList = {
           id: createId(),
           name: trimmed,
+          sections: [],
           folderId,
           createdAt: now,
           updatedAt: now,
@@ -260,6 +284,65 @@ export const useWorkspace = create<WorkspaceState>()(
             tombstones: [...s.tombstones, { collection: "list" as const, id, at: now }],
           };
         }),
+
+      addSection: (listId, name) => {
+        const trimmed = name.trim();
+        if (!trimmed || !get().lists.some((l) => l.id === listId)) return null;
+        const id = createId();
+        set((s) => ({
+          lists: s.lists.map((l) =>
+            l.id === listId
+              ? { ...l, sections: [...l.sections, { id, name: trimmed }], updatedAt: Date.now() }
+              : l,
+          ),
+        }));
+        return id;
+      },
+
+      renameSection: (listId, sectionId, name) => {
+        const trimmed = name.trim();
+        if (!trimmed) return;
+        set((s) => ({
+          lists: s.lists.map((l) =>
+            l.id === listId
+              ? {
+                  ...l,
+                  sections: l.sections.map((x) =>
+                    x.id === sectionId ? { ...x, name: trimmed } : x,
+                  ),
+                  updatedAt: Date.now(),
+                }
+              : l,
+          ),
+        }));
+      },
+
+      deleteSection: (listId, sectionId) =>
+        set((s) => {
+          const now = Date.now();
+          return {
+            lists: s.lists.map((l) =>
+              l.id === listId
+                ? { ...l, sections: l.sections.filter((x) => x.id !== sectionId), updatedAt: now }
+                : l,
+            ),
+            items: s.items.map((item) =>
+              item.listId === listId && item.sectionId === sectionId
+                ? { ...item, sectionId: null, updatedAt: now }
+                : item,
+            ),
+          };
+        }),
+
+      moveSection: (listId, sectionId, delta) =>
+        set((s) => ({
+          lists: s.lists.map((l) => {
+            const sections = moveSectionBy(l.sections, sectionId, delta);
+            return l.id === listId && sections !== l.sections
+              ? { ...l, sections, updatedAt: Date.now() }
+              : l;
+          }),
+        })),
 
       addFolder: (name) => {
         const trimmed = name.trim();
@@ -325,7 +408,7 @@ export const useWorkspace = create<WorkspaceState>()(
     }),
     {
       name: WORKSPACE_KEY,
-      version: 2,
+      version: 3,
       skipHydration: true,
       partialize: (s) => ({
         items: s.items,
@@ -333,7 +416,7 @@ export const useWorkspace = create<WorkspaceState>()(
         folders: s.folders,
         tombstones: s.tombstones,
       }),
-      // v1 lists and folders had no updatedAt; v1 had no tombstones.
+      // v1 lists and folders had no updatedAt; v1 had no tombstones; before v3 there were no sections.
       migrate: (persisted) => {
         const old = (persisted ?? {}) as Partial<WorkspaceData>;
         const stamp = <T extends { createdAt: number; updatedAt?: number }>(x: T) => ({
@@ -341,8 +424,8 @@ export const useWorkspace = create<WorkspaceState>()(
           updatedAt: x.updatedAt ?? x.createdAt,
         });
         return {
-          items: old.items ?? [],
-          lists: (old.lists ?? []).map(stamp),
+          items: (old.items ?? []).map((item) => ({ ...item, sectionId: item.sectionId ?? null })),
+          lists: (old.lists ?? []).map(stamp).map((l) => ({ ...l, sections: l.sections ?? [] })),
           folders: (old.folders ?? []).map(stamp),
           tombstones: old.tombstones ?? [],
         };
@@ -376,7 +459,7 @@ export function upgradeLegacyStorage(storage: Pick<Storage, "getItem" | "setItem
   const { items, lists } = migrateLegacyData(notes, tasks);
   storage.setItem(
     WORKSPACE_KEY,
-    JSON.stringify({ state: { items, lists, folders: [], tombstones: [] }, version: 2 }),
+    JSON.stringify({ state: { items, lists, folders: [], tombstones: [] }, version: 3 }),
   );
   return true;
 }

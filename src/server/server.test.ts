@@ -34,6 +34,7 @@ const item = (id: string, updatedAt: number, title = id): Item => ({
   priority: "none",
   due: null,
   subtasks: [],
+  sectionId: null,
 });
 const change = (data: Item) => ({
   collection: "item",

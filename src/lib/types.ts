@@ -30,11 +30,20 @@ export type Item = {
   /** Local calendar date as YYYY-MM-DD, or null when there is no due date. */
   due: string | null;
   subtasks: Subtask[];
+  /** Section of the item's list it belongs to, or null for the unsectioned top of the list. */
+  sectionId: string | null;
+};
+
+export type ListSection = {
+  id: string;
+  name: string;
 };
 
 export type TaskList = {
   id: string;
   name: string;
+  /** Ordered sections; they are stored on the list, so they sync with it. */
+  sections: ListSection[];
   folderId: string | null;
   createdAt: number;
   updatedAt: number;

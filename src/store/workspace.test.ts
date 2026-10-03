@@ -135,13 +135,68 @@ describe("lists and folders", () => {
   });
 });
 
+describe("sections", () => {
+  const setup = () => {
+    const listId = state().addList("Work")!;
+    const a = state().addSection(listId, "  Doing ")!;
+    const b = state().addSection(listId, "Done");
+    const item = state().addItem({ kind: "task", title: "T", listId });
+    return { listId, a, b: b!, item };
+  };
+  const list = (id: string) => state().lists.find((l) => l.id === id)!;
+
+  it("adds, renames and reorders sections, bumping the list's updatedAt", () => {
+    const { listId, a, b } = setup();
+    expect(list(listId).sections).toEqual([
+      { id: a, name: "Doing" },
+      { id: b, name: "Done" },
+    ]);
+    expect(state().addSection(listId, "  ")).toBeNull();
+    expect(state().addSection("missing", "X")).toBeNull();
+
+    useWorkspace.setState({ lists: [{ ...list(listId), updatedAt: 0 }] });
+    state().renameSection(listId, b, "Finished");
+    expect(list(listId).sections[1].name).toBe("Finished");
+    expect(list(listId).updatedAt).toBeGreaterThan(0);
+
+    state().moveSection(listId, b, -1);
+    expect(list(listId).sections.map((s) => s.id)).toEqual([b, a]);
+    state().moveSection(listId, b, -1);
+    expect(list(listId).sections.map((s) => s.id)).toEqual([b, a]);
+  });
+
+  it("moves an item between sections and clears the section when the list changes", () => {
+    const { listId, a, item } = setup();
+    state().updateItem(item, { sectionId: a });
+    expect(state().items[0].sectionId).toBe(a);
+    state().updateItem(item, { sectionId: "unknown" });
+    expect(state().items[0].sectionId).toBeNull();
+    state().updateItem(item, { sectionId: a });
+    state().updateItem(item, { title: "Renamed" });
+    expect(state().items[0].sectionId).toBe(a);
+    expect(state().duplicateItem(item)).toBeTruthy();
+    expect(state().items[0].sectionId).toBe(a);
+    state().updateItem(item, { listId: INBOX_ID });
+    expect(state().items.find((i) => i.id === item)?.sectionId).toBeNull();
+    expect(listId).toBeTruthy();
+  });
+
+  it("keeps the items of a deleted section in the list, unsectioned", () => {
+    const { listId, a, item } = setup();
+    state().updateItem(item, { sectionId: a });
+    state().deleteSection(listId, a);
+    expect(list(listId).sections).toHaveLength(1);
+    expect(state().items[0]).toMatchObject({ listId, sectionId: null });
+  });
+});
+
 describe("mergeData", () => {
   it("adds only unseen items and lists, remapping items of unknown lists to the Inbox", () => {
     const id = state().addItem({ kind: "note", title: "mine" });
     const mine = state().items[0];
     const added = state().mergeData({
       items: [mine, { ...mine, id: "new" }, { ...mine, id: "orphan", listId: "nope" }],
-      lists: [{ id: "l", name: "L", folderId: null, createdAt: 1, updatedAt: 1 }],
+      lists: [{ id: "l", name: "L", sections: [], folderId: null, createdAt: 1, updatedAt: 1 }],
       folders: [],
     });
     expect(added).toEqual({ items: 2, lists: 1 });
