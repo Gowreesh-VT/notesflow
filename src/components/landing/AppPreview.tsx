@@ -1,3 +1,4 @@
+import { LogoMark } from "@/components/Logo";
 import {
   Ban,
   CalendarClock,
@@ -47,9 +48,7 @@ export function AppPreview() {
       <div className="flex h-[26rem] text-left text-sm sm:h-[30rem]">
         <div className="hidden w-52 shrink-0 border-r border-stone-200 bg-stone-100 p-3 md:block dark:border-stone-800 dark:bg-stone-900">
           <div className="mb-3 flex items-center gap-2 px-1">
-            <span className="flex size-6 items-center justify-center rounded-lg bg-accent-600 text-white dark:bg-accent-500">
-              <Check size={14} strokeWidth={3} />
-            </span>
+            <LogoMark size={24} />
             <span className="heading-display text-base font-semibold">Notesflow</span>
           </div>
           {NAV.map(({ icon: Icon, label, count, active }) => (

@@ -7,7 +7,6 @@ import {
   CalendarClock,
   CalendarDays,
   CalendarRange,
-  Check,
   CheckCheck,
   ChevronRight,
   Download,
@@ -35,6 +34,7 @@ import { INBOX_ID, type SmartViewId, type View } from "@/lib/types";
 import { useUi, type Theme } from "@/store/ui";
 import { AccountMenu } from "./AccountMenu";
 import { InstallButton } from "./InstallButton";
+import { LogoMark } from "./Logo";
 import { useWorkspace } from "@/store/workspace";
 
 const SMART_ICONS: Record<SmartViewId, React.ReactNode> = {
@@ -186,12 +186,7 @@ export function Sidebar() {
       >
         <div className="flex items-center justify-between px-4 pb-2 pt-4">
           <Link href="/" className="flex items-center gap-2" aria-label="Notesflow home">
-            <span
-              aria-hidden
-              className="flex size-7 items-center justify-center rounded-lg bg-accent-600 text-white dark:bg-accent-500"
-            >
-              <Check size={16} strokeWidth={3} />
-            </span>
+            <LogoMark size={28} />
             <span className="heading-display text-xl font-semibold">Notesflow</span>
           </Link>
           <button

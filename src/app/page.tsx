@@ -14,6 +14,7 @@ import {
   WifiOff,
   Zap,
 } from "lucide-react";
+import { LogoMark } from "@/components/Logo";
 import { AppPreview } from "@/components/landing/AppPreview";
 
 export const metadata: Metadata = {
@@ -89,12 +90,7 @@ export default function Landing() {
       <header className="sticky top-0 z-20 border-b border-stone-200/70 bg-stone-50/85 backdrop-blur dark:border-stone-800/70 dark:bg-stone-950/85">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
           <Link href="/" className="flex items-center gap-2" aria-label="Notesflow home">
-            <span
-              aria-hidden
-              className="flex size-8 items-center justify-center rounded-xl bg-accent-600 text-white dark:bg-accent-500"
-            >
-              <Check size={18} strokeWidth={3} />
-            </span>
+            <LogoMark size={32} />
             <span className="heading-display text-xl font-semibold">Notesflow</span>
           </Link>
           <nav aria-label="Main" className="flex items-center gap-1 text-sm">

@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { BRAND_COLOR, LOGO_DOT, LOGO_TICK } from "@/lib/brand";
 
 // App icons are rendered at build time so no binary files live in the repository.
 const ICONS: Record<string, { size: number; maskable: boolean }> = {
@@ -28,19 +29,19 @@ export async function GET(_request: Request, { params }: { params: Promise<{ nam
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#c24a2a",
+        background: BRAND_COLOR,
         borderRadius: maskable ? 0 : Math.round(size * 0.22),
       }}
     >
       <svg width={glyph} height={glyph} viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="10" stroke="#ffffff" strokeWidth="2" />
         <path
-          d="M7.5 12.5l3 3 6-6.5"
+          d={LOGO_TICK}
           stroke="#ffffff"
-          strokeWidth="2.4"
+          strokeWidth="2.6"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
+        <circle cx={LOGO_DOT.cx} cy={LOGO_DOT.cy} r={LOGO_DOT.r} fill="#ffffff" opacity="0.7" />
       </svg>
     </div>,
     { width: size, height: size },

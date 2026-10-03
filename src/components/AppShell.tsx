@@ -7,6 +7,7 @@ import { INBOX_ID } from "@/lib/types";
 import { useUi } from "@/store/ui";
 import { useSyncStore } from "@/store/sync";
 import { upgradeLegacyStorage, useWorkspace } from "@/store/workspace";
+import { LogoMark } from "./Logo";
 import { CommandPalette } from "./CommandPalette";
 import { ShortcutHelp } from "./ShortcutHelp";
 import { Sidebar } from "./Sidebar";
@@ -95,7 +96,10 @@ export function AppShell() {
           >
             <Menu size={20} />
           </button>
-          <span className="heading-display text-lg font-semibold">Notesflow</span>
+          <span className="flex items-center gap-2">
+            <LogoMark size={24} />
+            <span className="heading-display text-lg font-semibold">Notesflow</span>
+          </span>
         </header>
         <main id="main" className="min-h-0 flex-1">
           {!ready ? (

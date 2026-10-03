@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { BRAND_COLOR, BRAND_PAPER, LOGO_DOT, LOGO_TICK } from "@/lib/brand";
 
 export const alt = "Notesflow — a calmer way to get things done";
 export const size = { width: 1200, height: 630 };
@@ -14,7 +15,7 @@ export default function OpenGraphImage() {
         flexDirection: "column",
         justifyContent: "center",
         padding: 80,
-        background: "#faf7f2",
+        background: BRAND_PAPER,
         color: "#231e19",
       }}
     >
@@ -24,7 +25,7 @@ export default function OpenGraphImage() {
             width: 72,
             height: 72,
             borderRadius: 18,
-            background: "#c24a2a",
+            background: BRAND_COLOR,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -32,12 +33,13 @@ export default function OpenGraphImage() {
         >
           <svg width="44" height="44" viewBox="0 0 24 24" fill="none">
             <path
-              d="M5 12.5l4.5 4.5L19 7.5"
+              d={LOGO_TICK}
               stroke="#fff"
-              strokeWidth="3"
+              strokeWidth="2.6"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
+            <circle cx={LOGO_DOT.cx} cy={LOGO_DOT.cy} r={LOGO_DOT.r} fill="#fff" opacity="0.7" />
           </svg>
         </div>
         <div style={{ fontSize: 44, fontWeight: 700 }}>Notesflow</div>
