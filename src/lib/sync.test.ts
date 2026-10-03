@@ -27,12 +27,14 @@ const item = (id: string, patch: Partial<Item> = {}): Item => ({
   priority: "none",
   due: null,
   subtasks: [],
+  sectionId: null,
   ...patch,
 });
 
 const list = (id: string, patch: Partial<TaskList> = {}): TaskList => ({
   id,
   name: id,
+  sections: [],
   folderId: null,
   createdAt: 1,
   updatedAt: 10,

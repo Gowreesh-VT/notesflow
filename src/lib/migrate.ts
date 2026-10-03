@@ -52,6 +52,7 @@ export function migrateLegacyData(
       priority: "none",
       due: null,
       subtasks: [],
+      sectionId: null,
     });
   }
 
@@ -71,6 +72,7 @@ export function migrateLegacyData(
       priority: task.priority,
       due: task.due,
       subtasks: task.subtasks,
+      sectionId: null,
     });
   }
 
@@ -79,6 +81,7 @@ export function migrateLegacyData(
         {
           id: LEGACY_ARCHIVE_LIST_ID,
           name: "Archived",
+          sections: [],
           folderId: null,
           createdAt: now,
           updatedAt: now,
