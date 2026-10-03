@@ -1,6 +1,6 @@
 name: Daily improvement
 
-# Every day at 09:00 India time Claude picks ONE improvement and implements it. The change is validated, then:
+# Every day at 09:00 India time (03:30 UTC) Claude picks ONE improvement and implements it. The change is validated, then:
 #   - small, low-risk changes are committed straight to the default branch;
 #   - big changes, or any that touch dependencies, config, database or auth paths, are opened as a pull request
 #     for the owner to review and merge.
@@ -9,8 +9,8 @@ name: Daily improvement
 
 on:
   schedule:
-    - cron: "0 9 * * *"
-      timezone: "Asia/Kolkata"
+    # 09:00 India time. India has no daylight saving, so the UTC equivalent never shifts.
+    - cron: "30 3 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -82,6 +82,10 @@ jobs:
           echo "count=$count" >> "$GITHUB_OUTPUT"
 
       - name: Claude picks and implements one improvement
+        id: claude
+        # The action reports a failure when Claude finishes but used more turns than the limit. The work is still
+        # judged by the guards and checks below, and the next step fails the run if Claude produced nothing usable.
+        continue-on-error: true
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -107,6 +111,10 @@ jobs:
                .daily-pr-body.md. Commit messages must contain no Co-Authored-By or "Generated with" lines
                and no mention of Claude, Anthropic or automation.
 
+            Work efficiently: aim to finish within roughly 100 tool turns. If the chosen item is too large for that,
+            implement the first coherent slice that leaves the app working and say so in the pull request or commit
+            body, instead of running out of turns half way.
+
             There are currently ${{ steps.prs.outputs.count }} open automation pull request(s). If that number is above
             zero, do NOT start a major change today; do a minor improvement or make no changes.
 
@@ -119,13 +127,23 @@ jobs:
             files.
           claude_args: |
             --model claude-sonnet-5-5
-            --max-turns 60
+            --max-turns 150
             --allowedTools "Read,Glob,Grep,Edit,Write,Bash(npm run lint),Bash(npm run typecheck),Bash(npm run test),Bash(npm test),Bash(npm run build),Bash(npm install --ignore-scripts:*),Bash(npm run db:generate),Bash(npx prettier --write:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(ls:*)"
             --disallowedTools "WebFetch,WebSearch,Edit(.github/**),Write(.github/**),Edit(CLAUDE.md),Write(CLAUDE.md),Edit(AGENTS.md),Write(AGENTS.md),Edit(.gitignore),Write(.gitignore),Edit(.npmrc),Write(.npmrc),Read(.env),Read(.env.*),Read(**/.env),Read(**/.env.*),Read(**/*.pem),Read(**/*.key),Read(/proc/**),Read(~/.ssh/**),Read(~/.aws/**),Read(~/.npmrc),Bash(git push:*),Bash(git commit:*),Bash(git remote:*),Bash(git config:*),Bash(git reset:*),Bash(git checkout:*),Bash(git switch:*),Bash(git branch:*),Bash(git tag:*),Bash(git rebase:*),Bash(git merge:*),Bash(git clean:*),Bash(git stash:*),Bash(env:*),Bash(printenv:*),Bash(export:*),Bash(set:*),Bash(curl:*),Bash(wget:*),Bash(gh:*),Bash(ssh:*),Bash(rm:*),Bash(npm ci:*),Bash(npm publish:*),Bash(sudo:*)"
 
       - name: Verify the change is allowed
         id: verify
         run: bash .github/scripts/verify-changes.sh
+
+      - name: Fail if Claude failed and produced nothing
+        if: steps.claude.outcome == 'failure' && steps.verify.outputs.changed != 'true'
+        run: |
+          echo "::error::The Claude step failed and left no changes. See that step's log (credits, limits, auth)."
+          exit 1
+
+      - name: Note that Claude's step reported a problem
+        if: steps.claude.outcome == 'failure' && steps.verify.outputs.changed == 'true'
+        run: echo "::warning::The Claude step reported a problem (for example it used more turns than the limit), but it left a change. The change must still pass every check before it is published."
 
       - name: Validate commit message
         if: steps.verify.outputs.changed == 'true'
