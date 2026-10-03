@@ -17,16 +17,49 @@ const item: Item = {
   priority: "high",
   due: "2026-01-01",
   subtasks: [{ id: "s1", title: "sub", done: true }],
+  sectionId: "sec",
 };
 
 describe("backup", () => {
   it("round-trips items, lists and folders", () => {
     const data = {
       items: [item],
-      lists: [{ id: "work", name: "Work", folderId: "f", createdAt: 1, updatedAt: 2 }],
+      lists: [
+        {
+          id: "work",
+          name: "Work",
+          sections: [{ id: "sec", name: "Doing" }],
+          folderId: "f",
+          createdAt: 1,
+          updatedAt: 2,
+        },
+      ],
       folders: [{ id: "f", name: "Life", createdAt: 1, updatedAt: 2 }],
     };
     expect(parseBackup(JSON.stringify(createBackup(data, 5)))).toEqual(data);
+  });
+
+  it("sanitises sections and defaults them for older data", () => {
+    const text = JSON.stringify({
+      app: "notesflow",
+      version: 2,
+      items: [
+        { ...item, sectionId: 5 },
+        { ...item, id: "i2", sectionId: undefined },
+      ],
+      lists: [
+        {
+          id: "a",
+          name: "A",
+          sections: [{ id: "s", name: " X " }, { id: "s", name: "dup" }, 1, { id: "t" }],
+        },
+        { id: "b", name: "B", sections: "nope" },
+      ],
+      folders: [],
+    });
+    const parsed = parseBackup(text);
+    expect(parsed.items.map((i) => i.sectionId)).toEqual([null, null]);
+    expect(parsed.lists.map((l) => l.sections)).toEqual([[{ id: "s", name: "X" }], []]);
   });
 
   it("imports the original notes+tasks format", () => {
@@ -84,7 +117,7 @@ describe("backup", () => {
     });
     expect(result.items[1]).toMatchObject({ kind: "note", pinned: false, createdAt: 7 });
     expect(result.lists).toEqual([
-      { id: "l2", name: "Real", folderId: null, createdAt: 7, updatedAt: 7 },
+      { id: "l2", name: "Real", sections: [], folderId: null, createdAt: 7, updatedAt: 7 },
     ]);
     expect(result.folders).toEqual([]);
   });

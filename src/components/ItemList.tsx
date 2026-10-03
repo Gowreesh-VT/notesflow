@@ -1,11 +1,25 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Ban, Check, ChevronRight, FileText, Flag, ListChecks, Plus, Search } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Ban,
+  Check,
+  ChevronRight,
+  FileText,
+  Flag,
+  ListChecks,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+} from "lucide-react";
 import clsx from "clsx";
 import {
   dueBucket,
   filterItems,
+  groupBySections,
   itemTags,
   parseQuickAdd,
   subtaskProgress,
@@ -141,6 +155,28 @@ function ItemRow({
   );
 }
 
+function SectionButton({
+  label,
+  onClick,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      className="rounded-md p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700 focus-visible:outline-2 focus-visible:outline-accent-500 dark:hover:bg-stone-800 dark:hover:text-stone-200"
+    >
+      {children}
+    </button>
+  );
+}
+
 const SORTS: { value: ItemSort; label: string }[] = [
   { value: "default", label: "Smart order" },
   { value: "due", label: "Due date" },
@@ -158,6 +194,10 @@ export function ItemList() {
   const renameList = useWorkspace((s) => s.renameList);
   const moveList = useWorkspace((s) => s.moveList);
   const deleteList = useWorkspace((s) => s.deleteList);
+  const addSection = useWorkspace((s) => s.addSection);
+  const renameSection = useWorkspace((s) => s.renameSection);
+  const deleteSection = useWorkspace((s) => s.deleteSection);
+  const moveSection = useWorkspace((s) => s.moveSection);
   const { view, query, sort, selectedItemId } = useUi();
   const setQuery = useUi((s) => s.setQuery);
   const setSort = useUi((s) => s.setSort);
@@ -280,6 +320,16 @@ export function ItemList() {
             </label>
             <button
               type="button"
+              className="btn btn-ghost px-2 py-1 text-xs"
+              onClick={() => {
+                const name = window.prompt("New section name");
+                if (name) addSection(currentList.id, name);
+              }}
+            >
+              Add section
+            </button>
+            <button
+              type="button"
               className="btn btn-danger px-2 py-1 text-xs"
               onClick={() => {
                 if (
@@ -370,17 +420,79 @@ export function ItemList() {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-4">
-        <ul className="space-y-0.5 pt-1">
-          {main.map((item) => (
-            <ItemRow
-              key={item.id}
-              item={item}
-              today={today}
-              showList={!isContainer}
-              selected={item.id === selectedItemId}
-            />
-          ))}
-        </ul>
+        {currentList && currentList.sections.length > 0 ? (
+          groupBySections(main, currentList.sections).map(({ section, items: group }) => (
+            <section key={section?.id ?? "none"} aria-label={section?.name ?? "No section"}>
+              {section ? (
+                <div className="flex items-center gap-1 px-3 pb-1 pt-4">
+                  <h2 className="min-w-0 flex-1 truncate text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
+                    {section.name} <span className="font-normal">({group.length})</span>
+                  </h2>
+                  <SectionButton
+                    label={`Move section ${section.name} up`}
+                    onClick={() => moveSection(currentList.id, section.id, -1)}
+                  >
+                    <ArrowUp size={14} aria-hidden />
+                  </SectionButton>
+                  <SectionButton
+                    label={`Move section ${section.name} down`}
+                    onClick={() => moveSection(currentList.id, section.id, 1)}
+                  >
+                    <ArrowDown size={14} aria-hidden />
+                  </SectionButton>
+                  <SectionButton
+                    label={`Rename section ${section.name}`}
+                    onClick={() => {
+                      const name = window.prompt("Rename section", section.name);
+                      if (name) renameSection(currentList.id, section.id, name);
+                    }}
+                  >
+                    <Pencil size={14} aria-hidden />
+                  </SectionButton>
+                  <SectionButton
+                    label={`Delete section ${section.name}`}
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `Delete the section “${section.name}”? Its items stay in the list.`,
+                        )
+                      ) {
+                        deleteSection(currentList.id, section.id);
+                      }
+                    }}
+                  >
+                    <Trash2 size={14} aria-hidden />
+                  </SectionButton>
+                </div>
+              ) : (
+                group.length > 0 && <div className="pt-1" />
+              )}
+              <ul className="space-y-0.5">
+                {group.map((item) => (
+                  <ItemRow
+                    key={item.id}
+                    item={item}
+                    today={today}
+                    showList={false}
+                    selected={item.id === selectedItemId}
+                  />
+                ))}
+              </ul>
+            </section>
+          ))
+        ) : (
+          <ul className="space-y-0.5 pt-1">
+            {main.map((item) => (
+              <ItemRow
+                key={item.id}
+                item={item}
+                today={today}
+                showList={!isContainer}
+                selected={item.id === selectedItemId}
+              />
+            ))}
+          </ul>
+        )}
         {main.length === 0 && finished.length === 0 && (
           <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
             <svg width="64" height="64" viewBox="0 0 64 64" fill="none" aria-hidden>
