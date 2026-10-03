@@ -32,7 +32,7 @@ jobs:
   improve:
     name: Claude improves, workflow validates
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     permissions:
       contents: read # Claude and the validation steps never receive a write token
       pull-requests: read
@@ -111,7 +111,7 @@ jobs:
                .daily-pr-body.md. Commit messages must contain no Co-Authored-By or "Generated with" lines
                and no mention of Claude, Anthropic or automation.
 
-            Work efficiently: aim to finish within roughly 100 tool turns. If the chosen item is too large for that,
+            Work efficiently: aim to finish within roughly 200 tool turns. If the chosen item is too large for that,
             implement the first coherent slice that leaves the app working and say so in the pull request or commit
             body, instead of running out of turns half way.
 
@@ -127,7 +127,7 @@ jobs:
             files.
           claude_args: |
             --model claude-sonnet-5-5
-            --max-turns 150
+            --max-turns 300
             --allowedTools "Read,Glob,Grep,Edit,Write,Bash(npm run lint),Bash(npm run typecheck),Bash(npm run test),Bash(npm test),Bash(npm run build),Bash(npm install --ignore-scripts:*),Bash(npm run db:generate),Bash(npx prettier --write:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(ls:*)"
             --disallowedTools "WebFetch,WebSearch,Edit(.github/**),Write(.github/**),Edit(CLAUDE.md),Write(CLAUDE.md),Edit(AGENTS.md),Write(AGENTS.md),Edit(.gitignore),Write(.gitignore),Edit(.npmrc),Write(.npmrc),Read(.env),Read(.env.*),Read(**/.env),Read(**/.env.*),Read(**/*.pem),Read(**/*.key),Read(/proc/**),Read(~/.ssh/**),Read(~/.aws/**),Read(~/.npmrc),Bash(git push:*),Bash(git commit:*),Bash(git remote:*),Bash(git config:*),Bash(git reset:*),Bash(git checkout:*),Bash(git switch:*),Bash(git branch:*),Bash(git tag:*),Bash(git rebase:*),Bash(git merge:*),Bash(git clean:*),Bash(git stash:*),Bash(env:*),Bash(printenv:*),Bash(export:*),Bash(set:*),Bash(curl:*),Bash(wget:*),Bash(gh:*),Bash(ssh:*),Bash(rm:*),Bash(npm ci:*),Bash(npm publish:*),Bash(sudo:*)"
 
