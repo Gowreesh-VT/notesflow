@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Menu } from "lucide-react";
 import { SMART_VIEWS } from "@/lib/items-logic";
 import { INBOX_ID } from "@/lib/types";
 import { useUi } from "@/store/ui";
 import { useSyncStore } from "@/store/sync";
 import { upgradeLegacyStorage, useWorkspace } from "@/store/workspace";
-import { LogoMark } from "./Logo";
+import { NavRail } from "./NavRail";
 import { CommandPalette } from "./CommandPalette";
 import { ShortcutHelp } from "./ShortcutHelp";
 import { Sidebar } from "./Sidebar";
@@ -21,7 +20,6 @@ function isTypingTarget(target: EventTarget | null): boolean {
 
 export function AppShell() {
   const [ready, setReady] = useState(false);
-  const setSidebarOpen = useUi((s) => s.setSidebarOpen);
 
   useEffect(() => {
     let active = true;
@@ -85,23 +83,10 @@ export function AppShell() {
       >
         Skip to content
       </a>
+      <NavRail />
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center gap-2 border-b border-stone-200 px-3 py-2 dark:border-stone-800 md:hidden">
-          <button
-            type="button"
-            className="btn btn-ghost"
-            aria-label="Open menu"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <Menu size={20} />
-          </button>
-          <span className="flex items-center gap-2">
-            <LogoMark size={24} />
-            <span className="heading-display text-lg font-semibold">Notesflow</span>
-          </span>
-        </header>
-        <main id="main" className="min-h-0 flex-1">
+        <main id="main" className="min-h-0 flex-1 bg-white dark:bg-stone-900">
           {!ready ? (
             <p className="p-6 text-sm text-stone-500" role="status">
               Loading your workspace…

@@ -226,3 +226,41 @@ export function moveSectionBy(sections: ListSection[], id: string, delta: -1 | 1
   [next[from], next[to]] = [next[to], next[from]];
   return next;
 }
+
+export type DueGroupId = "overdue" | "today" | "tomorrow" | "week" | "later" | "nodate" | "notes";
+export type DueGroup = { id: DueGroupId; label: string; items: Item[] };
+
+const DUE_GROUP_LABELS: Record<DueGroupId, string> = {
+  overdue: "Overdue",
+  today: "Today",
+  tomorrow: "Tomorrow",
+  week: "Next 7 days",
+  later: "Later",
+  nodate: "No date",
+  notes: "Notes",
+};
+
+/**
+ * Splits items into date groups (overdue, today, tomorrow, next 7 days, later, no date) with notes last, keeping the
+ * incoming order inside each group. Empty groups are left out.
+ */
+export function groupByDue(items: Item[], today: string): DueGroup[] {
+  const tomorrow = addDays(today, 1);
+  const weekEnd = addDays(today, 7);
+  const groupOf = (item: Item): DueGroupId => {
+    if (item.kind === "note") return "notes";
+    if (!item.due) return "nodate";
+    if (item.due < today) return "overdue";
+    if (item.due === today) return "today";
+    if (item.due === tomorrow) return "tomorrow";
+    if (item.due <= weekEnd) return "week";
+    return "later";
+  };
+  const buckets = new Map<DueGroupId, Item[]>(
+    (Object.keys(DUE_GROUP_LABELS) as DueGroupId[]).map((id) => [id, []]),
+  );
+  for (const item of items) buckets.get(groupOf(item))!.push(item);
+  return [...buckets]
+    .filter(([, group]) => group.length > 0)
+    .map(([id, group]) => ({ id, label: DUE_GROUP_LABELS[id], items: group }));
+}

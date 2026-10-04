@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Copy, Download, Pin, PinOff, RotateCcw, Trash2 } from "lucide-react";
+import { ArrowLeft, Copy, Download, Pin, PinOff, RotateCcw, Trash2, X } from "lucide-react";
 import clsx from "clsx";
 import { exportNoteMarkdown } from "@/lib/data-actions";
 import type { Item } from "@/lib/types";
@@ -64,11 +64,12 @@ export function NoteDetail({ item }: { item: Item }) {
       <div className="flex items-center gap-2 px-3 py-2">
         <button
           type="button"
-          className="btn btn-ghost px-2 md:hidden"
-          aria-label="Back to list"
+          className="btn btn-ghost px-2"
+          aria-label="Close details"
           onClick={() => selectItem(null)}
         >
-          <ArrowLeft size={18} />
+          <ArrowLeft size={18} className="md:hidden" />
+          <X size={18} className="hidden md:block" />
         </button>
         <input
           value={item.title}

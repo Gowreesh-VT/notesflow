@@ -49,6 +49,8 @@ const SMART_ICONS: Record<SmartViewId, React.ReactNode> = {
 };
 
 const COUNTED: SmartViewId[] = ["inbox", "today", "tomorrow", "week", "all"];
+/** Archive-like views sit at the bottom of the sidebar, as in TickTick. */
+const ARCHIVE_VIEWS: SmartViewId[] = ["completed", "wontdo", "trash"];
 
 function NavItem({
   icon,
@@ -71,15 +73,21 @@ function NavItem({
       onClick={onClick}
       aria-current={active ? "page" : undefined}
       className={clsx(
-        "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors",
+        "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[7px] text-left text-sm transition-colors",
         "focus-visible:outline-2 focus-visible:outline-accent-500",
         indent && "pl-7",
         active
-          ? "bg-accent-100 font-medium text-accent-900 dark:bg-accent-950 dark:text-accent-200"
-          : "text-stone-600 hover:bg-stone-200/70 dark:text-stone-300 dark:hover:bg-stone-800",
+          ? "bg-stone-200/80 font-medium text-stone-900 dark:bg-stone-800 dark:text-stone-50"
+          : "text-stone-600 hover:bg-stone-200/50 dark:text-stone-300 dark:hover:bg-stone-900",
       )}
     >
-      <span aria-hidden className="shrink-0">
+      <span
+        aria-hidden
+        className={clsx(
+          "shrink-0",
+          active ? "text-accent-600 dark:text-accent-400" : "text-stone-400",
+        )}
+      >
         {icon}
       </span>
       <span className="min-w-0 flex-1 truncate">{label}</span>
@@ -104,7 +112,7 @@ export function Sidebar() {
   const addFolder = useWorkspace((s) => s.addFolder);
   const renameFolder = useWorkspace((s) => s.renameFolder);
   const deleteFolder = useWorkspace((s) => s.deleteFolder);
-  const { view, theme, sidebarOpen } = useUi();
+  const { view, theme, sidebarOpen, sidebarCollapsed } = useUi();
   const setView = useUi((s) => s.setView);
   const setTheme = useUi((s) => s.setTheme);
   const setSidebarOpen = useUi((s) => s.setSidebarOpen);
@@ -179,12 +187,13 @@ export function Sidebar() {
       <aside
         aria-label="Sidebar"
         className={clsx(
-          "fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-stone-200 bg-stone-100 transition-transform",
-          "dark:border-stone-800 dark:bg-stone-900 md:static md:translate-x-0",
+          "fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-stone-200 bg-stone-50 transition-transform",
+          "dark:border-stone-800 dark:bg-stone-950 md:static md:w-60 md:translate-x-0",
           sidebarOpen ? "translate-x-0" : "-translate-x-full",
+          sidebarCollapsed && "md:hidden",
         )}
       >
-        <div className="flex items-center justify-between px-4 pb-2 pt-4">
+        <div className="flex items-center justify-between px-4 pb-2 pt-4 md:hidden">
           <Link href="/" className="flex items-center gap-2" aria-label="Notesflow home">
             <LogoMark size={28} />
             <span className="heading-display text-xl font-semibold">Notesflow</span>
@@ -199,7 +208,7 @@ export function Sidebar() {
           </button>
         </div>
 
-        <div className="px-3">
+        <div className="px-3 md:hidden">
           <button
             type="button"
             onClick={() => setPaletteOpen(true)}
@@ -213,8 +222,11 @@ export function Sidebar() {
           </button>
         </div>
 
-        <nav aria-label="Workspace" className="min-h-0 flex-1 overflow-y-auto px-2 pb-4 pt-2">
-          {SMART_VIEWS.map((v) => (
+        <nav
+          aria-label="Workspace"
+          className="min-h-0 flex-1 overflow-y-auto px-2 pb-4 pt-2 md:pt-4"
+        >
+          {SMART_VIEWS.filter((v) => !ARCHIVE_VIEWS.includes(v.id)).map((v) => (
             <NavItem
               key={v.id}
               icon={SMART_ICONS[v.id]}
@@ -226,7 +238,7 @@ export function Sidebar() {
           ))}
 
           <div className="flex items-center justify-between px-2.5 pb-1 pt-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
+            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
               Lists
             </h2>
             <span className="flex">
@@ -344,7 +356,7 @@ export function Sidebar() {
 
           {tags.length > 0 && (
             <>
-              <h2 className="px-2.5 pb-1 pt-4 text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
+              <h2 className="px-2.5 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
                 Tags
               </h2>
               {tags.map(({ tag, count }) => (
@@ -359,10 +371,21 @@ export function Sidebar() {
               ))}
             </>
           )}
+
+          <div className="mx-2.5 my-3 border-t border-stone-200 dark:border-stone-800" />
+          {SMART_VIEWS.filter((v) => ARCHIVE_VIEWS.includes(v.id)).map((v) => (
+            <NavItem
+              key={v.id}
+              icon={SMART_ICONS[v.id]}
+              label={v.label}
+              active={sameView(view, { kind: "smart", id: v.id })}
+              onClick={() => goTo({ kind: "smart", id: v.id })}
+            />
+          ))}
         </nav>
 
         <div className="space-y-2 border-t border-stone-200 p-3 dark:border-stone-800">
-          <div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-1">
+          <div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-1 md:hidden">
             {THEMES.map((t) => (
               <button
                 key={t.value}
@@ -381,29 +404,39 @@ export function Sidebar() {
               </button>
             ))}
           </div>
-          <div className="grid grid-cols-3 gap-1">
-            <button
-              type="button"
-              className="btn btn-ghost px-1 text-xs"
-              onClick={() => run(exportBackup)}
-            >
-              <Download size={14} aria-hidden /> Backup
-            </button>
-            <button
-              type="button"
-              className="btn btn-ghost px-1 text-xs"
-              onClick={() => backupInput.current?.click()}
-            >
-              <Upload size={14} aria-hidden /> Restore
-            </button>
-            <button
-              type="button"
-              className="btn btn-ghost px-1 text-xs"
-              onClick={() => markdownInput.current?.click()}
-            >
-              <FileText size={14} aria-hidden /> Import .md
-            </button>
-          </div>
+          <details className="group">
+            <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-stone-500 hover:bg-stone-200/70 dark:text-stone-400 dark:hover:bg-stone-800 [&::-webkit-details-marker]:hidden">
+              <ChevronRight
+                size={13}
+                aria-hidden
+                className="transition-transform group-open:rotate-90"
+              />
+              Backup &amp; import
+            </summary>
+            <div className="grid grid-cols-3 gap-1 pt-1">
+              <button
+                type="button"
+                className="btn btn-ghost px-1 text-xs"
+                onClick={() => run(exportBackup)}
+              >
+                <Download size={14} aria-hidden /> Backup
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost px-1 text-xs"
+                onClick={() => backupInput.current?.click()}
+              >
+                <Upload size={14} aria-hidden /> Restore
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost px-1 text-xs"
+                onClick={() => markdownInput.current?.click()}
+              >
+                <FileText size={14} aria-hidden /> Import .md
+              </button>
+            </div>
+          </details>
           <AccountMenu />
           <InstallButton />
           <input

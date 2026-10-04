@@ -86,11 +86,12 @@ export function TaskDetail({ item }: { item: Item }) {
       <div className="flex items-start gap-3 px-4 pb-2 pt-4">
         <button
           type="button"
-          className="btn btn-ghost mt-0.5 px-2 md:hidden"
-          aria-label="Back to list"
+          className="btn btn-ghost mt-0.5 px-2"
+          aria-label="Close details"
           onClick={() => selectItem(null)}
         >
-          <ArrowLeft size={18} />
+          <ArrowLeft size={18} className="md:hidden" />
+          <X size={18} className="hidden md:block" />
         </button>
         <button
           type="button"
@@ -100,7 +101,7 @@ export function TaskDetail({ item }: { item: Item }) {
           disabled={trashed}
           onClick={() => toggleDone(item.id)}
           className={clsx(
-            "mt-1.5 flex size-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
+            "mt-1.5 flex size-[22px] shrink-0 items-center justify-center rounded-md border-2 transition-colors",
             "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500",
             item.status === "done"
               ? "border-accent-600 bg-accent-600 text-white"

@@ -4,6 +4,7 @@ import {
   countInView,
   dueBucket,
   filterItems,
+  groupByDue,
   groupBySections,
   moveSectionBy,
   parseQuickAdd,
@@ -197,5 +198,33 @@ describe("parseQuickAdd", () => {
   it("keeps #tags in the title and falls back to the input when only keywords are given", () => {
     expect(parseQuickAdd("Buy milk #errands", today).title).toBe("Buy milk #errands");
     expect(parseQuickAdd("today", today).title).toBe("today");
+  });
+});
+
+describe("groupByDue", () => {
+  it("groups by date with notes last, keeps order and drops empty groups", () => {
+    const groups = groupByDue(
+      [
+        make("n", { kind: "note" }),
+        make("t1", { due: today }),
+        make("x", { due: "2026-05-01" }),
+        make("t2", { due: today }),
+        make("tm", { due: "2026-05-11" }),
+        make("wk", { due: "2026-05-17" }),
+        make("lt", { due: "2026-05-18" }),
+        make("nd"),
+      ],
+      today,
+    );
+    expect(groups.map((g) => [g.id, g.items.map((i) => i.id)])).toEqual([
+      ["overdue", ["x"]],
+      ["today", ["t1", "t2"]],
+      ["tomorrow", ["tm"]],
+      ["week", ["wk"]],
+      ["later", ["lt"]],
+      ["nodate", ["nd"]],
+      ["notes", ["n"]],
+    ]);
+    expect(groupByDue([], today)).toEqual([]);
   });
 });
