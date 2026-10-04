@@ -1,5 +1,5 @@
-import { parseFolder, parseItem, parseList } from "./backup";
-import type { Folder, Item, SyncCollection, TaskList, Tombstone } from "./types";
+import { parseFilter, parseFolder, parseItem, parseList } from "./backup";
+import type { Folder, Item, SavedFilter, SyncCollection, TaskList, Tombstone } from "./types";
 
 /** One synced record as sent over the wire. `data` is null for deletions. */
 export type SyncRecord = {
@@ -14,29 +14,42 @@ export type SyncData = {
   items: Item[];
   lists: TaskList[];
   folders: Folder[];
+  filters: SavedFilter[];
   tombstones: Tombstone[];
 };
 
 export type SyncState = { cursor: number; lastPushAt: number };
 
-export const COLLECTIONS: SyncCollection[] = ["item", "list", "folder"];
+export const COLLECTIONS: SyncCollection[] = ["item", "list", "folder", "filter"];
 
 const PARSERS = {
   item: parseItem,
   list: parseList,
   folder: parseFolder,
+  filter: parseFilter,
 } as const;
+
+/** The SyncData array that holds each collection. */
+const FIELDS = {
+  item: "items",
+  list: "lists",
+  folder: "folders",
+  filter: "filters",
+} as const satisfies Record<SyncCollection, keyof SyncData>;
+
+const isCollection = (value: unknown): value is SyncCollection =>
+  COLLECTIONS.includes(value as SyncCollection);
 
 /**
  * Validates a record from the network (or a client) and normalises its data with the same sanitisers the backup
  * importer uses. Returns null for anything malformed. New fields on items/lists/folders must be added to those
- * sanitisers in backup.ts, otherwise they are dropped here.
+ * sanitisers in backup.ts (saved filters: parseFilter), otherwise they are dropped here.
  */
 export function sanitizeRecord(raw: unknown, now = Date.now()): SyncRecord | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
   const collection = r.collection;
-  if (collection !== "item" && collection !== "list" && collection !== "folder") return null;
+  if (!isCollection(collection)) return null;
   if (typeof r.id !== "string" || r.id.length === 0 || r.id.length > 128) return null;
   if (typeof r.updatedAt !== "number" || !Number.isFinite(r.updatedAt) || r.updatedAt <= 0)
     return null;
@@ -53,37 +66,17 @@ export function sanitizeRecord(raw: unknown, now = Date.now()): SyncRecord | nul
 /** Everything changed at or after `since` (local clock), plus deletions, ready to push. */
 export function collectChanges(data: SyncData, since: number): SyncRecord[] {
   const records: SyncRecord[] = [];
-  for (const item of data.items) {
-    if (item.updatedAt >= since) {
-      records.push({
-        collection: "item",
-        id: item.id,
-        updatedAt: item.updatedAt,
-        deleted: false,
-        data: item,
-      });
-    }
-  }
-  for (const list of data.lists) {
-    if (list.updatedAt >= since) {
-      records.push({
-        collection: "list",
-        id: list.id,
-        updatedAt: list.updatedAt,
-        deleted: false,
-        data: list,
-      });
-    }
-  }
-  for (const folder of data.folders) {
-    if (folder.updatedAt >= since) {
-      records.push({
-        collection: "folder",
-        id: folder.id,
-        updatedAt: folder.updatedAt,
-        deleted: false,
-        data: folder,
-      });
+  for (const collection of COLLECTIONS) {
+    for (const record of data[FIELDS[collection]]) {
+      if (record.updatedAt >= since) {
+        records.push({
+          collection,
+          id: record.id,
+          updatedAt: record.updatedAt,
+          deleted: false,
+          data: record,
+        });
+      }
     }
   }
   for (const tombstone of data.tombstones) {
@@ -148,11 +141,18 @@ export function applyRecords(
   const items = mergeCollection(data.items, valid, data.tombstones, "item", since);
   const lists = mergeCollection(data.lists, valid, data.tombstones, "list", since);
   const folders = mergeCollection(data.folders, valid, data.tombstones, "folder", since);
-  const changed = items.changed || lists.changed || folders.changed;
+  const filters = mergeCollection(data.filters, valid, data.tombstones, "filter", since);
+  const merged = [items, lists, folders, filters];
   return {
-    data: { ...data, items: items.next, lists: lists.next, folders: folders.next },
-    changed,
-    conflicts: items.conflicts + lists.conflicts + folders.conflicts,
+    data: {
+      ...data,
+      items: items.next,
+      lists: lists.next,
+      folders: folders.next,
+      filters: filters.next,
+    },
+    changed: merged.some((m) => m.changed),
+    conflicts: merged.reduce((sum, m) => sum + m.conflicts, 0),
   };
 }
 
@@ -193,6 +193,7 @@ export async function syncOnce(
         items: merged.data.items,
         lists: merged.data.lists,
         folders: merged.data.folders,
+        filters: merged.data.filters,
       });
     }
     cursor = response.cursor;

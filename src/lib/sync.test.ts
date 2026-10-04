@@ -10,7 +10,8 @@ import {
   type SyncResponse,
   type SyncState,
 } from "./sync";
-import { INBOX_ID, type Item, type TaskList } from "./types";
+import { EMPTY_CRITERIA } from "./filters";
+import { INBOX_ID, type Item, type SavedFilter, type TaskList } from "./types";
 
 const item = (id: string, patch: Partial<Item> = {}): Item => ({
   id,
@@ -41,7 +42,13 @@ const list = (id: string, patch: Partial<TaskList> = {}): TaskList => ({
   ...patch,
 });
 
-const empty = (): SyncData => ({ items: [], lists: [], folders: [], tombstones: [] });
+const empty = (): SyncData => ({
+  items: [],
+  lists: [],
+  folders: [],
+  filters: [],
+  tombstones: [],
+});
 const rec = (
   collection: SyncRecord["collection"],
   data: { id: string; updatedAt: number },
@@ -108,6 +115,7 @@ describe("collectChanges", () => {
       items: [item("old", { updatedAt: 5 }), item("new", { updatedAt: 20 })],
       lists: [list("l", { updatedAt: 30 })],
       folders: [],
+      filters: [],
       tombstones: [{ collection: "item", id: "gone", at: 7 }],
     };
     const changes = collectChanges(data, 20);
@@ -269,10 +277,78 @@ describe("conflicts", () => {
       items: [note("edited", 50), note("old", 5)] as unknown as Item[],
       lists: [],
       folders: [],
+      filters: [],
       tombstones: [],
     };
     // "edited" changed here after the last push (40) and elsewhere; "old" only changed elsewhere.
     expect(applyRecords(data, [record("edited", 60), record("old", 70)], 40).conflicts).toBe(1);
     expect(applyRecords(data, [record("edited", 50)], 40).conflicts).toBe(0);
+  });
+});
+
+describe("saved filters", () => {
+  const filter = (id: string, updatedAt = 10): SavedFilter => ({
+    id,
+    name: id,
+    criteria: { ...EMPTY_CRITERIA, priorities: ["high"] },
+    createdAt: 1,
+    updatedAt,
+  });
+
+  it("sanitises filter records and rejects nameless ones", () => {
+    const record = sanitizeRecord({
+      collection: "filter",
+      id: "f",
+      updatedAt: 5,
+      deleted: false,
+      data: { ...filter("f"), criteria: { priorities: ["high", "bogus"] }, extra: 1 },
+    });
+    expect(record?.data).toEqual(filter("f"));
+    expect(
+      sanitizeRecord({
+        collection: "filter",
+        id: "f",
+        updatedAt: 5,
+        data: { ...filter("f"), name: " " },
+      }),
+    ).toBeNull();
+  });
+
+  it("pushes, pulls and deletes filters like other records", () => {
+    const data: SyncData = {
+      ...empty(),
+      filters: [filter("mine", 30)],
+      tombstones: [{ collection: "filter", id: "gone", at: 40 }],
+    };
+    expect(collectChanges(data, 20).map((c) => `${c.collection}:${c.id}:${c.deleted}`)).toEqual([
+      "filter:mine:false",
+      "filter:gone:true",
+    ]);
+
+    const pulled = applyRecords(empty(), [rec("filter", filter("remote", 50))]);
+    expect(pulled.data.filters).toEqual([filter("remote", 50)]);
+    const deleted = applyRecords(pulled.data, [del("filter", "remote", 60)]);
+    expect(deleted.data.filters).toEqual([]);
+    expect(deleted.changed).toBe(true);
+  });
+
+  it("round-trips filters through syncOnce", async () => {
+    let data: SyncData = { ...empty(), filters: [filter("local", 100)] };
+    const sent: SyncRecord[] = [];
+    await syncOnce({
+      getData: () => data,
+      setData: (partial) => {
+        data = { ...data, ...partial };
+      },
+      dropTombstones: () => {},
+      getState: () => ({ cursor: 0, lastPushAt: 0 }),
+      setState: () => {},
+      post: async (body) => {
+        sent.push(...body.changes);
+        return { cursor: 1, hasMore: false, records: [rec("filter", filter("remote", 70))] };
+      },
+    });
+    expect(sent.map((c) => c.id)).toEqual(["local"]);
+    expect(data.filters.map((f) => f.id).sort()).toEqual(["local", "remote"]);
   });
 });

@@ -108,6 +108,28 @@ describe("syncForUser", () => {
     expect((b.records.find((r) => r.id === "shared-id")?.data as Item).title).toBe("bob's");
   });
 
+  it("stores saved filters as their own collection", async () => {
+    const filter = {
+      id: "f-1",
+      name: "Urgent",
+      criteria: { priorities: ["high"] },
+      createdAt: 1,
+      updatedAt: 10,
+    };
+    const before = await syncForUser(db, "alice", { cursor: 0, changes: [] });
+    await syncForUser(db, "alice", {
+      cursor: 0,
+      changes: [{ collection: "filter", id: "f-1", updatedAt: 10, deleted: false, data: filter }],
+    });
+    const after = await syncForUser(db, "alice", { cursor: before.cursor, changes: [] });
+    expect(after.records).toHaveLength(1);
+    expect(after.records[0]).toMatchObject({
+      collection: "filter",
+      id: "f-1",
+      data: { name: "Urgent", criteria: { priorities: ["high"], status: "open" } },
+    });
+  });
+
   it("discards malformed and oversized changes without failing the request", async () => {
     const huge = { ...item("huge", 10), body: "x".repeat(250_000) };
     const result = await syncForUser(db, "alice", {

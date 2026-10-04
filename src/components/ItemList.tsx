@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import {
+  Archive,
+  ArchiveRestore,
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
@@ -27,6 +29,8 @@ import {
 } from "lucide-react";
 import clsx from "clsx";
 import {
+  activeLists,
+  archivedListIds,
   dueBucket,
   ENERGY_OPTIONS,
   filterByEnergy,
@@ -40,6 +44,7 @@ import {
   resolveGroupBy,
   itemTags,
   parseQuickAdd,
+  quickAddDefaults,
   subtaskProgress,
   viewKey,
   viewTitle,
@@ -57,7 +62,7 @@ import { DragHandle, DropLine, useReorder } from "./Reorder";
 import { TemplatesMenu } from "./TemplatesMenu";
 import { runningEntry } from "@/lib/time-tracking";
 import { INBOX_ID, type Item, type ItemKind, type ItemSort, type Priority } from "@/lib/types";
-import { addDays, displayTitle, formatDueRange, formatDueWithTime, getSnippet } from "@/lib/utils";
+import { displayTitle, formatDueRange, formatDueWithTime, getSnippet } from "@/lib/utils";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
 
@@ -402,10 +407,12 @@ export function ItemList() {
   const items = useWorkspace((s) => s.items);
   const lists = useWorkspace((s) => s.lists);
   const folders = useWorkspace((s) => s.folders);
+  const filters = useWorkspace((s) => s.filters);
   const addItem = useWorkspace((s) => s.addItem);
   const emptyTrash = useWorkspace((s) => s.emptyTrash);
   const renameList = useWorkspace((s) => s.renameList);
   const moveList = useWorkspace((s) => s.moveList);
+  const setListArchived = useWorkspace((s) => s.setListArchived);
   const deleteList = useWorkspace((s) => s.deleteList);
   const addSection = useWorkspace((s) => s.addSection);
   const renameSection = useWorkspace((s) => s.renameSection);
@@ -431,8 +438,15 @@ export function ItemList() {
   const energyFilter = useUi((s) => s.energyFilter);
   const setEnergyFilter = useUi((s) => s.setEnergyFilter);
   const visible = useMemo(
-    () => filterByEnergy(filterItems(items, view, query, today, sort), energyFilter),
-    [items, view, query, today, sort, energyFilter],
+    () =>
+      filterByEnergy(
+        filterItems(items, view, query, today, sort, {
+          filters,
+          archived: archivedListIds(lists),
+        }),
+        energyFilter,
+      ),
+    [items, view, query, today, sort, energyFilter, filters, lists],
   );
 
   const isContainer = view.kind === "list" || (view.kind === "smart" && view.id === "inbox");
@@ -448,7 +462,7 @@ export function ItemList() {
   const openCount = main.filter((i) => i.kind === "task").length;
 
   const currentList = view.kind === "list" ? lists.find((l) => l.id === view.id) : undefined;
-  const title = viewTitle(view, lists);
+  const title = viewTitle(view, lists, filters);
   const hasSections = Boolean(currentList && currentList.sections.length > 0);
   const groupBy = resolveGroupBy(groupChoices?.[viewKey(view)], {
     hasSections,
@@ -464,13 +478,11 @@ export function ItemList() {
       return next;
     });
 
-  const listId = view.kind === "list" ? view.id : INBOX_ID;
-  const defaultDue =
-    view.kind === "smart" && (view.id === "today" || view.id === "week")
-      ? today
-      : view.kind === "smart" && view.id === "tomorrow"
-        ? addDays(today, 1)
-        : null;
+  const {
+    listId,
+    priority: defaultPriority,
+    due: defaultDue,
+  } = quickAddDefaults(view, today, filters);
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -480,11 +492,11 @@ export function ItemList() {
     if (kind === "note") {
       selectItem(addItem({ kind, title: `${draft.trim()}${tagSuffix}`, listId }));
     } else {
-      const parsed = parseQuickAdd(draft, today, lists);
+      const parsed = parseQuickAdd(draft, today, activeLists(lists));
       addItem({
         kind,
         title: `${parsed.title}${tagSuffix}`,
-        priority: parsed.priority,
+        priority: parsed.priority !== "none" ? parsed.priority : defaultPriority,
         due: parsed.due ?? defaultDue,
         dueTime: parsed.dueTime ?? null,
         estimate: parsed.estimate ?? null,
@@ -494,7 +506,8 @@ export function ItemList() {
     setDraft("");
   };
 
-  const preview = kind === "task" && draft.trim() ? parseQuickAdd(draft, today, lists) : null;
+  const preview =
+    kind === "task" && draft.trim() ? parseQuickAdd(draft, today, activeLists(lists)) : null;
   const previewParts = preview
     ? [
         preview.due ? formatDueWithTime(preview.due, preview.dueTime, today) : "",
@@ -521,7 +534,9 @@ export function ItemList() {
             : view.kind === "smart" &&
                 (view.id === "today" || view.id === "tomorrow" || view.id === "week")
               ? "Nothing due. Enjoy the calm."
-              : "Nothing here yet. Add a task or note above.";
+              : view.kind === "filter"
+                ? "Nothing matches this filter."
+                : "Nothing here yet. Add a task or note above.";
 
   // Manual order can be changed by dragging (or Alt+Arrow keys) in a list or the Inbox, when nothing is hidden by a
   // search or filter. Elsewhere the order is still shown, just not editable.
@@ -703,6 +718,11 @@ export function ItemList() {
         <h1 className="heading-display min-w-0 max-w-full truncate text-2xl font-semibold">
           {title}
         </h1>
+        {currentList?.archivedAt ? (
+          <span className="mt-1 rounded-md bg-stone-100 px-1.5 py-0.5 text-xs font-medium text-stone-600 dark:bg-stone-800 dark:text-stone-300">
+            Archived
+          </span>
+        ) : null}
         {!isReadOnlyView && openCount > 0 && (
           <span className="mt-1 text-sm tabular-nums text-stone-400 dark:text-stone-500">
             {openCount}
@@ -872,6 +892,24 @@ export function ItemList() {
                         ))}
                       </select>
                     </label>
+                    <MenuItem
+                      onClick={() => {
+                        setMenuOpen(false);
+                        const archive = !currentList.archivedAt;
+                        setListArchived(currentList.id, archive);
+                        if (archive) setView({ kind: "smart", id: "inbox" });
+                      }}
+                    >
+                      {currentList.archivedAt ? (
+                        <>
+                          <ArchiveRestore size={15} aria-hidden /> Restore list
+                        </>
+                      ) : (
+                        <>
+                          <Archive size={15} aria-hidden /> Archive list
+                        </>
+                      )}
+                    </MenuItem>
                     <div className="my-1 border-t border-stone-200 dark:border-stone-700" />
                     <MenuItem
                       danger

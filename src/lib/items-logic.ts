@@ -5,12 +5,14 @@ import {
   type ItemSort,
   type ListSection,
   type Priority,
+  type SavedFilter,
   type SmartViewId,
   type TaskList,
   type View,
 } from "./types";
 import { parseDuration } from "./duration";
 import { compareOrder } from "./ordering";
+import { findFilter, matchesCriteria } from "./filters";
 import { countSubtasks, flattenSubtasks } from "./subtasks";
 import { addDays, displayTitle, extractTags } from "./utils";
 
@@ -46,15 +48,36 @@ export function itemTags(item: Pick<Item, "title" | "body">): string[] {
   return extractTags(`${item.title}\n${item.body}`);
 }
 
+/**
+ * What some views need besides the items: saved filters for filter views, and the ids of archived lists, whose
+ * items only show up in the list itself (and in filters that name it).
+ */
+export type ViewContext = { filters?: SavedFilter[]; archived?: ReadonlySet<string> };
+
+export const isArchived = (list: Pick<TaskList, "archivedAt">): boolean => Boolean(list.archivedAt);
+
+/** Lists that are not archived, for the sidebar, pickers and quick add. */
+export const activeLists = <T extends Pick<TaskList, "archivedAt">>(lists: T[]): T[] =>
+  lists.filter((l) => !isArchived(l));
+
+/** Archived lists, most recently archived first. */
+export const archivedLists = <T extends Pick<TaskList, "archivedAt">>(lists: T[]): T[] =>
+  lists.filter(isArchived).sort((a, b) => (b.archivedAt ?? 0) - (a.archivedAt ?? 0));
+
+export const archivedListIds = (lists: TaskList[]): ReadonlySet<string> =>
+  new Set(archivedLists(lists).map((l) => l.id));
+
 export function sameView(a: View, b: View): boolean {
   if (a.kind !== b.kind) return false;
   if (a.kind === "smart" && b.kind === "smart") return a.id === b.id;
   if (a.kind === "list" && b.kind === "list") return a.id === b.id;
+  if (a.kind === "filter" && b.kind === "filter") return a.id === b.id;
   return a.kind === "tag" && b.kind === "tag" && a.tag === b.tag;
 }
 
-export function viewTitle(view: View, lists: TaskList[]): string {
+export function viewTitle(view: View, lists: TaskList[], filters: SavedFilter[] = []): string {
   if (view.kind === "tag") return `#${view.tag}`;
+  if (view.kind === "filter") return findFilter(filters, view.id)?.name ?? "Filter";
   if (view.kind === "list") {
     return view.id === INBOX_ID ? "Inbox" : (lists.find((l) => l.id === view.id)?.name ?? "List");
   }
@@ -62,11 +85,16 @@ export function viewTitle(view: View, lists: TaskList[]): string {
 }
 
 /** Does the item belong in the view at all (before hiding finished tasks)? */
-function matchesView(item: Item, view: View, today: string): boolean {
+function matchesView(item: Item, view: View, today: string, ctx: ViewContext): boolean {
   if (view.kind === "smart" && view.id === "trash") return item.deletedAt !== null;
   if (item.deletedAt !== null || item.template) return false;
 
   if (view.kind === "list") return item.listId === view.id;
+  if (view.kind === "filter") {
+    const filter = findFilter(ctx.filters ?? [], view.id);
+    return filter ? matchesCriteria(item, filter.criteria, today, ctx.archived) : false;
+  }
+  if (ctx.archived?.has(item.listId)) return false;
   if (view.kind === "tag") {
     return (item.kind === "note" || isOpenTask(item)) && itemTags(item).includes(view.tag);
   }
@@ -149,9 +177,10 @@ export function filterItems(
   query: string,
   today: string,
   sort: ItemSort = "default",
+  ctx: ViewContext = {},
 ): Item[] {
   const q = query.trim().toLowerCase();
-  const inView = items.filter((item) => matchesView(item, view, today));
+  const inView = items.filter((item) => matchesView(item, view, today, ctx));
   const matching = q
     ? inView.filter(
         (item) =>
@@ -164,18 +193,29 @@ export function filterItems(
 }
 
 /** Number shown next to a view: open tasks and notes, or all matches for finished/trash views. */
-export function countInView(items: Item[], view: View, today: string): number {
-  const matches = items.filter((item) => matchesView(item, view, today));
-  const isContainer = view.kind === "list" || (view.kind === "smart" && view.id === "inbox");
+export function countInView(
+  items: Item[],
+  view: View,
+  today: string,
+  ctx: ViewContext = {},
+): number {
+  const matches = items.filter((item) => matchesView(item, view, today, ctx));
+  const isContainer =
+    view.kind === "list" ||
+    (view.kind === "smart" && view.id === "inbox") ||
+    (view.kind === "filter" && findFilter(ctx.filters ?? [], view.id)?.criteria.status === "all");
   return isContainer
     ? matches.filter((item) => item.kind === "note" || item.status === "open").length
     : matches.length;
 }
 
-export function collectTags(items: Item[]): { tag: string; count: number }[] {
+export function collectTags(
+  items: Item[],
+  archived: ReadonlySet<string> = new Set(),
+): { tag: string; count: number }[] {
   const counts = new Map<string, number>();
   for (const item of items) {
-    if (item.deletedAt !== null || item.template) continue;
+    if (item.deletedAt !== null || item.template || archived.has(item.listId)) continue;
     if (!(item.kind === "note" || isOpenTask(item))) continue;
     for (const tag of itemTags(item)) counts.set(tag, (counts.get(tag) ?? 0) + 1);
   }
@@ -315,6 +355,40 @@ export function parseQuickAdd(
   if (result.dueTime && !result.due) result.due = today;
   result.title = kept.join(" ").trim() || input.trim();
   return result;
+}
+
+/**
+ * Where quick add puts a new task in a view and what it starts with: the open list (or the Inbox), today or tomorrow
+ * in date views, and in a filter view the filter's first list and priority and a date it allows.
+ */
+export function quickAddDefaults(
+  view: View,
+  today: string,
+  filters: SavedFilter[] = [],
+): { listId: string; priority: Priority; due: string | null } {
+  if (view.kind === "list") return { listId: view.id, priority: "none", due: null };
+  if (view.kind === "smart") {
+    const due =
+      view.id === "today" || view.id === "week"
+        ? today
+        : view.id === "tomorrow"
+          ? addDays(today, 1)
+          : null;
+    return { listId: INBOX_ID, priority: "none", due };
+  }
+  const criteria = view.kind === "filter" ? findFilter(filters, view.id)?.criteria : undefined;
+  if (!criteria) return { listId: INBOX_ID, priority: "none", due: null };
+  const due =
+    criteria.due === "today" || criteria.due === "next7"
+      ? today
+      : criteria.due === "range"
+        ? (criteria.dueFrom ?? criteria.dueTo)
+        : null;
+  return {
+    listId: criteria.lists[0] ?? INBOX_ID,
+    priority: criteria.priorities[0] ?? "none",
+    due,
+  };
 }
 
 export type SectionGroup = { section: ListSection | null; items: Item[] };

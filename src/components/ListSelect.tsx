@@ -1,5 +1,6 @@
 "use client";
 
+import { isArchived } from "@/lib/items-logic";
 import { INBOX_ID } from "@/lib/types";
 import { useWorkspace } from "@/store/workspace";
 
@@ -14,8 +15,10 @@ export function ListSelect({
   label?: string;
   className?: string;
 }) {
-  const lists = useWorkspace((s) => s.lists);
+  const allLists = useWorkspace((s) => s.lists);
   const folders = useWorkspace((s) => s.folders);
+  // Archived lists are not offered as targets; the current one stays selectable so the value still shows.
+  const lists = allLists.filter((l) => !isArchived(l) || l.id === value);
   const topLevel = lists.filter((l) => !l.folderId || !folders.some((f) => f.id === l.folderId));
 
   return (

@@ -113,6 +113,8 @@ export type TaskList = {
   order?: number;
   createdAt: number;
   updatedAt: number;
+  /** Set while the list is archived: hidden from the sidebar's lists, pickers and smart views. */
+  archivedAt?: number | null;
 };
 
 export type Folder = {
@@ -122,7 +124,37 @@ export type Folder = {
   updatedAt: number;
 };
 
-export type SyncCollection = "item" | "list" | "folder";
+/** Due-date rule of a saved filter; "range" uses `dueFrom`/`dueTo` (either may be open-ended). */
+export type FilterDue = "any" | "overdue" | "today" | "next7" | "nodate" | "range";
+export type FilterStatus = "open" | "done" | "wontdo" | "all";
+export type FilterKind = "both" | "task" | "note";
+
+/**
+ * What a saved filter matches. Empty arrays mean "any". Within one criterion any value may match; all criteria must
+ * match together. Notes have no priority, due date, energy or status, so those criteria only ever match tasks.
+ */
+export type FilterCriteria = {
+  kind: FilterKind;
+  /** List ids, including "inbox". */
+  lists: string[];
+  tags: string[];
+  priorities: Priority[];
+  due: FilterDue;
+  dueFrom: string | null;
+  dueTo: string | null;
+  energies: Energy[];
+  status: FilterStatus;
+};
+
+export type SavedFilter = {
+  id: string;
+  name: string;
+  criteria: FilterCriteria;
+  createdAt: number;
+  updatedAt: number;
+};
+
+export type SyncCollection = "item" | "list" | "folder" | "filter";
 
 /** Records that something was permanently deleted, so the deletion can reach other devices. */
 export type Tombstone = {
@@ -135,7 +167,10 @@ export type SmartViewId =
   "inbox" | "today" | "tomorrow" | "week" | "all" | "completed" | "wontdo" | "trash";
 
 export type View =
-  { kind: "smart"; id: SmartViewId } | { kind: "list"; id: string } | { kind: "tag"; tag: string };
+  | { kind: "smart"; id: SmartViewId }
+  | { kind: "list"; id: string }
+  | { kind: "tag"; tag: string }
+  | { kind: "filter"; id: string };
 
 export type ItemSort = "default" | "manual" | "due" | "priority" | "title" | "updated";
 
@@ -146,4 +181,6 @@ export type Backup = {
   items: Item[];
   lists: TaskList[];
   folders: Folder[];
+  /** Saved filters; absent in backups made before filters existed. */
+  filters?: SavedFilter[];
 };

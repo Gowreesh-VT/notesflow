@@ -50,9 +50,9 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 
 - [x] Move or copy a task to another list, from the detail panel and the list context
 - [x] [BIG] Multi-select with batch edit: set date, priority, list, tags or energy, complete, and delete many tasks at once
-- [ ] [BIG] Saved filters: combine list, tag, priority, due range, energy and status; pinned in the sidebar under "Filters"
+- [x] [BIG] Saved filters: combine list, tag, priority, due range, energy and status; pinned in the sidebar under "Filters"
 - [x] Rename or merge a tag across all items from the sidebar
-- [ ] Archive lists: hide finished lists in an "Archived lists" section, restorable
+- [x] Archive lists: hide finished lists in an "Archived lists" section, restorable
 - [x] Drag-and-drop ordering of tasks within a list or section, and of lists in the sidebar
 - [x] Group a list by due date, priority, section or tag
 - [x] Note-to-task: turn the unchecked checklist lines of a note into real tasks
