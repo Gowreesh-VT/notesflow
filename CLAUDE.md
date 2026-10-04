@@ -54,10 +54,14 @@ sync), (3) the store's `addItem`/mutations, which must bump `updatedAt` (last wr
 `version` + `migrate` if existing local data needs a default. Add a test for each. Permanent deletions must create a
 tombstone. A feature that is not synced is incomplete.
 Prefer **optional** item fields (`dueTime`, `startDate`, `estimate`, `timeEntries`, `outcome`, `energy`, `template`,
-`reminders`, `constantReminder`, `snoozedUntil`, `repeat`): write them
+`reminders`, `constantReminder`, `snoozedUntil`, `repeat`, `order`, `dailyNote`; lists: `order`, `archivedAt`): write them
 in `optionalItemFields` in `backup.ts` only when set, and list them in `OPTIONAL_FIELDS` in `src/store/workspace.ts`
 so a null or empty value is deleted instead of stored. Then no store migration or fixture changes are needed.
 Templates are items with `template: true`; every view, count and tag list must keep excluding them.
+Saved filters are a fourth synced collection (`"filter"`, `SavedFilter` in `types.ts`): a new collection must be added
+everywhere `COLLECTIONS` is used (sync, backup, store, SyncRunner). Archived lists (`archivedAt`) and their items stay
+out of smart views, counts, tags and list pickers (use `activeLists`/`isArchived` from `items-logic.ts`).
+`filterItems`/`countInView` take an optional context with the saved filters and archived list ids; pass it.
 Completing a repeating task goes through `setStatus`, which returns the id of the finished copy; use that id for
 anything that follows completion (such as the outcome prompt). Reminder firing state (`src/store/alarms.ts`) and
 reminder settings live on the device only and are never synced.
