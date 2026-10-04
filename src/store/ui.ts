@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { isGroupBy, type GroupBy } from "@/lib/items-logic";
 import { cleanOutcomeLabels, DEFAULT_OUTCOME_LABELS } from "@/lib/outcomes";
 import { DEFAULT_REMINDER_TIME, isClock, type QuietHours } from "@/lib/reminders";
 import type { Energy, ItemSort, View } from "@/lib/types";
@@ -13,6 +14,8 @@ type UiState = {
   theme: Theme;
   editorMode: EditorMode;
   sort: ItemSort;
+  /** Grouping chosen per view (keyed by `viewKey`); views without a choice use their default grouping. */
+  groupBy: Record<string, GroupBy>;
   view: View;
   query: string;
   selectedItemId: string | null;
@@ -35,6 +38,7 @@ type UiState = {
   setTheme: (theme: Theme) => void;
   setEditorMode: (mode: EditorMode) => void;
   setSort: (sort: ItemSort) => void;
+  setGroupBy: (viewKey: string, groupBy: GroupBy) => void;
   setView: (view: View) => void;
   setQuery: (query: string) => void;
   selectItem: (id: string | null) => void;
@@ -56,6 +60,7 @@ export const useUi = create<UiState>()(
       theme: "system",
       editorMode: "split",
       sort: "default",
+      groupBy: {},
       view: INBOX_VIEW,
       query: "",
       selectedItemId: null,
@@ -72,6 +77,9 @@ export const useUi = create<UiState>()(
       setTheme: (theme) => set({ theme }),
       setEditorMode: (editorMode) => set({ editorMode }),
       setSort: (sort) => set({ sort }),
+      setGroupBy: (viewKey, groupBy) => {
+        if (isGroupBy(groupBy)) set((s) => ({ groupBy: { ...s.groupBy, [viewKey]: groupBy } }));
+      },
       setView: (view) => set({ view, query: "", selectedItemId: null, sidebarOpen: false }),
       setQuery: (query) => set({ query }),
       selectItem: (selectedItemId) => set({ selectedItemId }),
@@ -98,6 +106,7 @@ export const useUi = create<UiState>()(
         theme: s.theme,
         editorMode: s.editorMode,
         sort: s.sort,
+        groupBy: s.groupBy,
         sidebarCollapsed: s.sidebarCollapsed,
         outcomeLabels: s.outcomeLabels,
         defaultReminderTime: s.defaultReminderTime,

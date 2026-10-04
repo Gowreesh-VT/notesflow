@@ -6,8 +6,12 @@ import {
   filterByEnergy,
   filterItems,
   groupByDue,
+  groupByPriority,
   groupBySections,
+  groupByTag,
   isEnergy,
+  resolveGroupBy,
+  viewKey,
   listTemplates,
   moveSectionBy,
   parseClock,
@@ -363,5 +367,57 @@ describe("manual order", () => {
       "a",
       "b",
     ]);
+  });
+});
+
+describe("grouping", () => {
+  const ids = (groups: { id: string; items: Item[] }[]) =>
+    groups.map((g) => `${g.id}=${g.items.map((i) => i.id).join(",")}`);
+
+  it("groups by priority, high first, notes last, keeping order and skipping empty groups", () => {
+    const items = [
+      make("n", { kind: "note" }),
+      make("l1", { priority: "low" }),
+      make("h", { priority: "high" }),
+      make("x"),
+      make("l2", { priority: "low" }),
+    ];
+    expect(ids(groupByPriority(items))).toEqual(["high=h", "low=l1,l2", "none=x", "notes=n"]);
+    expect(groupByPriority(items).map((g) => g.label)).toEqual([
+      "High priority",
+      "Low priority",
+      "No priority",
+      "Notes",
+    ]);
+  });
+
+  it("groups by tag alphabetically, listing multi-tag items under each tag and untagged items last", () => {
+    const items = [
+      make("both", { title: "Plan #work #home" }),
+      make("plain"),
+      make("note", { kind: "note", title: "Idea", body: "about #home" }),
+      make("w", { title: "Ship #work" }),
+    ];
+    expect(ids(groupByTag(items))).toEqual(["#home=both,note", "#work=both,w", "none=plain"]);
+    expect(groupByTag(items).map((g) => g.label)).toEqual(["#home", "#work", "No tag"]);
+    expect(groupByTag([make("a", { title: "x #t" })]).map((g) => g.id)).toEqual(["#t"]);
+  });
+
+  it("keys views for per-view settings", () => {
+    expect(viewKey(smart("today"))).toBe("smart:today");
+    expect(viewKey({ kind: "list", id: "abc" })).toBe("list:abc");
+    expect(viewKey({ kind: "tag", tag: "work" })).toBe("tag:work");
+  });
+
+  it("uses the chosen grouping, or a sensible default", () => {
+    const ctx = { hasSections: false, sort: "default" as const, readOnly: false };
+    expect(resolveGroupBy(undefined, ctx)).toBe("due");
+    expect(resolveGroupBy(undefined, { ...ctx, readOnly: true })).toBe("none");
+    expect(resolveGroupBy(undefined, { ...ctx, sort: "manual" })).toBe("none");
+    expect(resolveGroupBy(undefined, { ...ctx, hasSections: true })).toBe("section");
+    expect(resolveGroupBy("tag", { ...ctx, hasSections: true })).toBe("tag");
+    expect(resolveGroupBy("priority", ctx)).toBe("priority");
+    expect(resolveGroupBy("section", ctx)).toBe("due");
+    expect(resolveGroupBy("bogus", ctx)).toBe("due");
   });
 });

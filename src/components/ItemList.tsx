@@ -11,6 +11,7 @@ import {
   ChevronRight,
   FileText,
   FolderInput,
+  Group as GroupIcon,
   Hourglass,
   ListChecks,
   Menu,
@@ -30,12 +31,18 @@ import {
   filterByEnergy,
   filterItems,
   isEnergy,
+  GROUP_BY_OPTIONS,
   groupByDue,
+  groupByPriority,
   groupBySections,
+  groupByTag,
+  resolveGroupBy,
   itemTags,
   parseQuickAdd,
   subtaskProgress,
+  viewKey,
   viewTitle,
+  type GroupBy,
 } from "@/lib/items-logic";
 import { formatDuration } from "@/lib/duration";
 import { planMove, planStep } from "@/lib/ordering";
@@ -334,6 +341,8 @@ export function ItemList() {
   const { view, query, sort, selectedItemId } = useUi();
   const setQuery = useUi((s) => s.setQuery);
   const setSort = useUi((s) => s.setSort);
+  const groupChoices = useUi((s) => s.groupBy);
+  const setGroupBy = useUi((s) => s.setGroupBy);
   const selectItem = useUi((s) => s.selectItem);
   const setView = useUi((s) => s.setView);
   const setSidebarOpen = useUi((s) => s.setSidebarOpen);
@@ -365,6 +374,12 @@ export function ItemList() {
 
   const currentList = view.kind === "list" ? lists.find((l) => l.id === view.id) : undefined;
   const title = viewTitle(view, lists);
+  const hasSections = Boolean(currentList && currentList.sections.length > 0);
+  const groupBy = resolveGroupBy(groupChoices?.[viewKey(view)], {
+    hasSections,
+    sort,
+    readOnly: isReadOnlyView,
+  });
 
   const toggleGroup = (id: string) =>
     setCollapsed((prev) => {
@@ -493,7 +508,7 @@ export function ItemList() {
   };
 
   const renderGroups = () => {
-    if (currentList && currentList.sections.length > 0) {
+    if (groupBy === "section" && currentList) {
       return groupBySections(main, currentList.sections).map(({ section, items: group }) =>
         section ? (
           <section key={section.id} aria-label={section.name}>
@@ -574,20 +589,29 @@ export function ItemList() {
         ),
       );
     }
-    if (sort === "default" && !isReadOnlyView) {
-      return groupByDue(main, today).map((group) => (
-        <section key={group.id} aria-label={group.label}>
+    if (groupBy === "none" || groupBy === "section") {
+      return <div className="pt-2">{rows(main, !isContainer, "all")}</div>;
+    }
+    const groups =
+      groupBy === "due"
+        ? groupByDue(main, today)
+        : groupBy === "priority"
+          ? groupByPriority(main)
+          : groupByTag(main);
+    return groups.map((group) => {
+      const key = `${groupBy}:${group.id}`;
+      return (
+        <section key={key} aria-label={group.label}>
           <GroupHeader
             label={group.label}
             count={group.items.length}
-            open={!collapsed.has(group.id)}
-            onToggle={() => toggleGroup(group.id)}
+            open={!collapsed.has(key)}
+            onToggle={() => toggleGroup(key)}
           />
-          {!collapsed.has(group.id) && rows(group.items, !isContainer)}
+          {!collapsed.has(key) && rows(group.items, !isContainer, key)}
         </section>
-      ));
-    }
-    return <div className="pt-2">{rows(main, !isContainer, "all")}</div>;
+      );
+    });
   };
 
   return (
@@ -649,6 +673,26 @@ export function ItemList() {
             >
               <option value="">Any energy</option>
               {ENERGY_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="relative">
+            <span className="sr-only">Group by</span>
+            <GroupIcon
+              size={15}
+              aria-hidden
+              className="pointer-events-none absolute left-2.5 top-2.5 text-stone-500"
+            />
+            <select
+              aria-label="Group by"
+              value={groupBy}
+              onChange={(e) => setGroupBy(viewKey(view), e.target.value as GroupBy)}
+              className="cursor-pointer appearance-none rounded-xl bg-transparent py-1.5 pl-8 pr-2 text-sm text-stone-600 hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-accent-500 dark:text-stone-300 dark:hover:bg-stone-800"
+            >
+              {GROUP_BY_OPTIONS.filter((o) => o.value !== "section" || hasSections).map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
                 </option>
