@@ -71,7 +71,7 @@ async function syncRound(): Promise<void> {
   sync.setState({ status: "syncing", error: null });
   try {
     const workspace = useWorkspace;
-    await syncOnce({
+    const result = await syncOnce({
       getData: () => {
         const { items, lists, folders, tombstones } = workspace.getState();
         return { items, lists, folders, tombstones };
@@ -82,7 +82,12 @@ async function syncRound(): Promise<void> {
       setState: (s) => sync.setState(s),
       post,
     });
-    sync.setState({ status: "synced", lastSyncedAt: Date.now(), error: null });
+    sync.setState({
+      status: "synced",
+      lastSyncedAt: Date.now(),
+      error: null,
+      ...(result.conflicts ? { conflictsResolved: result.conflicts, conflictsAt: Date.now() } : {}),
+    });
   } catch (error) {
     if (error instanceof TypeError || navigator.onLine === false) {
       sync.setState({ status: "offline", error: null });

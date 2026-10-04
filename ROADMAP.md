@@ -43,7 +43,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 - [x] [BIG] Recurring tasks: daily, weekly, monthly, yearly, custom intervals, and "repeat after completion"
 - [x] Smarter quick add: times ("5pm"), weekdays ("mon", "next friday"), `@list`, `#tag`, `!priority` and `~estimate`
 - [x] Start date on tasks, so a task can span a date range
-- [ ] Offline and sync status banner: clear states for offline, syncing, failed, and conflicts resolved
+- [x] Offline and sync status banner: clear states for offline, syncing, failed, and conflicts resolved
 - [ ] Notification and reminder settings (quiet hours, default reminder time)
 
 ### Phase 3 — Organise (days 20–28)

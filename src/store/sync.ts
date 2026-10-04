@@ -11,6 +11,9 @@ type SyncStore = {
   status: SyncStatus;
   lastSyncedAt: number | null;
   error: string | null;
+  /** Records where this device and another both changed something; the newest change was kept. */
+  conflictsResolved: number;
+  conflictsAt: number | null;
   reset: () => void;
 };
 
@@ -23,6 +26,8 @@ export const useSyncStore = create<SyncStore>()(
       status: "idle",
       lastSyncedAt: null,
       error: null,
+      conflictsResolved: 0,
+      conflictsAt: null,
       reset: () =>
         set({
           userId: null,
@@ -31,6 +36,8 @@ export const useSyncStore = create<SyncStore>()(
           status: "idle",
           lastSyncedAt: null,
           error: null,
+          conflictsResolved: 0,
+          conflictsAt: null,
         }),
     }),
     {

@@ -206,7 +206,7 @@ describe("syncOnce", () => {
       [{ cursor: 9, hasMore: false, records: [rec("item", item("remote", { updatedAt: 70 }))] }],
     );
     const result = await syncOnce(t.deps);
-    expect(result).toEqual({ pushed: 2, pulled: 1 });
+    expect(result).toEqual({ pushed: 2, pulled: 1, conflicts: 0 });
     expect(t.posts[0].cursor).toBe(5);
     expect(t.posts[0].changes.map((c) => c.id)).toEqual(["local", "x"]);
     expect(
@@ -244,5 +244,35 @@ describe("syncOnce", () => {
     await expect(syncOnce(t.deps)).rejects.toThrow("unexpected extra request");
     expect(t.state()).toEqual({ cursor: 3, lastPushAt: 1 });
     expect(t.data().tombstones).toHaveLength(1);
+  });
+});
+
+describe("conflicts", () => {
+  it("counts records changed both here (since the last push) and elsewhere", () => {
+    const note = (id: string, updatedAt: number) => ({
+      id,
+      kind: "note",
+      title: id,
+      body: "",
+      listId: INBOX_ID,
+      createdAt: 1,
+      updatedAt,
+    });
+    const record = (id: string, updatedAt: number) => ({
+      collection: "item" as const,
+      id,
+      updatedAt,
+      deleted: false,
+      data: note(id, updatedAt),
+    });
+    const data = {
+      items: [note("edited", 50), note("old", 5)] as unknown as Item[],
+      lists: [],
+      folders: [],
+      tombstones: [],
+    };
+    // "edited" changed here after the last push (40) and elsewhere; "old" only changed elsewhere.
+    expect(applyRecords(data, [record("edited", 60), record("old", 70)], 40).conflicts).toBe(1);
+    expect(applyRecords(data, [record("edited", 50)], 40).conflicts).toBe(0);
   });
 });

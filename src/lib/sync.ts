@@ -103,9 +103,11 @@ function mergeCollection<T extends { id: string; updatedAt: number }>(
   incoming: SyncRecord[],
   tombstones: Tombstone[],
   collection: SyncCollection,
-): { next: T[]; changed: boolean } {
+  since: number,
+): { next: T[]; changed: boolean; conflicts: number } {
   const byId = new Map(local.map((x) => [x.id, x]));
   let changed = false;
+  let conflicts = 0;
 
   for (const record of incoming) {
     if (record.collection !== collection) continue;
@@ -113,6 +115,10 @@ function mergeCollection<T extends { id: string; updatedAt: number }>(
     const deletedLocallyAt = tombstones.find(
       (t) => t.collection === collection && t.id === record.id,
     )?.at;
+    // Both this device (since its last push) and another device changed the record: last write wins.
+    if (existing && existing.updatedAt >= since && record.updatedAt !== existing.updatedAt) {
+      conflicts++;
+    }
 
     if (record.deleted) {
       if (existing && existing.updatedAt <= record.updatedAt) {
@@ -128,23 +134,25 @@ function mergeCollection<T extends { id: string; updatedAt: number }>(
     }
   }
 
-  return { next: changed ? [...byId.values()] : local, changed };
+  return { next: changed ? [...byId.values()] : local, changed, conflicts };
 }
 
 /** Last-write-wins merge of records from the server into local data. Returns the same arrays if nothing changed. */
 export function applyRecords(
   data: SyncData,
   records: SyncRecord[],
-): { data: SyncData; changed: boolean } {
+  since = Infinity,
+): { data: SyncData; changed: boolean; conflicts: number } {
   const valid = records.flatMap((r) => sanitizeRecord(r) ?? []);
   // Keep the original (possibly large) updatedAt values: sanitizeRecord preserves them.
-  const items = mergeCollection(data.items, valid, data.tombstones, "item");
-  const lists = mergeCollection(data.lists, valid, data.tombstones, "list");
-  const folders = mergeCollection(data.folders, valid, data.tombstones, "folder");
+  const items = mergeCollection(data.items, valid, data.tombstones, "item", since);
+  const lists = mergeCollection(data.lists, valid, data.tombstones, "list", since);
+  const folders = mergeCollection(data.folders, valid, data.tombstones, "folder", since);
   const changed = items.changed || lists.changed || folders.changed;
   return {
     data: { ...data, items: items.next, lists: lists.next, folders: folders.next },
     changed,
+    conflicts: items.conflicts + lists.conflicts + folders.conflicts,
   };
 }
 
@@ -162,7 +170,9 @@ export type SyncDeps = {
 const MAX_PAGES = 20;
 
 /** Pushes local changes, then pulls everything new from the server. Throws if the network call fails. */
-export async function syncOnce(deps: SyncDeps): Promise<{ pushed: number; pulled: number }> {
+export async function syncOnce(
+  deps: SyncDeps,
+): Promise<{ pushed: number; pulled: number; conflicts: number }> {
   const state = deps.getState();
   const snapshot = deps.getData();
   const changes = collectChanges(snapshot, state.lastPushAt);
@@ -170,12 +180,14 @@ export async function syncOnce(deps: SyncDeps): Promise<{ pushed: number; pulled
 
   let cursor = state.cursor;
   let pulled = 0;
+  let conflicts = 0;
   let outgoing = changes;
 
   for (let page = 0; page < MAX_PAGES; page++) {
     const response = await deps.post({ cursor, changes: outgoing });
     outgoing = [];
-    const merged = applyRecords(deps.getData(), response.records);
+    const merged = applyRecords(deps.getData(), response.records, state.lastPushAt);
+    conflicts += merged.conflicts;
     if (merged.changed) {
       deps.setData({
         items: merged.data.items,
@@ -191,5 +203,5 @@ export async function syncOnce(deps: SyncDeps): Promise<{ pushed: number; pulled
   deps.dropTombstones(sentTombstones);
   const newest = changes.reduce((max, c) => Math.max(max, c.updatedAt), state.lastPushAt);
   deps.setState({ cursor, lastPushAt: newest });
-  return { pushed: changes.length, pulled };
+  return { pushed: changes.length, pulled, conflicts };
 }

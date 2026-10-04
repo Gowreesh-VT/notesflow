@@ -9,6 +9,7 @@ import { upgradeLegacyStorage, useWorkspace } from "@/store/workspace";
 import { NavRail } from "./NavRail";
 import { OutcomePrompt } from "./Outcome";
 import { ReminderRunner } from "./ReminderRunner";
+import { SyncBanner } from "./SyncBanner";
 import { CommandPalette } from "./CommandPalette";
 import { ShortcutHelp } from "./ShortcutHelp";
 import { Sidebar } from "./Sidebar";
@@ -88,6 +89,7 @@ export function AppShell() {
       <NavRail />
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
+        {ready && <SyncBanner />}
         <main id="main" className="min-h-0 flex-1 bg-white dark:bg-stone-900">
           {!ready ? (
             <p className="p-6 text-sm text-stone-500" role="status">
