@@ -1,9 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, Copy, Download, Pin, PinOff, RotateCcw, Trash2, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Copy,
+  Download,
+  ListChecks,
+  Pin,
+  PinOff,
+  RotateCcw,
+  Trash2,
+  X,
+} from "lucide-react";
 import clsx from "clsx";
 import { exportNoteMarkdown } from "@/lib/data-actions";
+import { viewTitle } from "@/lib/items-logic";
 import type { Item } from "@/lib/types";
 import { displayTitle, readingMinutes, wordCount } from "@/lib/utils";
 import { useUi } from "@/store/ui";
@@ -16,8 +27,15 @@ export function NoteDetail({ item }: { item: Item }) {
   const editorMode = useUi((s) => s.editorMode);
   const setEditorMode = useUi((s) => s.setEditorMode);
   const selectItem = useUi((s) => s.selectItem);
-  const { updateItem, togglePin, trashItem, restoreItem, deleteForever, duplicateItem } =
-    useWorkspace.getState();
+  const {
+    updateItem,
+    togglePin,
+    trashItem,
+    restoreItem,
+    deleteForever,
+    duplicateItem,
+    checklistToTasks,
+  } = useWorkspace.getState();
 
   const [notice, setNotice] = useState("");
   const trashed = item.deletedAt !== null;
@@ -92,6 +110,18 @@ export function NoteDetail({ item }: { item: Item }) {
             {iconButton("Duplicate note", <Copy size={17} />, () => {
               const id = duplicateItem(item.id);
               if (id) selectItem(id);
+            })}
+            {iconButton("Create tasks from checklist", <ListChecks size={17} />, () => {
+              const created = checklistToTasks(item.id).length;
+              const listName = viewTitle(
+                { kind: "list", id: item.listId },
+                useWorkspace.getState().lists,
+              );
+              setNotice(
+                created
+                  ? `Created ${created} task${created === 1 ? "" : "s"} in ${listName} and checked them off here.`
+                  : "No unchecked checklist items (- [ ] …) in this note.",
+              );
             })}
             {iconButton("Export as Markdown", <Download size={17} />, () =>
               exportNoteMarkdown(item, displayTitle(item)),

@@ -395,6 +395,45 @@ describe("upgradeLegacyStorage", () => {
   });
 });
 
+describe("note checklists to tasks", () => {
+  it("creates a task per unchecked line in the note's list and checks the lines off", () => {
+    const work = state().addList("Work")!;
+    const section = state().addSection(work, "Plans")!;
+    const noteId = state().addItem({
+      kind: "note",
+      title: "Meeting",
+      body: "- [ ] Send notes #team\n- [x] Book room\n1. [ ] Follow up",
+      listId: work,
+    });
+    state().updateItem(noteId, { sectionId: section });
+    useWorkspace.setState({ items: state().items.map((i) => ({ ...i, updatedAt: 1 })) });
+    const ids = state().checklistToTasks(noteId);
+    const tasks = ids.map((id) => state().items.find((i) => i.id === id)!);
+    expect(tasks.map((t) => t.title)).toEqual(["Send notes #team", "Follow up"]);
+    expect(tasks[0]).toMatchObject({
+      kind: "task",
+      status: "open",
+      listId: work,
+      sectionId: section,
+    });
+    const note = state().items.find((i) => i.id === noteId)!;
+    expect(note.body).toBe("- [x] Send notes #team\n- [x] Book room\n1. [x] Follow up");
+    expect(note.updatedAt).toBeGreaterThan(1);
+    expect(state().checklistToTasks(noteId)).toEqual([]);
+  });
+
+  it("ignores tasks, trashed notes and unknown ids", () => {
+    const task = state().addItem({ kind: "task", title: "T" });
+    state().updateItem(task, { body: "- [ ] x" });
+    const note = state().addItem({ kind: "note", body: "- [ ] x" });
+    state().trashItem(note);
+    expect(state().checklistToTasks(task)).toEqual([]);
+    expect(state().checklistToTasks(note)).toEqual([]);
+    expect(state().checklistToTasks("missing")).toEqual([]);
+    expect(state().items).toHaveLength(2);
+  });
+});
+
 describe("converting between tasks and subtasks", () => {
   it("turns a subtask into a task in the same list, keeping its children", () => {
     const listId = state().addList("Work")!;

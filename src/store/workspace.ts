@@ -21,6 +21,7 @@ import { makeOutcome } from "@/lib/outcomes";
 import { nextDueDate } from "@/lib/recurrence";
 import { makeReminder, MAX_REMINDERS, parseReminders } from "@/lib/reminders";
 import { renameTagInText } from "@/lib/tags";
+import { takeChecklist } from "@/lib/checklist";
 import { migrateLegacyData, type LegacyNote, type LegacyTask } from "@/lib/migrate";
 import {
   INBOX_ID,
@@ -124,6 +125,11 @@ type WorkspaceState = WorkspaceData & {
    */
   taskToSubtask: (taskId: string, targetId: string, parentSubtaskId?: string | null) => boolean;
   toggleSubtask: (itemId: string, subtaskId: string) => void;
+  /**
+   * Turns a note's unchecked checklist lines into open tasks in the note's list (and section), and checks those
+   * lines off in the note. Returns the new task ids, in the order of the lines.
+   */
+  checklistToTasks: (noteId: string) => string[];
   deleteSubtask: (itemId: string, subtaskId: string) => void;
 
   /**
@@ -673,6 +679,35 @@ export const useWorkspace = create<WorkspaceState>()(
           ],
         }));
         return true;
+      },
+
+      checklistToTasks: (noteId) => {
+        const note = get().items.find((i) => i.id === noteId);
+        if (!note || note.kind !== "note" || note.deletedAt !== null) return [];
+        const { titles, body } = takeChecklist(note.body);
+        if (!titles.length) return [];
+        const now = Date.now();
+        const tasks: Item[] = titles.map((title) => ({
+          id: createId(),
+          kind: "task",
+          title,
+          body: "",
+          listId: note.listId,
+          createdAt: now,
+          updatedAt: now,
+          deletedAt: null,
+          pinned: false,
+          status: "open",
+          completedAt: null,
+          priority: "none",
+          due: null,
+          subtasks: [],
+          sectionId: note.sectionId,
+        }));
+        set((s) => ({
+          items: [...tasks, ...mapItem(s.items, noteId, (i) => touch(i, { body }))],
+        }));
+        return tasks.map((t) => t.id);
       },
 
       // Toggling a subtask also toggles everything below it; parents follow their children.
