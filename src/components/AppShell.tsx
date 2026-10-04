@@ -8,6 +8,7 @@ import { useSyncStore } from "@/store/sync";
 import { upgradeLegacyStorage, useWorkspace } from "@/store/workspace";
 import { NavRail } from "./NavRail";
 import { OutcomePrompt } from "./Outcome";
+import { ReminderRunner } from "./ReminderRunner";
 import { CommandPalette } from "./CommandPalette";
 import { ShortcutHelp } from "./ShortcutHelp";
 import { Sidebar } from "./Sidebar";
@@ -100,6 +101,7 @@ export function AppShell() {
       {ready && <CommandPalette />}
       {ready && <ShortcutHelp />}
       {ready && <OutcomePrompt />}
+      {ready && <ReminderRunner />}
     </div>
   );
 }

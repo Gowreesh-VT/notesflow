@@ -11,6 +11,7 @@ import {
 } from "@/lib/reminders";
 import type { Item } from "@/lib/types";
 import { useWorkspace } from "@/store/workspace";
+import { NotificationPermission } from "./NotificationPermission";
 
 const formatWhen = (ms: number) =>
   new Date(ms).toLocaleString(undefined, {
@@ -88,6 +89,7 @@ export function RemindersField({ item, readOnly }: { item: Item; readOnly: boole
           <option value="custom">Custom…</option>
         </select>
       )}
+      {times.length > 0 && !readOnly && <NotificationPermission />}
       {!item.dueTime && times.length > 0 && (
         <p className="text-xs text-stone-500 dark:text-stone-400">
           All-day task: reminders count back from 9:00 AM on the due date.
