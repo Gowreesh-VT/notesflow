@@ -11,6 +11,7 @@ import { useUi, type EditorMode } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
 import { ListSelect } from "./ListSelect";
 import { MarkdownEditor, ModeSwitch } from "./MarkdownEditor";
+import { MakeSubtask } from "./MakeSubtask";
 import { SubtaskTree } from "./SubtaskTree";
 
 const PRIORITIES: { value: Priority; label: string; active: string }[] = [
@@ -276,6 +277,7 @@ export function TaskDetail({ item }: { item: Item }) {
           >
             <Copy size={15} aria-hidden /> Duplicate
           </button>
+          <MakeSubtask item={item} />
           <button
             type="button"
             className="btn btn-danger"

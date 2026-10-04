@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { CornerDownRight, X } from "lucide-react";
+import { ArrowUpRight, CornerDownRight, X } from "lucide-react";
 import clsx from "clsx";
 import { countSubtasks, MAX_SUBTASK_DEPTH } from "@/lib/subtasks";
 import type { Item, Subtask } from "@/lib/types";
+import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
 
 function AddForm({
@@ -62,7 +63,9 @@ function SubtaskNode({
   readOnly: boolean;
 }) {
   const [adding, setAdding] = useState(false);
-  const { addSubtask, renameSubtask, toggleSubtask, deleteSubtask } = useWorkspace.getState();
+  const { addSubtask, renameSubtask, toggleSubtask, deleteSubtask, subtaskToTask } =
+    useWorkspace.getState();
+  const selectItem = useUi((s) => s.selectItem);
   const children = node.children ?? [];
   const progress = countSubtasks(children);
 
@@ -115,6 +118,18 @@ function SubtaskNode({
                 <CornerDownRight size={14} />
               </button>
             )}
+            <button
+              type="button"
+              className="btn btn-ghost px-1 py-0.5"
+              aria-label={`Convert ${node.title} into a task`}
+              title="Convert into a task"
+              onClick={() => {
+                const id = subtaskToTask(item.id, node.id);
+                if (id) selectItem(id);
+              }}
+            >
+              <ArrowUpRight size={14} />
+            </button>
             <button
               type="button"
               className="btn btn-ghost px-1 py-0.5"

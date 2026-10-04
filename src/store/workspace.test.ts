@@ -305,3 +305,38 @@ describe("upgradeLegacyStorage", () => {
     expect(upgradeLegacyStorage(fakeStorage({ "notesflow:notes": "{bad json" }))).toBe(false);
   });
 });
+
+describe("converting between tasks and subtasks", () => {
+  it("turns a subtask into a task in the same list, keeping its children", () => {
+    const listId = state().addList("Work")!;
+    const id = state().addItem({ kind: "task", title: "Parent", listId });
+    const sub = state().addSubtask(id, "Child")!;
+    state().addSubtask(id, "Grandchild", sub);
+    const newId = state().subtaskToTask(id, sub)!;
+    const task = state().items.find((i) => i.id === newId)!;
+    expect(task).toMatchObject({ kind: "task", title: "Child", listId, status: "open" });
+    expect(task.subtasks.map((s) => s.title)).toEqual(["Grandchild"]);
+    expect(state().items.find((i) => i.id === id)!.subtasks).toEqual([]);
+    expect(state().subtaskToTask(id, "missing")).toBeNull();
+  });
+
+  it("moves a task under another task, records a tombstone and respects the depth limit", () => {
+    const target = state().addItem({ kind: "task", title: "Target" });
+    const source = state().addItem({ kind: "task", title: "Source" });
+    state().addSubtask(source, "Its subtask");
+    expect(state().taskToSubtask(source, target)).toBe(true);
+    expect(state().items.some((i) => i.id === source)).toBe(false);
+    expect(state().tombstones).toContainEqual(expect.objectContaining({ id: source }));
+    const moved = state().items.find((i) => i.id === target)!.subtasks[0];
+    expect(moved).toMatchObject({ title: "Source", children: [{ title: "Its subtask" }] });
+
+    // A two-level task cannot go under a level-4 subtask (it would reach level 6).
+    let parent: string | null = null;
+    for (let level = 1; level <= 4; level++)
+      parent = state().addSubtask(target, `L${level}`, parent);
+    const deep = state().addItem({ kind: "task", title: "Deep" });
+    state().addSubtask(deep, "Child");
+    expect(state().taskToSubtask(deep, target, parent)).toBe(false);
+    expect(state().taskToSubtask(deep, deep)).toBe(false);
+  });
+});

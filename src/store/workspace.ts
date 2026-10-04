@@ -7,6 +7,7 @@ import {
   MAX_SUBTASK_DEPTH,
   rollUp,
   setDoneDeep,
+  subtreeHeight,
   updateSubtask,
 } from "@/lib/subtasks";
 import { migrateLegacyData, type LegacyNote, type LegacyTask } from "@/lib/migrate";
@@ -62,6 +63,13 @@ type WorkspaceState = WorkspaceData & {
   /** Adds a subtask under the task, or under another subtask when `parentId` is given (up to 5 levels). */
   addSubtask: (itemId: string, title: string, parentId?: string | null) => string | null;
   renameSubtask: (itemId: string, subtaskId: string, title: string) => void;
+  /** Turns a subtask (with its own subtasks) into a task in the same list; returns the new task id. */
+  subtaskToTask: (itemId: string, subtaskId: string) => string | null;
+  /**
+   * Moves a task, with its subtasks, under another task (or one of its subtasks). The original task is deleted.
+   * Returns false when the target is missing or the result would be deeper than five levels.
+   */
+  taskToSubtask: (taskId: string, targetId: string, parentSubtaskId?: string | null) => boolean;
   toggleSubtask: (itemId: string, subtaskId: string) => void;
   deleteSubtask: (itemId: string, subtaskId: string) => void;
 
@@ -258,6 +266,77 @@ export const useWorkspace = create<WorkspaceState>()(
             }),
           ),
         }));
+      },
+
+      subtaskToTask: (itemId, subtaskId) => {
+        const item = get().items.find((i) => i.id === itemId);
+        const found = item && findSubtask(item.subtasks, subtaskId);
+        if (!item || !found) return null;
+        const now = Date.now();
+        const task: Item = {
+          id: createId(),
+          kind: "task",
+          title: found.node.title,
+          body: "",
+          listId: item.listId,
+          createdAt: now,
+          updatedAt: now,
+          deletedAt: null,
+          pinned: false,
+          status: found.node.done ? "done" : "open",
+          completedAt: found.node.done ? now : null,
+          priority: "none",
+          due: null,
+          subtasks: found.node.children ?? [],
+          sectionId: item.sectionId,
+        };
+        set((s) => ({
+          items: [
+            task,
+            ...mapItem(s.items, itemId, (i) =>
+              touch(i, { subtasks: rollUp(updateSubtask(i.subtasks, subtaskId, () => null)) }),
+            ),
+          ],
+        }));
+        return task.id;
+      },
+
+      taskToSubtask: (taskId, targetId, parentSubtaskId = null) => {
+        const { items } = get();
+        const source = items.find((i) => i.id === taskId);
+        const target = items.find((i) => i.id === targetId);
+        if (!source || !target || source.id === target.id || target.kind !== "task") return false;
+        const node: Subtask = {
+          id: createId(),
+          title: source.title || "Untitled task",
+          done: source.status !== "open",
+          ...(source.subtasks.length ? { children: source.subtasks } : {}),
+        };
+        let level = 1;
+        if (parentSubtaskId) {
+          const parent = findSubtask(target.subtasks, parentSubtaskId);
+          if (!parent) return false;
+          level = parent.depth + 1;
+        }
+        if (level - 1 + subtreeHeight(node) > MAX_SUBTASK_DEPTH) return false;
+        const subtasks = parentSubtaskId
+          ? updateSubtask(target.subtasks, parentSubtaskId, (p) => ({
+              ...p,
+              children: [...(p.children ?? []), node],
+            }))
+          : [...target.subtasks, node];
+        set((s) => ({
+          items: mapItem(
+            s.items.filter((i) => i.id !== taskId),
+            targetId,
+            (i) => touch(i, { subtasks: rollUp(subtasks) }),
+          ),
+          tombstones: [
+            ...s.tombstones,
+            { collection: "item" as const, id: taskId, at: Date.now() },
+          ],
+        }));
+        return true;
       },
 
       // Toggling a subtask also toggles everything below it; parents follow their children.
