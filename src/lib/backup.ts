@@ -110,6 +110,7 @@ function optionalItemFields(r: Record<string, unknown>): Partial<Item> {
   if (r.template === true && r.kind === "task") fields.template = true;
   const reminders = parseReminders(r.reminders);
   if (reminders.length) fields.reminders = reminders;
+  if (r.constantReminder === true) fields.constantReminder = true;
   return fields;
 }
 

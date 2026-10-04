@@ -58,6 +58,7 @@ type ItemPatch = Partial<
     | "dueTime"
     | "estimate"
     | "energy"
+    | "constantReminder"
     | "sectionId"
   >
 >;
@@ -145,13 +146,19 @@ const OPTIONAL_FIELDS = [
   "outcome",
   "energy",
   "reminders",
+  "constantReminder",
 ] as const;
 
 const dropEmptyOptionals = (item: Item): Item => {
   const next = { ...item };
   for (const key of OPTIONAL_FIELDS) {
     const value = next[key];
-    if (value === null || value === undefined || (Array.isArray(value) && !value.length)) {
+    if (
+      value === null ||
+      value === undefined ||
+      value === false ||
+      (Array.isArray(value) && !value.length)
+    ) {
       delete next[key];
     }
   }

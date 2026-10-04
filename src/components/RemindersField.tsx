@@ -26,6 +26,7 @@ const formatWhen = (ms: number) =>
 export function RemindersField({ item, readOnly }: { item: Item; readOnly: boolean }) {
   const addReminder = useWorkspace((s) => s.addReminder);
   const removeReminder = useWorkspace((s) => s.removeReminder);
+  const updateItem = useWorkspace((s) => s.updateItem);
   const times = reminderTimes(item);
   const used = new Set((item.reminders ?? []).map((r) => r.before));
   const full = used.size >= MAX_REMINDERS;
@@ -88,6 +89,18 @@ export function RemindersField({ item, readOnly }: { item: Item; readOnly: boole
           ))}
           <option value="custom">Custom…</option>
         </select>
+      )}
+      {times.length > 0 && (
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={Boolean(item.constantReminder)}
+            disabled={readOnly}
+            onChange={(e) => updateItem(item.id, { constantReminder: e.target.checked })}
+            className="size-4 accent-accent-600"
+          />
+          Keep reminding me every 5 minutes until it’s done
+        </label>
       )}
       {times.length > 0 && !readOnly && <NotificationPermission />}
       {!item.dueTime && times.length > 0 && (

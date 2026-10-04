@@ -5,6 +5,8 @@ import type { Alarm } from "@/lib/alarms";
 type AlarmState = {
   /** Reminder keys already shown on this device, with when they fired. */
   fired: Record<string, number>;
+  /** When each task last rang on this device (drives constant-reminder repeats). */
+  lastShown: Record<string, number>;
   /** Reminders currently shown inside the app. */
   active: Alarm[];
   markFired: (alarms: Alarm[], now: number) => void;
@@ -18,10 +20,12 @@ export const useAlarms = create<AlarmState>()(
   persist(
     (set) => ({
       fired: {},
+      lastShown: {},
       active: [],
       markFired: (alarms, now) =>
         set((s) => ({
           fired: { ...s.fired, ...Object.fromEntries(alarms.map((a) => [a.key, now])) },
+          lastShown: { ...s.lastShown, ...Object.fromEntries(alarms.map((a) => [a.itemId, now])) },
           active: [
             ...s.active.filter((a) => !alarms.some((n) => n.itemId === a.itemId)),
             ...alarms,
@@ -36,7 +40,7 @@ export const useAlarms = create<AlarmState>()(
       name: "notesflow:alarms",
       version: 1,
       skipHydration: true,
-      partialize: (s) => ({ fired: s.fired }),
+      partialize: (s) => ({ fired: s.fired, lastShown: s.lastShown }),
     },
   ),
 );

@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { dueAlarms, FIRED_TTL_MS, pruneFired, STALE_AFTER_MS } from "./alarms";
+import {
+  dueAlarms,
+  FIRED_TTL_MS,
+  pruneFired,
+  repeatAlarms,
+  REPEAT_EVERY_MS,
+  REPEAT_FOR_MS,
+  STALE_AFTER_MS,
+} from "./alarms";
 import { atLocal } from "./reminders";
 import { INBOX_ID, type Item } from "./types";
 
@@ -56,5 +64,22 @@ describe("pruneFired", () => {
     expect(pruneFired(fired, FIRED_TTL_MS + 10)).toEqual({ recent: FIRED_TTL_MS });
     const fresh = { a: 5 };
     expect(pruneFired(fresh, 10)).toBe(fresh);
+  });
+});
+
+describe("repeatAlarms", () => {
+  const constant = task("a", { constantReminder: true });
+  it("repeats constant reminders every five minutes after they rang", () => {
+    expect(repeatAlarms([constant], fireAt + 60_000, {})).toEqual([]);
+    expect(repeatAlarms([constant], fireAt + 4 * 60_000, { a: fireAt })).toEqual([]);
+    const [again] = repeatAlarms([constant], fireAt + REPEAT_EVERY_MS, { a: fireAt });
+    expect(again).toMatchObject({ itemId: "a", repeat: true, label: "Still to do" });
+  });
+
+  it("stops for normal, finished or long-past reminders", () => {
+    const later = fireAt + REPEAT_EVERY_MS;
+    expect(repeatAlarms([task("a")], later, { a: fireAt })).toEqual([]);
+    expect(repeatAlarms([{ ...constant, status: "done" }], later, { a: fireAt })).toEqual([]);
+    expect(repeatAlarms([constant], fireAt + REPEAT_FOR_MS, { a: fireAt })).toEqual([]);
   });
 });

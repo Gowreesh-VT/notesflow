@@ -46,6 +46,8 @@ export type Item = {
   template?: boolean;
   /** Up to five reminders relative to the due date and time. */
   reminders?: Reminder[];
+  /** Once a reminder fires, keep repeating it until the task is completed or snoozed. */
+  constantReminder?: boolean;
   subtasks: Subtask[];
   /** Section of the item's list it belongs to, or null for the unsectioned top of the list. */
   sectionId: string | null;

@@ -2,13 +2,15 @@
 
 import { useEffect } from "react";
 import { Bell, Check, ExternalLink, X } from "lucide-react";
-import { dueAlarms, pruneFired } from "@/lib/alarms";
+import { dueAlarms, pruneFired, repeatAlarms } from "@/lib/alarms";
 import { showNotification } from "@/lib/notifications";
 import { useAlarms } from "@/store/alarms";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
 
 const CHECK_MS = 15_000;
+
+const item = (itemId: string) => useWorkspace.getState().items.find((i) => i.id === itemId);
 
 const openItem = (itemId: string) => {
   const ui = useUi.getState();
@@ -32,13 +34,20 @@ export function ReminderRunner() {
       const alarms = useAlarms.getState();
       const fired = pruneFired(alarms.fired, now);
       if (fired !== alarms.fired) alarms.setFired(fired);
-      const due = dueAlarms(useWorkspace.getState().items, now, fired);
+      const items = useWorkspace.getState().items;
+      const due = [...dueAlarms(items, now, fired), ...repeatAlarms(items, now, alarms.lastShown)];
       if (!due.length) return;
       alarms.markFired(due, now);
       for (const alarm of due) {
         void showNotification(
           alarm.title,
-          { body: `Reminder · ${alarm.label}`, tag: alarm.key, itemId: alarm.itemId },
+          {
+            body: `Reminder · ${alarm.label}`,
+            // Repeats replace the previous notification for the task instead of stacking.
+            tag: alarm.repeat ? `repeat:${alarm.itemId}` : alarm.key,
+            itemId: alarm.itemId,
+            requireInteraction: Boolean(item(alarm.itemId)?.constantReminder),
+          },
           () => openItem(alarm.itemId),
         );
       }
@@ -99,7 +108,10 @@ function ReminderCards() {
             />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold">{alarm.title}</p>
-              <p className="text-xs text-stone-500 dark:text-stone-400">Reminder · {alarm.label}</p>
+              <p className="text-xs text-stone-500 dark:text-stone-400">
+                Reminder · {alarm.label}
+                {item(alarm.itemId)?.constantReminder && " · repeats every 5 minutes until done"}
+              </p>
             </div>
             <button
               type="button"

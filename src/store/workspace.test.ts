@@ -465,3 +465,13 @@ describe("reminders", () => {
     expect(state().items[0]).not.toHaveProperty("reminders");
   });
 });
+
+describe("constant reminder", () => {
+  it("is stored only while switched on", () => {
+    const id = state().addItem({ kind: "task", title: "Pills", due: "2026-05-10" });
+    state().updateItem(id, { constantReminder: true });
+    expect(state().items[0].constantReminder).toBe(true);
+    state().updateItem(id, { constantReminder: false });
+    expect(state().items[0]).not.toHaveProperty("constantReminder");
+  });
+});

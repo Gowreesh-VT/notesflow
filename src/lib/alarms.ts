@@ -3,6 +3,10 @@ import type { Item } from "./types";
 
 /** Reminders older than this when the app opens are skipped instead of firing late. */
 export const STALE_AFTER_MS = 12 * 60 * 60_000;
+/** Constant reminders repeat this often until the task is done or snoozed. */
+export const REPEAT_EVERY_MS = 5 * 60_000;
+/** A constant reminder stops repeating a day after it first rang. */
+export const REPEAT_FOR_MS = 24 * 60 * 60_000;
 /** Fired-reminder records are forgotten after a week. */
 export const FIRED_TTL_MS = 7 * 24 * 60 * 60_000;
 
@@ -13,6 +17,8 @@ export type Alarm = {
   title: string;
   label: string;
   at: number;
+  /** A repeat of a constant reminder. */
+  repeat?: boolean;
 };
 
 const isActiveTask = (item: Item) =>
@@ -47,4 +53,35 @@ export function dueAlarms(
 export function pruneFired(fired: Record<string, number>, now: number): Record<string, number> {
   const kept = Object.entries(fired).filter(([, at]) => now - at < FIRED_TTL_MS);
   return kept.length === Object.keys(fired).length ? fired : Object.fromEntries(kept);
+}
+
+/**
+ * Repeats of constant reminders: a task whose reminder rang within the last day, is still open, and was last
+ * shown at least REPEAT_EVERY_MS ago rings again.
+ */
+export function repeatAlarms(
+  items: Item[],
+  now: number,
+  lastShown: Record<string, number>,
+  defaultTime = DEFAULT_REMINDER_TIME,
+): Alarm[] {
+  const alarms: Alarm[] = [];
+  for (const item of items) {
+    if (!item.constantReminder || !isActiveTask(item)) continue;
+    const last = lastShown[item.id];
+    if (last === undefined || now - last < REPEAT_EVERY_MS) continue;
+    const rang = reminderTimes(item, defaultTime).filter(
+      ({ at }) => at <= now && now - at < REPEAT_FOR_MS,
+    );
+    if (!rang.length) continue;
+    alarms.push({
+      key: `${item.id}:repeat:${now}`,
+      itemId: item.id,
+      title: item.title,
+      label: "Still to do",
+      at: now,
+      repeat: true,
+    });
+  }
+  return alarms;
 }
