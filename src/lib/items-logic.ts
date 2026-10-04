@@ -10,6 +10,7 @@ import {
   type View,
 } from "./types";
 import { parseDuration } from "./duration";
+import { compareOrder } from "./ordering";
 import { countSubtasks, flattenSubtasks } from "./subtasks";
 import { addDays, displayTitle, extractTags } from "./utils";
 
@@ -94,8 +95,12 @@ function matchesView(item: Item, view: View, today: string): boolean {
   }
 }
 
-/** Item groups, in display order: open tasks, notes, finished tasks. */
-const group = (item: Item): number => (item.kind === "note" ? 1 : item.status === "open" ? 0 : 2);
+/**
+ * Item groups, in display order: open tasks, notes, finished tasks. In manual order, open tasks and notes share
+ * one group so they can be arranged freely.
+ */
+const group = (item: Item, sort: ItemSort): number =>
+  item.kind === "note" ? (sort === "manual" ? 0 : 1) : item.status === "open" ? 0 : 2;
 
 function compareDue(a: Item, b: Item): number {
   if (a.due !== b.due) {
@@ -110,6 +115,7 @@ function compareDue(a: Item, b: Item): number {
 }
 
 function compareWithin(a: Item, b: Item, sort: ItemSort): number {
+  if (sort === "manual") return compareOrder(a, b, "first") || a.createdAt - b.createdAt;
   if (sort === "title") return displayTitle(a).localeCompare(displayTitle(b));
   if (sort === "updated") return b.updatedAt - a.updatedAt;
   if (a.kind === "note") return b.updatedAt - a.updatedAt;
@@ -128,10 +134,10 @@ function compareWithin(a: Item, b: Item, sort: ItemSort): number {
 }
 
 export function compareItems(a: Item, b: Item, sort: ItemSort): number {
-  const byGroup = group(a) - group(b);
+  const byGroup = group(a, sort) - group(b, sort);
   if (byGroup !== 0) return byGroup;
-  if (group(a) === 1 && a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-  if (group(a) === 2) {
+  if (group(a, sort) === 1 && a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+  if (group(a, sort) === 2) {
     return (b.completedAt ?? b.updatedAt) - (a.completedAt ?? a.updatedAt);
   }
   return compareWithin(a, b, sort);
@@ -395,4 +401,78 @@ export function groupByDue(items: Item[], today: string): DueGroup[] {
   return [...buckets]
     .filter(([, group]) => group.length > 0)
     .map(([id, group]) => ({ id, label: DUE_GROUP_LABELS[id], items: group }));
+}
+
+/** How a view's items are split into collapsible groups. */
+export type GroupBy = "none" | "due" | "priority" | "section" | "tag";
+
+export const GROUP_BY_OPTIONS: { value: GroupBy; label: string }[] = [
+  { value: "none", label: "No groups" },
+  { value: "due", label: "Date groups" },
+  { value: "priority", label: "Priority groups" },
+  { value: "section", label: "Sections" },
+  { value: "tag", label: "Tag groups" },
+];
+
+export const isGroupBy = (value: unknown): value is GroupBy =>
+  GROUP_BY_OPTIONS.some((o) => o.value === value);
+
+export type ItemGroup = { id: string; label: string; items: Item[] };
+
+/** A stable key for remembering per-view settings such as grouping. */
+export function viewKey(view: View): string {
+  if (view.kind === "tag") return `tag:${view.tag}`;
+  return `${view.kind}:${view.id}`;
+}
+
+/**
+ * The grouping a view uses: the one chosen for it, otherwise sections for a list that has them, date groups in
+ * smart order (except the finished and trash views), and no groups otherwise. "Section" only applies to lists with
+ * sections.
+ */
+export function resolveGroupBy(
+  chosen: unknown,
+  context: { hasSections: boolean; sort: ItemSort; readOnly: boolean },
+): GroupBy {
+  if (isGroupBy(chosen) && (chosen !== "section" || context.hasSections)) return chosen;
+  if (context.hasSections) return "section";
+  return context.sort === "default" && !context.readOnly ? "due" : "none";
+}
+
+const PRIORITY_GROUPS: { id: Priority; label: string }[] = [
+  { id: "high", label: "High priority" },
+  { id: "medium", label: "Medium priority" },
+  { id: "low", label: "Low priority" },
+  { id: "none", label: "No priority" },
+];
+
+/** Splits items by priority (high first) with notes last, keeping the incoming order. Empty groups are left out. */
+export function groupByPriority(items: Item[]): ItemGroup[] {
+  const groups: ItemGroup[] = [
+    ...PRIORITY_GROUPS.map(({ id, label }) => ({
+      id,
+      label,
+      items: items.filter((i) => i.kind === "task" && i.priority === id),
+    })),
+    { id: "notes", label: "Notes", items: items.filter((i) => i.kind === "note") },
+  ];
+  return groups.filter((g) => g.items.length > 0);
+}
+
+/**
+ * Splits items by #tag, alphabetically, keeping the incoming order inside each group. An item with several tags is
+ * listed under each of them; items without tags come last under "No tag". Empty groups are left out.
+ */
+export function groupByTag(items: Item[]): ItemGroup[] {
+  const byTag = new Map<string, Item[]>();
+  const untagged: Item[] = [];
+  for (const item of items) {
+    const tags = itemTags(item);
+    if (tags.length === 0) untagged.push(item);
+    for (const tag of tags) byTag.set(tag, [...(byTag.get(tag) ?? []), item]);
+  }
+  const groups = [...byTag.keys()]
+    .sort((a, b) => a.localeCompare(b))
+    .map((tag) => ({ id: `#${tag}`, label: `#${tag}`, items: byTag.get(tag)! }));
+  return untagged.length ? [...groups, { id: "none", label: "No tag", items: untagged }] : groups;
 }

@@ -125,6 +125,14 @@ type WorkspaceState = WorkspaceData & {
    */
   setStatusMany: (ids: string[], status: TaskStatus) => string[];
   trashItems: (ids: string[]) => void;
+  /**
+   * Writes manual positions by id (from `planMove`). `section` also moves that item into another section of its
+   * list (null = unsectioned); unknown sections fall back to unsectioned.
+   */
+  reorderItems: (
+    orders: Record<string, number>,
+    section?: { id: string; sectionId: string | null },
+  ) => void;
 
   /** Adds a subtask under the task, or under another subtask when `parentId` is given (up to 5 levels). */
   addSubtask: (itemId: string, title: string, parentId?: string | null) => string | null;
@@ -170,6 +178,8 @@ type WorkspaceState = WorkspaceData & {
   addList: (name: string, folderId?: string | null) => string | null;
   renameList: (id: string, name: string) => void;
   moveList: (id: string, folderId: string | null) => void;
+  /** Writes sidebar positions of lists by id (from `planMove`). */
+  reorderLists: (orders: Record<string, number>) => void;
   deleteList: (id: string) => void;
   addSection: (listId: string, name: string) => string | null;
   renameSection: (listId: string, sectionId: string, name: string) => void;
@@ -208,6 +218,7 @@ const OPTIONAL_FIELDS = [
   "snoozedUntil",
   "repeat",
   "dailyNote",
+  "order",
 ] as const;
 
 const dropEmptyOptionals = (item: Item): Item => {
@@ -586,6 +597,23 @@ export const useWorkspace = create<WorkspaceState>()(
             ),
           };
         }),
+      reorderItems: (orders, section) =>
+        set((s) => ({
+          items: s.items.map((item) => {
+            const order = orders[item.id];
+            const moving = section?.id === item.id;
+            if (order === undefined && !moving) return item;
+            const patch: Partial<Item> = order === undefined ? {} : { order };
+            if (moving) {
+              const sections = s.lists.find((l) => l.id === item.listId)?.sections ?? [];
+              const sectionId = section.sectionId;
+              patch.sectionId =
+                sectionId && sections.some((x) => x.id === sectionId) ? sectionId : null;
+            }
+            const same = (Object.keys(patch) as (keyof Item)[]).every((k) => item[k] === patch[k]);
+            return same ? item : touch(item, patch);
+          }),
+        })),
 
       addSubtask: (itemId, title, parentId = null) => {
         const trimmed = title.trim();
@@ -932,6 +960,15 @@ export const useWorkspace = create<WorkspaceState>()(
       moveList: (id, folderId) =>
         set((s) => ({
           lists: s.lists.map((l) => (l.id === id ? { ...l, folderId, updatedAt: Date.now() } : l)),
+        })),
+
+      reorderLists: (orders) =>
+        set((s) => ({
+          lists: s.lists.map((l) =>
+            orders[l.id] !== undefined && orders[l.id] !== l.order
+              ? { ...l, order: orders[l.id], updatedAt: Date.now() }
+              : l,
+          ),
         })),
 
       // Items in a deleted list are kept and moved to the Inbox.

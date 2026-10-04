@@ -53,8 +53,8 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 - [ ] [BIG] Saved filters: combine list, tag, priority, due range, energy and status; pinned in the sidebar under "Filters"
 - [x] Rename or merge a tag across all items from the sidebar
 - [ ] Archive lists: hide finished lists in an "Archived lists" section, restorable
-- [ ] Drag-and-drop ordering of tasks within a list or section, and of lists in the sidebar
-- [ ] Group a list by due date, priority, section or tag
+- [x] Drag-and-drop ordering of tasks within a list or section, and of lists in the sidebar
+- [x] Group a list by due date, priority, section or tag
 - [x] Note-to-task: turn the unchecked checklist lines of a note into real tasks
 - [x] Daily notes: one note per day, created from the command palette
 

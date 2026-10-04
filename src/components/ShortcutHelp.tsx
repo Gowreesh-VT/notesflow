@@ -9,6 +9,7 @@ const SHORTCUTS: { keys: string; label: string }[] = [
   { keys: "Alt + T", label: "New task" },
   { keys: "Alt + J", label: "Open today’s daily note" },
   { keys: "/", label: "Search the current list" },
+  { keys: "Alt + ↑ / ↓", label: "Move a list, or a task in manual order" },
   { keys: "?", label: "Show this help" },
   { keys: "Ctrl/⌘ + click", label: "Select several items" },
   { keys: "Shift + click", label: "Select a range of items" },
