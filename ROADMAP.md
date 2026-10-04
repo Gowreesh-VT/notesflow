@@ -29,7 +29,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 - [x] Convert a subtask into a task and a task into a subtask
 - [x] Due time on tasks (date plus optional time, or all-day), shown in lists and used for sorting
 - [x] Estimated time per task (for example 25m or 1h30), shown in the list and the detail panel
-- [ ] [BIG] Time tracking per task: start and stop a timer, add manual entries, and see the total
+- [x] [BIG] Time tracking per task: start and stop a timer, add manual entries, and see the total
 - [ ] [BIG] Outcomes: when completing a task, optionally tag how it went (Went well, Learned something, Needs follow-up, Didn't go as planned; editable) with a one-line note
 - [ ] Energy and effort tags on tasks (quick win, deep work, low energy) with a filter
 - [ ] [BIG] Task templates: save a task with its subtasks as a template and create new tasks from it

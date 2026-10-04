@@ -14,6 +14,7 @@ import { MarkdownEditor, ModeSwitch } from "./MarkdownEditor";
 import { EstimateField } from "./EstimateField";
 import { MakeSubtask } from "./MakeSubtask";
 import { SubtaskTree } from "./SubtaskTree";
+import { TimeTracker } from "./TimeTracker";
 
 const PRIORITIES: { value: Priority; label: string; active: string }[] = [
   { value: "none", label: "None", active: "bg-stone-200 dark:bg-stone-700" },
@@ -280,6 +281,8 @@ export function TaskDetail({ item }: { item: Item }) {
       </dl>
 
       <SubtaskTree item={item} readOnly={trashed} />
+
+      <TimeTracker item={item} readOnly={trashed} />
 
       <MarkdownEditor
         label="Task description"

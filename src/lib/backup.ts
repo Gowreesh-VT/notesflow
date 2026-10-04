@@ -12,6 +12,7 @@ import {
 } from "./types";
 import { asMinutes } from "./duration";
 import { MAX_SUBTASK_DEPTH, rollUp } from "./subtasks";
+import { parseTimeEntries } from "./time-tracking";
 import { createId } from "./utils";
 
 const PRIORITIES: Priority[] = ["none", "low", "medium", "high"];
@@ -98,6 +99,8 @@ function optionalItemFields(r: Record<string, unknown>): Partial<Item> {
   if (dueTime) fields.dueTime = dueTime;
   const estimate = asMinutes(r.estimate);
   if (estimate) fields.estimate = estimate;
+  const timeEntries = parseTimeEntries(r.timeEntries);
+  if (timeEntries.length) fields.timeEntries = timeEntries;
   return fields;
 }
 

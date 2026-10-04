@@ -35,9 +35,20 @@ export type Item = {
   dueTime?: string | null;
   /** Estimated effort in minutes; absent when not set. */
   estimate?: number | null;
+  /** Tracked time; at most one entry is running across the whole workspace. */
+  timeEntries?: TimeEntry[];
   subtasks: Subtask[];
   /** Section of the item's list it belongs to, or null for the unsectioned top of the list. */
   sectionId: string | null;
+};
+
+/** A stretch of time spent on a task. `end` is null while the timer is running. */
+export type TimeEntry = {
+  id: string;
+  start: number;
+  end: number | null;
+  /** Added by hand rather than with the timer. */
+  manual?: boolean;
 };
 
 export type ListSection = {

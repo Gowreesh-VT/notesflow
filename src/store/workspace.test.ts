@@ -372,3 +372,25 @@ describe("estimates", () => {
     expect(state().items.find((i) => i.id === id)).not.toHaveProperty("estimate");
   });
 });
+
+describe("time tracking", () => {
+  it("runs one timer at a time, adds manual time and stops on completion", () => {
+    const a = state().addItem({ kind: "task", title: "A" });
+    const b = state().addItem({ kind: "task", title: "B" });
+    const find = (id: string) => state().items.find((i) => i.id === id)!;
+    state().startTimer(a);
+    state().startTimer(a);
+    expect(find(a).timeEntries).toHaveLength(1);
+    state().startTimer(b);
+    expect(find(a).timeEntries![0].end).not.toBeNull();
+    expect(find(b).timeEntries![0].end).toBeNull();
+
+    state().addTimeEntry(b, 25);
+    expect(find(b).timeEntries).toHaveLength(2);
+    state().toggleDone(b);
+    expect(find(b).timeEntries!.every((e) => e.end !== null)).toBe(true);
+
+    for (const e of find(a).timeEntries!) state().deleteTimeEntry(a, e.id);
+    expect(find(a)).not.toHaveProperty("timeEntries");
+  });
+});

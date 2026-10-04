@@ -33,6 +33,7 @@ import {
 } from "@/lib/items-logic";
 import { formatDuration } from "@/lib/duration";
 import { useToday } from "@/lib/hooks";
+import { runningEntry } from "@/lib/time-tracking";
 import { INBOX_ID, type Item, type ItemKind, type ItemSort, type Priority } from "@/lib/types";
 import { addDays, displayTitle, formatDueWithTime, getSnippet } from "@/lib/utils";
 import { useUi } from "@/store/ui";
@@ -127,15 +128,21 @@ function ItemRow({
           )}
         </span>
         <span className="flex shrink-0 items-center gap-2 text-xs text-stone-400 dark:text-stone-500">
+          {isTask && runningEntry(item) && (
+            <span className="inline-flex items-center gap-1 font-medium text-accent-600 dark:text-accent-400">
+              <span className="size-1.5 animate-pulse rounded-full bg-accent-500" aria-hidden />
+              Timing
+            </span>
+          )}
           {isTask && item.estimate && (
-            <span className="inline-flex items-center gap-1" title="Estimated time">
+            <span className="hidden items-center gap-1 @xl:inline-flex" title="Estimated time">
               <Hourglass size={12} aria-hidden />
               <span className="sr-only">Estimate </span>
               {formatDuration(item.estimate)}
             </span>
           )}
           {progress.total > 0 && (
-            <span className="inline-flex items-center gap-1">
+            <span className="hidden items-center gap-1 @md:inline-flex">
               <ListChecks size={13} aria-hidden />
               {progress.done}/{progress.total}
             </span>
@@ -144,12 +151,12 @@ function ItemRow({
           {tags.slice(0, 2).map((tag) => (
             <span
               key={tag}
-              className="hidden rounded-md bg-stone-100 px-1.5 py-0.5 text-stone-600 sm:inline dark:bg-stone-800 dark:text-stone-300"
+              className="hidden rounded-md bg-stone-100 px-1.5 py-0.5 text-stone-600 @2xl:inline dark:bg-stone-800 dark:text-stone-300"
             >
               {tag}
             </span>
           ))}
-          {listName && <span className="hidden max-w-28 truncate sm:inline">{listName}</span>}
+          {listName && <span className="hidden max-w-28 truncate @xl:inline">{listName}</span>}
           {isTask && item.due && (
             <span
               className={clsx(
@@ -448,7 +455,7 @@ export function ItemList() {
   };
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="@container flex h-full flex-col">
       <header className="flex items-center gap-2 px-4 pb-3 pt-4 sm:px-6 sm:pt-5">
         <button
           type="button"
