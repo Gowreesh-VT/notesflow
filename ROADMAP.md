@@ -40,7 +40,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 - [x] Browser notifications for reminders while the app is open, with a clear permission flow
 - [x] Constant reminder: a persistent notification that repeats until the task is completed or snoozed
 - [x] Snooze for reminders (10 minutes, 1 hour, tomorrow morning)
-- [ ] [BIG] Recurring tasks: daily, weekly, monthly, yearly, custom intervals, and "repeat after completion"
+- [x] [BIG] Recurring tasks: daily, weekly, monthly, yearly, custom intervals, and "repeat after completion"
 - [ ] Smarter quick add: times ("5pm"), weekdays ("mon", "next friday"), `@list`, `#tag`, `!priority` and `~estimate`
 - [ ] Start date on tasks, so a task can span a date range
 - [ ] Offline and sync status banner: clear states for offline, syncing, failed, and conflicts resolved

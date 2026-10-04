@@ -50,9 +50,22 @@ export type Item = {
   constantReminder?: boolean;
   /** Reminders are silenced until this time, then ring once more; cleared when the task is finished. */
   snoozedUntil?: number | null;
+  /** Repeat rule: finishing the task logs a finished copy and moves this task to its next due date. */
+  repeat?: Repeat | null;
   subtasks: Subtask[];
   /** Section of the item's list it belongs to, or null for the unsectioned top of the list. */
   sectionId: string | null;
+};
+
+export type RepeatUnit = "day" | "week" | "month" | "year";
+
+/** How a task recurs: every `every` units; weekly rules may pick weekdays (0 = Sunday). */
+export type Repeat = {
+  unit: RepeatUnit;
+  every: number;
+  weekdays?: number[];
+  /** Count the next date from the day it was completed instead of from the due date. */
+  afterCompletion?: boolean;
 };
 
 /** A reminder `before` minutes ahead of the task's due moment (0 = at the due time). */

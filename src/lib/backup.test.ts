@@ -220,3 +220,40 @@ describe("energy and outcomes in backups", () => {
     expect(parse({ status: "open", outcome })).not.toHaveProperty("outcome");
   });
 });
+
+describe("reminder and repeat fields in backups", () => {
+  const parse = (fields: object) =>
+    parseBackup(
+      JSON.stringify({
+        app: "notesflow",
+        version: 2,
+        items: [{ ...item, ...fields }],
+        lists: [],
+        folders: [],
+      }),
+    ).items[0];
+
+  it("keeps valid reminders, snooze, constant flag and repeat rules", () => {
+    const parsed = parse({
+      reminders: [{ id: "r", before: 30 }],
+      constantReminder: true,
+      snoozedUntil: 99,
+      repeat: { unit: "month", every: 1 },
+    });
+    expect(parsed).toMatchObject({
+      reminders: [{ id: "r", before: 30 }],
+      constantReminder: true,
+      snoozedUntil: 99,
+      repeat: { unit: "month", every: 1 },
+    });
+    const junk = parse({
+      reminders: "x",
+      constantReminder: "yes",
+      snoozedUntil: -1,
+      repeat: { unit: "x" },
+    });
+    for (const key of ["reminders", "constantReminder", "snoozedUntil", "repeat"]) {
+      expect(junk).not.toHaveProperty(key);
+    }
+  });
+});

@@ -18,6 +18,7 @@ import {
   Pencil,
   Pin,
   Plus,
+  Repeat,
   Search,
   Trash2,
   Zap,
@@ -38,6 +39,7 @@ import {
 } from "@/lib/items-logic";
 import { formatDuration } from "@/lib/duration";
 import { useToday } from "@/lib/hooks";
+import { describeRepeat } from "@/lib/recurrence";
 import { EnergyIcon } from "./EnergyField";
 import { TemplatesMenu } from "./TemplatesMenu";
 import { runningEntry } from "@/lib/time-tracking";
@@ -95,8 +97,8 @@ function ItemRow({
           aria-label={`Mark “${item.title}” as ${item.status === "open" ? "done" : "not done"}`}
           disabled={trashed}
           onClick={() => {
-            toggleDone(item.id);
-            if (item.status === "open") promptOutcome(item.id);
+            const finishedId = toggleDone(item.id);
+            if (finishedId) promptOutcome(finishedId);
           }}
           className={clsx(
             "flex size-[18px] shrink-0 items-center justify-center rounded-[5px] border-2 transition-colors",
@@ -139,6 +141,9 @@ function ItemRow({
           )}
         </span>
         <span className="flex shrink-0 items-center gap-2 text-xs text-stone-400 dark:text-stone-500">
+          {isTask && item.repeat ? (
+            <Repeat size={12} aria-label={describeRepeat(item.repeat)} className="shrink-0" />
+          ) : null}
           {isTask && item.due && item.reminders?.length ? (
             <Bell size={12} aria-label="Has reminders" className="shrink-0" />
           ) : null}

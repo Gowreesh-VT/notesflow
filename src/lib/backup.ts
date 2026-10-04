@@ -13,6 +13,7 @@ import {
 import { asMinutes } from "./duration";
 import { isEnergy } from "./items-logic";
 import { parseOutcome } from "./outcomes";
+import { parseRepeat } from "./recurrence";
 import { parseReminders } from "./reminders";
 import { MAX_SUBTASK_DEPTH, rollUp } from "./subtasks";
 import { parseTimeEntries } from "./time-tracking";
@@ -111,6 +112,8 @@ function optionalItemFields(r: Record<string, unknown>): Partial<Item> {
   const reminders = parseReminders(r.reminders);
   if (reminders.length) fields.reminders = reminders;
   if (r.constantReminder === true) fields.constantReminder = true;
+  const repeat = r.kind === "task" ? parseRepeat(r.repeat) : null;
+  if (repeat) fields.repeat = repeat;
   if (typeof r.snoozedUntil === "number" && Number.isFinite(r.snoozedUntil) && r.snoozedUntil > 0) {
     fields.snoozedUntil = r.snoozedUntil;
   }

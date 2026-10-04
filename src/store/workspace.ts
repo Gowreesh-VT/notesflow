@@ -18,6 +18,7 @@ import {
   stopEntries,
 } from "@/lib/time-tracking";
 import { makeOutcome } from "@/lib/outcomes";
+import { nextDueDate } from "@/lib/recurrence";
 import { makeReminder, MAX_REMINDERS, parseReminders } from "@/lib/reminders";
 import { migrateLegacyData, type LegacyNote, type LegacyTask } from "@/lib/migrate";
 import {
@@ -31,7 +32,7 @@ import {
   type TaskStatus,
   type Tombstone,
 } from "@/lib/types";
-import { createId } from "@/lib/utils";
+import { createId, toDateKey } from "@/lib/utils";
 
 export const WORKSPACE_KEY = "notesflow:workspace";
 const LEGACY_NOTES_KEY = "notesflow:notes";
@@ -59,6 +60,7 @@ type ItemPatch = Partial<
     | "estimate"
     | "energy"
     | "constantReminder"
+    | "repeat"
     | "sectionId"
   >
 >;
@@ -73,8 +75,12 @@ export type WorkspaceData = {
 type WorkspaceState = WorkspaceData & {
   addItem: (input: NewItem) => string;
   updateItem: (id: string, patch: ItemPatch) => void;
-  setStatus: (id: string, status: TaskStatus) => void;
-  toggleDone: (id: string) => void;
+  /**
+   * Sets a task's status. Finishing a repeating task logs a finished copy and moves the task itself to its next
+   * due date. Returns the id of the item that is now finished (the copy for repeating tasks), or null.
+   */
+  setStatus: (id: string, status: TaskStatus) => string | null;
+  toggleDone: (id: string) => string | null;
   togglePin: (id: string) => void;
   trashItem: (id: string) => void;
   restoreItem: (id: string) => void;
@@ -150,6 +156,7 @@ const OPTIONAL_FIELDS = [
   "reminders",
   "constantReminder",
   "snoozedUntil",
+  "repeat",
 ] as const;
 
 const dropEmptyOptionals = (item: Item): Item => {
@@ -177,6 +184,7 @@ const templateFields = (source: Item) => ({
   ...(source.estimate ? { estimate: source.estimate } : {}),
   ...(source.energy ? { energy: source.energy } : {}),
   ...copyReminders(source),
+  ...(source.repeat ? { repeat: source.repeat } : {}),
 });
 
 /** Reminders with fresh ids, for copies of a task. */
@@ -259,25 +267,57 @@ export const useWorkspace = create<WorkspaceState>()(
           }),
         })),
 
-      setStatus: (id, status) =>
+      setStatus: (id, status) => {
+        const item = get().items.find((i) => i.id === id);
+        if (!item) return null;
+        if (status !== "open" && item.status === "open" && item.repeat && item.kind === "task") {
+          const now = Date.now();
+          const copy: Item = dropEmptyOptionals({
+            ...item,
+            ...stopTimerPatch(item, true),
+            id: createId(),
+            status,
+            completedAt: now,
+            updatedAt: now,
+            createdAt: now,
+            repeat: null,
+            reminders: [],
+            constantReminder: false,
+            snoozedUntil: null,
+            outcome: null,
+          });
+          const next = dropEmptyOptionals(
+            touch(item, {
+              due: nextDueDate(item.due, item.repeat, toDateKey(new Date(now))),
+              subtasks: item.subtasks.map((st) => setDoneDeep(st, false)),
+              timeEntries: [],
+              snoozedUntil: null,
+              outcome: null,
+            }),
+          );
+          set((s) => ({ items: [copy, ...s.items.map((i) => (i.id === id ? next : i))] }));
+          return copy.id;
+        }
         set((s) => ({
-          items: mapItem(s.items, id, (item) =>
+          items: mapItem(s.items, id, (current) =>
             dropEmptyOptionals(
-              touch(item, {
+              touch(current, {
                 status,
                 completedAt: status === "open" ? null : Date.now(),
-                ...stopTimerPatch(item, status !== "open"),
+                ...stopTimerPatch(current, status !== "open"),
                 // An outcome describes a finished task, so it goes away when the task is reopened or skipped.
                 ...(status !== "done" ? { outcome: null } : {}),
                 ...(status !== "open" ? { snoozedUntil: null } : {}),
               }),
             ),
           ),
-        })),
+        }));
+        return status === "open" ? null : id;
+      },
 
       toggleDone: (id) => {
         const item = get().items.find((i) => i.id === id);
-        if (item) get().setStatus(id, item.status === "open" ? "done" : "open");
+        return item ? get().setStatus(id, item.status === "open" ? "done" : "open") : null;
       },
 
       togglePin: (id) =>
@@ -333,6 +373,7 @@ export const useWorkspace = create<WorkspaceState>()(
             ...(source.estimate ? { estimate: source.estimate } : {}),
             ...(source.energy ? { energy: source.energy } : {}),
             ...copyReminders(source),
+            ...(source.repeat ? { repeat: source.repeat } : {}),
             subtasks: cloneSubtasks(source.subtasks, true),
           })),
         }));

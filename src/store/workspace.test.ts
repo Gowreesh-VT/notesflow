@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { INBOX_ID } from "@/lib/types";
+import { addDays, toDateKey } from "@/lib/utils";
 import { upgradeLegacyStorage, useWorkspace, WORKSPACE_KEY } from "./workspace";
 
 const state = () => useWorkspace.getState();
@@ -486,5 +487,41 @@ describe("snooze", () => {
     state().snooze(id, 456);
     state().toggleDone(id);
     expect(state().items[0]).not.toHaveProperty("snoozedUntil");
+  });
+});
+
+describe("recurring tasks", () => {
+  it("logs a finished copy and moves the task to its next due date", () => {
+    const today = toDateKey(new Date());
+    const id = state().addItem({ kind: "task", title: "Water plants", due: today });
+    state().updateItem(id, { repeat: { unit: "day", every: 2 } });
+    const sub = state().addSubtask(id, "Balcony")!;
+    state().toggleSubtask(id, sub);
+    state().addReminder(id, 15);
+    state().addTimeEntry(id, 10);
+
+    const finishedId = state().toggleDone(id)!;
+    expect(finishedId).not.toBe(id);
+    const finished = state().items.find((i) => i.id === finishedId)!;
+    const task = state().items.find((i) => i.id === id)!;
+    expect(finished).toMatchObject({ status: "done", title: "Water plants", due: today });
+    expect(finished).not.toHaveProperty("repeat");
+    expect(finished).not.toHaveProperty("reminders");
+    expect(finished.timeEntries).toHaveLength(1);
+    expect(task).toMatchObject({ status: "open", due: addDays(today, 2) });
+    expect(task.subtasks[0].done).toBe(false);
+    expect(task).not.toHaveProperty("timeEntries");
+    expect(task.reminders).toHaveLength(1);
+
+    expect(state().setStatus(id, "wontdo")).not.toBe(id);
+    expect(state().items.find((i) => i.id === id)!.due).toBe(addDays(today, 4));
+  });
+
+  it("finishes normally once the repeat is removed", () => {
+    const id = state().addItem({ kind: "task", title: "Once" });
+    state().updateItem(id, { repeat: { unit: "week", every: 1 } });
+    state().updateItem(id, { repeat: null });
+    expect(state().toggleDone(id)).toBe(id);
+    expect(state().items).toHaveLength(1);
   });
 });

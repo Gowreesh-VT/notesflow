@@ -16,6 +16,7 @@ import { EstimateField } from "./EstimateField";
 import { MakeSubtask } from "./MakeSubtask";
 import { OutcomeField } from "./Outcome";
 import { RemindersField } from "./RemindersField";
+import { RepeatField } from "./RepeatField";
 import { SubtaskTree } from "./SubtaskTree";
 import { TimeTracker } from "./TimeTracker";
 
@@ -106,8 +107,8 @@ export function TaskDetail({ item }: { item: Item }) {
           aria-label={item.status === "open" ? "Mark as done" : "Mark as not done"}
           disabled={trashed}
           onClick={() => {
-            toggleDone(item.id);
-            if (item.status === "open") promptOutcome(item.id);
+            const finishedId = toggleDone(item.id);
+            if (finishedId) promptOutcome(finishedId);
           }}
           className={clsx(
             "mt-1.5 flex size-[22px] shrink-0 items-center justify-center rounded-md border-2 transition-colors",
@@ -223,6 +224,15 @@ export function TaskDetail({ item }: { item: Item }) {
             </dd>
           </>
         )}
+
+        <dt className="self-start pt-1.5 text-stone-500 dark:text-stone-400">Repeat</dt>
+        <dd>
+          <RepeatField
+            value={item.repeat}
+            disabled={trashed}
+            onChange={(repeat) => updateItem(item.id, { repeat })}
+          />
+        </dd>
 
         <dt className="text-stone-500 dark:text-stone-400">Estimate</dt>
         <dd>

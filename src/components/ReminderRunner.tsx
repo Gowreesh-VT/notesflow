@@ -70,6 +70,7 @@ export function ReminderRunner() {
       if (type === "done") {
         const task = item(itemId);
         if (task?.status === "open") useWorkspace.getState().toggleDone(itemId);
+        useAlarms.getState().dismissItem(itemId);
       }
     };
     navigator.serviceWorker?.addEventListener("message", onMessage);
@@ -168,7 +169,11 @@ function ReminderCards() {
             <button
               type="button"
               className="btn btn-primary px-2 py-1 text-xs"
-              onClick={() => toggleDone(alarm.itemId)}
+              onClick={() => {
+                const finishedId = toggleDone(alarm.itemId);
+                dismissItem(alarm.itemId);
+                if (finishedId) useUi.getState().promptOutcome(finishedId);
+              }}
             >
               <Check size={13} aria-hidden /> Done
             </button>
