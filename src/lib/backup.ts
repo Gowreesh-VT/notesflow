@@ -11,6 +11,7 @@ import {
   type TaskStatus,
 } from "./types";
 import { asMinutes } from "./duration";
+import { parseOutcome } from "./outcomes";
 import { MAX_SUBTASK_DEPTH, rollUp } from "./subtasks";
 import { parseTimeEntries } from "./time-tracking";
 import { createId } from "./utils";
@@ -101,6 +102,8 @@ function optionalItemFields(r: Record<string, unknown>): Partial<Item> {
   if (estimate) fields.estimate = estimate;
   const timeEntries = parseTimeEntries(r.timeEntries);
   if (timeEntries.length) fields.timeEntries = timeEntries;
+  const outcome = r.status === "done" ? parseOutcome(r.outcome, Date.now()) : null;
+  if (outcome) fields.outcome = outcome;
   return fields;
 }
 

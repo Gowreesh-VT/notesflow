@@ -13,6 +13,7 @@ import { ListSelect } from "./ListSelect";
 import { MarkdownEditor, ModeSwitch } from "./MarkdownEditor";
 import { EstimateField } from "./EstimateField";
 import { MakeSubtask } from "./MakeSubtask";
+import { OutcomeField } from "./Outcome";
 import { SubtaskTree } from "./SubtaskTree";
 import { TimeTracker } from "./TimeTracker";
 
@@ -39,6 +40,7 @@ export function TaskDetail({ item }: { item: Item }) {
   const today = useToday();
   const [descriptionMode, setDescriptionMode] = useState<EditorMode>("edit");
   const selectItem = useUi((s) => s.selectItem);
+  const promptOutcome = useUi((s) => s.promptOutcome);
   const {
     updateItem,
     setStatus,
@@ -99,7 +101,10 @@ export function TaskDetail({ item }: { item: Item }) {
           aria-checked={item.status === "done"}
           aria-label={item.status === "open" ? "Mark as done" : "Mark as not done"}
           disabled={trashed}
-          onClick={() => toggleDone(item.id)}
+          onClick={() => {
+            toggleDone(item.id);
+            if (item.status === "open") promptOutcome(item.id);
+          }}
           className={clsx(
             "mt-1.5 flex size-[22px] shrink-0 items-center justify-center rounded-md border-2 transition-colors",
             "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500",
@@ -193,6 +198,15 @@ export function TaskDetail({ item }: { item: Item }) {
               ) : (
                 <span className="text-xs text-stone-500 dark:text-stone-400">All day</span>
               )}
+            </dd>
+          </>
+        )}
+
+        {item.status === "done" && (
+          <>
+            <dt className="self-start pt-1 text-stone-500 dark:text-stone-400">Outcome</dt>
+            <dd>
+              <OutcomeField item={item} />
             </dd>
           </>
         )}

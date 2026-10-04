@@ -37,6 +37,8 @@ export type Item = {
   estimate?: number | null;
   /** Tracked time; at most one entry is running across the whole workspace. */
   timeEntries?: TimeEntry[];
+  /** Set when a finished task was tagged with how it went; cleared when the task is reopened. */
+  outcome?: Outcome | null;
   subtasks: Subtask[];
   /** Section of the item's list it belongs to, or null for the unsectioned top of the list. */
   sectionId: string | null;
@@ -49,6 +51,13 @@ export type TimeEntry = {
   end: number | null;
   /** Added by hand rather than with the timer. */
   manual?: boolean;
+};
+
+/** How a finished task went: a short label (from the editable choices) and an optional one-line note. */
+export type Outcome = {
+  label: string;
+  note: string;
+  at: number;
 };
 
 export type ListSection = {

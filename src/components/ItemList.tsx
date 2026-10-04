@@ -60,6 +60,7 @@ function ItemRow({
   const lists = useWorkspace((s) => s.lists);
   const toggleDone = useWorkspace((s) => s.toggleDone);
   const selectItem = useUi((s) => s.selectItem);
+  const promptOutcome = useUi((s) => s.promptOutcome);
 
   const isTask = item.kind === "task";
   const closed = isTask && item.status !== "open";
@@ -86,7 +87,10 @@ function ItemRow({
           aria-checked={item.status === "done"}
           aria-label={`Mark “${item.title}” as ${item.status === "open" ? "done" : "not done"}`}
           disabled={trashed}
-          onClick={() => toggleDone(item.id)}
+          onClick={() => {
+            toggleDone(item.id);
+            if (item.status === "open") promptOutcome(item.id);
+          }}
           className={clsx(
             "flex size-[18px] shrink-0 items-center justify-center rounded-[5px] border-2 transition-colors",
             "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500",
@@ -156,6 +160,9 @@ function ItemRow({
               {tag}
             </span>
           ))}
+          {item.outcome && (
+            <span className="hidden max-w-32 truncate italic @md:inline">{item.outcome.label}</span>
+          )}
           {listName && <span className="hidden max-w-28 truncate @xl:inline">{listName}</span>}
           {isTask && item.due && (
             <span

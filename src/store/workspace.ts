@@ -17,6 +17,7 @@ import {
   startEntry,
   stopEntries,
 } from "@/lib/time-tracking";
+import { makeOutcome } from "@/lib/outcomes";
 import { migrateLegacyData, type LegacyNote, type LegacyTask } from "@/lib/migrate";
 import {
   INBOX_ID,
@@ -75,6 +76,8 @@ type WorkspaceState = WorkspaceData & {
   addSubtask: (itemId: string, title: string, parentId?: string | null) => string | null;
   renameSubtask: (itemId: string, subtaskId: string, title: string) => void;
   /** Starts the timer on a task, stopping any timer running on another task. */
+  /** Tags a finished task with how it went; a null or blank label clears it. */
+  setOutcome: (itemId: string, label: string | null, note?: string) => void;
   startTimer: (itemId: string) => void;
   stopTimer: (itemId: string) => void;
   addTimeEntry: (itemId: string, minutes: number) => void;
@@ -118,7 +121,7 @@ const mapItem = (items: Item[], id: string, fn: (item: Item) => Item): Item[] =>
   items.map((item) => (item.id === id ? fn(item) : item));
 
 /** Optional item fields are removed rather than stored as null, keeping records small and stable. */
-const OPTIONAL_FIELDS = ["dueTime", "estimate", "timeEntries"] as const;
+const OPTIONAL_FIELDS = ["dueTime", "estimate", "timeEntries", "outcome"] as const;
 
 const dropEmptyOptionals = (item: Item): Item => {
   const next = { ...item };
@@ -207,11 +210,15 @@ export const useWorkspace = create<WorkspaceState>()(
       setStatus: (id, status) =>
         set((s) => ({
           items: mapItem(s.items, id, (item) =>
-            touch(item, {
-              status,
-              completedAt: status === "open" ? null : Date.now(),
-              ...stopTimerPatch(item, status !== "open"),
-            }),
+            dropEmptyOptionals(
+              touch(item, {
+                status,
+                completedAt: status === "open" ? null : Date.now(),
+                ...stopTimerPatch(item, status !== "open"),
+                // An outcome describes a finished task, so it goes away when the task is reopened or skipped.
+                ...(status !== "done" ? { outcome: null } : {}),
+              }),
+            ),
           ),
         })),
 
@@ -313,6 +320,15 @@ export const useWorkspace = create<WorkspaceState>()(
           ),
         }));
       },
+
+      setOutcome: (itemId, label, note = "") =>
+        set((s) => ({
+          items: mapItem(s.items, itemId, (item) => {
+            if (item.kind !== "task" || item.status !== "done") return item;
+            const outcome = label ? makeOutcome(label, note, Date.now()) : null;
+            return dropEmptyOptionals(touch(item, { outcome }));
+          }),
+        })),
 
       startTimer: (itemId) =>
         set((s) => {

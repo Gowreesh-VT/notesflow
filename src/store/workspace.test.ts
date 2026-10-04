@@ -394,3 +394,19 @@ describe("time tracking", () => {
     expect(find(a)).not.toHaveProperty("timeEntries");
   });
 });
+
+describe("outcomes", () => {
+  it("tags only finished tasks and clears the outcome when the task is reopened", () => {
+    const id = state().addItem({ kind: "task", title: "Pitch" });
+    state().setOutcome(id, "Went well");
+    expect(state().items[0]).not.toHaveProperty("outcome");
+    state().toggleDone(id);
+    state().setOutcome(id, "Went well", " Client said yes ");
+    expect(state().items[0].outcome).toMatchObject({ label: "Went well", note: "Client said yes" });
+    state().setOutcome(id, null);
+    expect(state().items[0]).not.toHaveProperty("outcome");
+    state().setOutcome(id, "Needs follow-up");
+    state().toggleDone(id);
+    expect(state().items[0]).not.toHaveProperty("outcome");
+  });
+});

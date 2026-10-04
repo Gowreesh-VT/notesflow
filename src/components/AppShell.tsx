@@ -7,6 +7,7 @@ import { useUi } from "@/store/ui";
 import { useSyncStore } from "@/store/sync";
 import { upgradeLegacyStorage, useWorkspace } from "@/store/workspace";
 import { NavRail } from "./NavRail";
+import { OutcomePrompt } from "./Outcome";
 import { CommandPalette } from "./CommandPalette";
 import { ShortcutHelp } from "./ShortcutHelp";
 import { Sidebar } from "./Sidebar";
@@ -98,6 +99,7 @@ export function AppShell() {
       </div>
       {ready && <CommandPalette />}
       {ready && <ShortcutHelp />}
+      {ready && <OutcomePrompt />}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { cleanOutcomeLabels, DEFAULT_OUTCOME_LABELS } from "@/lib/outcomes";
 import type { ItemSort, View } from "@/lib/types";
 
 export type Theme = "system" | "light" | "dark";
@@ -19,6 +20,10 @@ type UiState = {
   sidebarOpen: boolean;
   /** Desktop only: hides the lists sidebar to give the task list more room. */
   sidebarCollapsed: boolean;
+  /** Task that was just completed and is waiting for an optional outcome. */
+  outcomePromptId: string | null;
+  /** Editable outcome choices (kept on this device). */
+  outcomeLabels: string[];
   setTheme: (theme: Theme) => void;
   setEditorMode: (mode: EditorMode) => void;
   setSort: (sort: ItemSort) => void;
@@ -29,6 +34,8 @@ type UiState = {
   setHelpOpen: (open: boolean) => void;
   setSidebarOpen: (open: boolean) => void;
   toggleSidebarCollapsed: () => void;
+  promptOutcome: (id: string | null) => void;
+  setOutcomeLabels: (labels: string[]) => void;
 };
 
 export const useUi = create<UiState>()(
@@ -44,6 +51,8 @@ export const useUi = create<UiState>()(
       helpOpen: false,
       sidebarOpen: false,
       sidebarCollapsed: false,
+      outcomePromptId: null,
+      outcomeLabels: DEFAULT_OUTCOME_LABELS,
       setTheme: (theme) => set({ theme }),
       setEditorMode: (editorMode) => set({ editorMode }),
       setSort: (sort) => set({ sort }),
@@ -54,6 +63,8 @@ export const useUi = create<UiState>()(
       setHelpOpen: (helpOpen) => set({ helpOpen }),
       setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
       toggleSidebarCollapsed: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
+      promptOutcome: (outcomePromptId) => set({ outcomePromptId }),
+      setOutcomeLabels: (labels) => set({ outcomeLabels: cleanOutcomeLabels(labels) }),
     }),
     {
       name: "notesflow:ui",
@@ -64,6 +75,7 @@ export const useUi = create<UiState>()(
         editorMode: s.editorMode,
         sort: s.sort,
         sidebarCollapsed: s.sidebarCollapsed,
+        outcomeLabels: s.outcomeLabels,
       }),
       // v1 stored a different sort field; only theme and editor mode carry over.
       migrate: (persisted) => {
