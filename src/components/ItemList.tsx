@@ -34,6 +34,7 @@ import {
   groupBySections,
   itemTags,
   parseQuickAdd,
+  quickAddDefaults,
   subtaskProgress,
   viewTitle,
 } from "@/lib/items-logic";
@@ -44,7 +45,7 @@ import { EnergyIcon } from "./EnergyField";
 import { TemplatesMenu } from "./TemplatesMenu";
 import { runningEntry } from "@/lib/time-tracking";
 import { INBOX_ID, type Item, type ItemKind, type ItemSort, type Priority } from "@/lib/types";
-import { addDays, displayTitle, formatDueRange, formatDueWithTime, getSnippet } from "@/lib/utils";
+import { displayTitle, formatDueRange, formatDueWithTime, getSnippet } from "@/lib/utils";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
 
@@ -303,6 +304,7 @@ export function ItemList() {
   const items = useWorkspace((s) => s.items);
   const lists = useWorkspace((s) => s.lists);
   const folders = useWorkspace((s) => s.folders);
+  const filters = useWorkspace((s) => s.filters);
   const addItem = useWorkspace((s) => s.addItem);
   const emptyTrash = useWorkspace((s) => s.emptyTrash);
   const renameList = useWorkspace((s) => s.renameList);
@@ -329,8 +331,8 @@ export function ItemList() {
   const energyFilter = useUi((s) => s.energyFilter);
   const setEnergyFilter = useUi((s) => s.setEnergyFilter);
   const visible = useMemo(
-    () => filterByEnergy(filterItems(items, view, query, today, sort), energyFilter),
-    [items, view, query, today, sort, energyFilter],
+    () => filterByEnergy(filterItems(items, view, query, today, sort, { filters }), energyFilter),
+    [items, view, query, today, sort, energyFilter, filters],
   );
 
   const isContainer = view.kind === "list" || (view.kind === "smart" && view.id === "inbox");
@@ -346,7 +348,7 @@ export function ItemList() {
   const openCount = main.filter((i) => i.kind === "task").length;
 
   const currentList = view.kind === "list" ? lists.find((l) => l.id === view.id) : undefined;
-  const title = viewTitle(view, lists);
+  const title = viewTitle(view, lists, filters);
 
   const toggleGroup = (id: string) =>
     setCollapsed((prev) => {
@@ -356,13 +358,11 @@ export function ItemList() {
       return next;
     });
 
-  const listId = view.kind === "list" ? view.id : INBOX_ID;
-  const defaultDue =
-    view.kind === "smart" && (view.id === "today" || view.id === "week")
-      ? today
-      : view.kind === "smart" && view.id === "tomorrow"
-        ? addDays(today, 1)
-        : null;
+  const {
+    listId,
+    priority: defaultPriority,
+    due: defaultDue,
+  } = quickAddDefaults(view, today, filters);
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -376,7 +376,7 @@ export function ItemList() {
       addItem({
         kind,
         title: `${parsed.title}${tagSuffix}`,
-        priority: parsed.priority,
+        priority: parsed.priority !== "none" ? parsed.priority : defaultPriority,
         due: parsed.due ?? defaultDue,
         dueTime: parsed.dueTime ?? null,
         estimate: parsed.estimate ?? null,
@@ -413,7 +413,9 @@ export function ItemList() {
             : view.kind === "smart" &&
                 (view.id === "today" || view.id === "tomorrow" || view.id === "week")
               ? "Nothing due. Enjoy the calm."
-              : "Nothing here yet. Add a task or note above.";
+              : view.kind === "filter"
+                ? "Nothing matches this filter."
+                : "Nothing here yet. Add a task or note above.";
 
   const rows = (group: Item[], showList: boolean) => (
     <ul>

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { exportBackup } from "@/lib/data-actions";
+import { sortFilters } from "@/lib/filters";
 import { filterItems, SMART_VIEWS } from "@/lib/items-logic";
 import { useToday } from "@/lib/hooks";
 import { INBOX_ID, type Item } from "@/lib/types";
@@ -27,6 +28,7 @@ function PaletteDialog({ onClose }: { onClose: () => void }) {
   const input = useRef<HTMLInputElement>(null);
   const items = useWorkspace((s) => s.items);
   const lists = useWorkspace((s) => s.lists);
+  const filters = useWorkspace((s) => s.filters);
   const today = useToday();
 
   const commands = useMemo<Command[]>(() => {
@@ -62,6 +64,11 @@ function PaletteDialog({ onClose }: { onClose: () => void }) {
         label: `Open list: ${l.name}`,
         run: () => ui.setView({ kind: "list", id: l.id }),
       })),
+      ...sortFilters(filters).map((f) => ({
+        id: `filter-${f.id}`,
+        label: `Open filter: ${f.name}`,
+        run: () => ui.setView({ kind: "filter", id: f.id }),
+      })),
       { id: "theme", label: "Cycle theme", run: () => ui.setTheme(NEXT_THEME[ui.theme]) },
       { id: "view-edit", label: "Editor: edit only", run: () => ui.setEditorMode("edit") },
       { id: "view-split", label: "Editor: split view", run: () => ui.setEditorMode("split") },
@@ -82,7 +89,7 @@ function PaletteDialog({ onClose }: { onClose: () => void }) {
           }))
       : [];
     return [...matchingCommands, ...itemResults];
-  }, [query, items, lists, today]);
+  }, [query, items, lists, filters, today]);
 
   useEffect(() => {
     input.current?.focus();

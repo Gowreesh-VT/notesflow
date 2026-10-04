@@ -33,6 +33,7 @@ export function SyncRunner() {
         state.items !== previous.items ||
         state.lists !== previous.lists ||
         state.folders !== previous.folders ||
+        state.filters !== previous.filters ||
         state.tombstones !== previous.tombstones
       ) {
         requestSync();

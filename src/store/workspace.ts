@@ -21,12 +21,15 @@ import { makeOutcome } from "@/lib/outcomes";
 import { nextDueDate } from "@/lib/recurrence";
 import { makeReminder, MAX_REMINDERS, parseReminders } from "@/lib/reminders";
 import { migrateLegacyData, type LegacyNote, type LegacyTask } from "@/lib/migrate";
+import { cleanFilterName, parseFilterCriteria } from "@/lib/filters";
 import {
   INBOX_ID,
+  type FilterCriteria,
   type Folder,
   type Item,
   type ItemKind,
   type Priority,
+  type SavedFilter,
   type Subtask,
   type TaskList,
   type TaskStatus,
@@ -71,6 +74,7 @@ export type WorkspaceData = {
   items: Item[];
   lists: TaskList[];
   folders: Folder[];
+  filters: SavedFilter[];
   tombstones: Tombstone[];
 };
 
@@ -133,8 +137,17 @@ type WorkspaceState = WorkspaceData & {
   addFolder: (name: string) => string | null;
   renameFolder: (id: string, name: string) => void;
   deleteFolder: (id: string) => void;
+  /** Saves a filter; returns its id, or null when the name is blank. */
+  addFilter: (name: string, criteria: FilterCriteria) => string | null;
+  updateFilter: (id: string, patch: { name?: string; criteria?: FilterCriteria }) => void;
+  deleteFilter: (id: string) => void;
 
-  mergeData: (incoming: { items: Item[]; lists: TaskList[]; folders: Folder[] }) => {
+  mergeData: (incoming: {
+    items: Item[];
+    lists: TaskList[];
+    folders: Folder[];
+    filters?: SavedFilter[];
+  }) => {
     items: number;
     lists: number;
   };
@@ -213,6 +226,7 @@ export const useWorkspace = create<WorkspaceState>()(
       items: [],
       lists: [],
       folders: [],
+      filters: [],
       tombstones: [],
 
       addItem: ({
@@ -828,8 +842,46 @@ export const useWorkspace = create<WorkspaceState>()(
           };
         }),
 
+      addFilter: (name, criteria) => {
+        const cleanName = cleanFilterName(name);
+        if (!cleanName) return null;
+        const now = Date.now();
+        const filter: SavedFilter = {
+          id: createId(),
+          name: cleanName,
+          criteria: parseFilterCriteria(criteria),
+          createdAt: now,
+          updatedAt: now,
+        };
+        set((s) => ({ filters: [...s.filters, filter] }));
+        return filter.id;
+      },
+
+      updateFilter: (id, patch) =>
+        set((s) => ({
+          filters: s.filters.map((f) => {
+            if (f.id !== id) return f;
+            const name = patch.name !== undefined ? cleanFilterName(patch.name) : f.name;
+            return {
+              ...f,
+              name: name ?? f.name,
+              criteria: patch.criteria ? parseFilterCriteria(patch.criteria) : f.criteria,
+              updatedAt: Date.now(),
+            };
+          }),
+        })),
+
+      deleteFilter: (id) =>
+        set((s) => {
+          if (!s.filters.some((f) => f.id === id)) return s;
+          return {
+            filters: s.filters.filter((f) => f.id !== id),
+            tombstones: [...s.tombstones, { collection: "filter" as const, id, at: Date.now() }],
+          };
+        }),
+
       mergeData: (incoming) => {
-        const { items, lists, folders } = get();
+        const { items, lists, folders, filters } = get();
         const itemIds = new Set(items.map((i) => i.id));
         const listIds = new Set(lists.map((l) => l.id));
         const folderIds = new Set(folders.map((f) => f.id));
@@ -839,10 +891,13 @@ export const useWorkspace = create<WorkspaceState>()(
         const newItems = incoming.items
           .filter((i) => !itemIds.has(i.id))
           .map((i) => (knownLists.has(i.listId) ? i : { ...i, listId: INBOX_ID }));
+        const filterIds = new Set(filters.map((f) => f.id));
+        const newFilters = (incoming.filters ?? []).filter((f) => !filterIds.has(f.id));
         set({
           items: [...newItems, ...items],
           lists: [...lists, ...newLists],
           folders: [...folders, ...newFolders],
+          filters: [...filters, ...newFilters],
         });
         return { items: newItems.length, lists: newLists.length };
       },
@@ -862,15 +917,17 @@ export const useWorkspace = create<WorkspaceState>()(
     }),
     {
       name: WORKSPACE_KEY,
-      version: 3,
+      version: 4,
       skipHydration: true,
       partialize: (s) => ({
         items: s.items,
         lists: s.lists,
         folders: s.folders,
+        filters: s.filters,
         tombstones: s.tombstones,
       }),
-      // v1 lists and folders had no updatedAt; v1 had no tombstones; before v3 there were no sections.
+      // v1 lists and folders had no updatedAt; v1 had no tombstones; before v3 there were no sections; before v4
+      // there were no saved filters.
       migrate: (persisted) => {
         const old = (persisted ?? {}) as Partial<WorkspaceData>;
         const stamp = <T extends { createdAt: number; updatedAt?: number }>(x: T) => ({
@@ -881,6 +938,7 @@ export const useWorkspace = create<WorkspaceState>()(
           items: (old.items ?? []).map((item) => ({ ...item, sectionId: item.sectionId ?? null })),
           lists: (old.lists ?? []).map(stamp).map((l) => ({ ...l, sections: l.sections ?? [] })),
           folders: (old.folders ?? []).map(stamp),
+          filters: old.filters ?? [],
           tombstones: old.tombstones ?? [],
         };
       },
@@ -913,7 +971,10 @@ export function upgradeLegacyStorage(storage: Pick<Storage, "getItem" | "setItem
   const { items, lists } = migrateLegacyData(notes, tasks);
   storage.setItem(
     WORKSPACE_KEY,
-    JSON.stringify({ state: { items, lists, folders: [], tombstones: [] }, version: 3 }),
+    JSON.stringify({
+      state: { items, lists, folders: [], filters: [], tombstones: [] },
+      version: 4,
+    }),
   );
   return true;
 }

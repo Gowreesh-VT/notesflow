@@ -36,6 +36,7 @@ import { useUi, type Theme } from "@/store/ui";
 import { AccountMenu } from "./AccountMenu";
 import { InstallButton } from "./InstallButton";
 import { LogoMark } from "./Logo";
+import { SidebarFilters } from "./SidebarFilters";
 import { useWorkspace } from "@/store/workspace";
 
 const SMART_ICONS: Record<SmartViewId, React.ReactNode> = {
@@ -354,6 +355,8 @@ export function Sidebar() {
               Create lists to organise tasks and notes.
             </p>
           )}
+
+          <SidebarFilters />
 
           {tags.length > 0 && (
             <>

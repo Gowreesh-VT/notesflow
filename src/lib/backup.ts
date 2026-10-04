@@ -7,10 +7,12 @@ import {
   type ListSection,
   type Subtask,
   type Priority,
+  type SavedFilter,
   type TaskList,
   type TaskStatus,
 } from "./types";
 import { asMinutes } from "./duration";
+import { cleanFilterName, parseFilterCriteria } from "./filters";
 import { isEnergy } from "./items-logic";
 import { parseOutcome } from "./outcomes";
 import { parseRepeat } from "./recurrence";
@@ -151,14 +153,32 @@ export function parseFolder(raw: unknown, now: number): Folder | null {
   };
 }
 
+export function parseFilter(raw: unknown, now: number): SavedFilter | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const name = cleanFilterName(asString(r.name));
+  if (!name || !asString(r.id)) return null;
+  return {
+    id: asString(r.id),
+    name,
+    criteria: parseFilterCriteria(r.criteria),
+    createdAt: asTime(r.createdAt, now),
+    updatedAt: asTime(r.updatedAt, asTime(r.createdAt, now)),
+  };
+}
+
 function parseArray<T>(raw: unknown, parse: (value: unknown) => T | null): T[] {
   return Array.isArray(raw) ? raw.flatMap((value) => parse(value) ?? []) : [];
 }
 
-export function createBackup(
-  data: { items: Item[]; lists: TaskList[]; folders: Folder[] },
-  now = Date.now(),
-): Backup {
+export type BackupData = {
+  items: Item[];
+  lists: TaskList[];
+  folders: Folder[];
+  filters: SavedFilter[];
+};
+
+export function createBackup(data: BackupData, now = Date.now()): Backup {
   return { app: "notesflow", version: 2, exportedAt: now, ...data };
 }
 
@@ -166,10 +186,7 @@ export function createBackup(
  * Parses and sanitises a backup file (current format, or the older notes+tasks format).
  * Throws an Error with a readable message when the file is not usable.
  */
-export function parseBackup(
-  text: string,
-  now = Date.now(),
-): { items: Item[]; lists: TaskList[]; folders: Folder[] } {
+export function parseBackup(text: string, now = Date.now()): BackupData {
   let data: unknown;
   try {
     data = JSON.parse(text);
@@ -186,6 +203,8 @@ export function parseBackup(
       items: parseArray(record.items, (v) => parseItem(v, now)),
       lists: parseArray(record.lists, (v) => parseList(v, now)),
       folders: parseArray(record.folders, (v) => parseFolder(v, now)),
+      // Backups made before saved filters existed have none.
+      filters: parseArray(record.filters, (v) => parseFilter(v, now)),
     };
   }
 
@@ -222,5 +241,5 @@ export function parseBackup(
     } satisfies LegacyTask;
   });
   const { items, lists } = migrateLegacyData(legacyNotes, legacyTasks, now);
-  return { items, lists, folders: [] };
+  return { items, lists, folders: [], filters: [] };
 }

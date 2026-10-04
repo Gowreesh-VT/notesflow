@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { EMPTY_CRITERIA } from "@/lib/filters";
 import { INBOX_ID } from "@/lib/types";
 import { addDays, toDateKey } from "@/lib/utils";
 import { upgradeLegacyStorage, useWorkspace, WORKSPACE_KEY } from "./workspace";
@@ -6,7 +7,7 @@ import { upgradeLegacyStorage, useWorkspace, WORKSPACE_KEY } from "./workspace";
 const state = () => useWorkspace.getState();
 
 beforeEach(() => {
-  useWorkspace.setState({ items: [], lists: [], folders: [], tombstones: [] });
+  useWorkspace.setState({ items: [], lists: [], folders: [], filters: [], tombstones: [] });
 });
 
 describe("items", () => {
@@ -242,6 +243,55 @@ describe("mergeData", () => {
     expect(added).toEqual({ items: 2, lists: 1 });
     expect(state().items.find((i) => i.id === "orphan")?.listId).toBe(INBOX_ID);
     expect(id).toBeTruthy();
+  });
+
+  it("adds unseen saved filters", () => {
+    const id = state().addFilter("Mine", EMPTY_CRITERIA)!;
+    const mine = state().filters[0];
+    state().mergeData({
+      items: [],
+      lists: [],
+      folders: [],
+      filters: [mine, { ...mine, id: "other", name: "Other" }],
+    });
+    expect(state().filters.map((f) => f.id)).toEqual([id, "other"]);
+  });
+});
+
+describe("saved filters", () => {
+  it("adds, edits and deletes filters, leaving a tombstone", () => {
+    expect(state().addFilter("  ", EMPTY_CRITERIA)).toBeNull();
+    const id = state().addFilter(" Urgent ", { ...EMPTY_CRITERIA, priorities: ["high"] })!;
+    const created = state().filters[0];
+    expect(created).toMatchObject({ id, name: "Urgent", criteria: { priorities: ["high"] } });
+
+    useWorkspace.setState({ filters: [{ ...created, updatedAt: 1 }] });
+    state().updateFilter(id, {
+      name: "Very urgent",
+      criteria: { ...EMPTY_CRITERIA, priorities: ["high", "high"], status: "all" },
+    });
+    expect(state().filters[0]).toMatchObject({
+      name: "Very urgent",
+      criteria: { priorities: ["high"], status: "all" },
+    });
+    expect(state().filters[0].updatedAt).toBeGreaterThan(1);
+
+    state().updateFilter(id, { name: " " });
+    expect(state().filters[0].name).toBe("Very urgent");
+
+    state().deleteFilter(id);
+    expect(state().filters).toEqual([]);
+    expect(state().tombstones).toEqual([{ collection: "filter", id, at: expect.any(Number) }]);
+    state().deleteFilter(id);
+    expect(state().tombstones).toHaveLength(1);
+  });
+
+  it("gives older stored workspaces an empty filter list", () => {
+    const migrate = useWorkspace.persist.getOptions().migrate!;
+    const migrated = migrate({ items: [], lists: [], folders: [], tombstones: [] }, 3) as {
+      filters: unknown;
+    };
+    expect(migrated.filters).toEqual([]);
   });
 });
 

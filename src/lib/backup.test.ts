@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createBackup, parseBackup } from "./backup";
-import { INBOX_ID, type Item } from "./types";
+import { EMPTY_CRITERIA } from "./filters";
+import { INBOX_ID, type Item, type SavedFilter } from "./types";
 
 const item: Item = {
   id: "i1",
@@ -35,6 +36,7 @@ describe("backup", () => {
         },
       ],
       folders: [{ id: "f", name: "Life", createdAt: 1, updatedAt: 2 }],
+      filters: [],
     };
     expect(parseBackup(JSON.stringify(createBackup(data, 5)))).toEqual(data);
   });
@@ -255,5 +257,43 @@ describe("reminder and repeat fields in backups", () => {
     for (const key of ["reminders", "constantReminder", "snoozedUntil", "repeat"]) {
       expect(junk).not.toHaveProperty(key);
     }
+  });
+});
+
+describe("saved filters in backups", () => {
+  const filter: SavedFilter = {
+    id: "f1",
+    name: "Urgent",
+    criteria: {
+      kind: "task",
+      lists: ["inbox"],
+      tags: ["work"],
+      priorities: ["high"],
+      due: "range",
+      dueFrom: "2026-01-01",
+      dueTo: "2026-02-01",
+      energies: ["deep"],
+      status: "open",
+    },
+    createdAt: 1,
+    updatedAt: 2,
+  };
+
+  it("exports and imports filters", () => {
+    const data = { items: [], lists: [], folders: [], filters: [filter] };
+    expect(parseBackup(JSON.stringify(createBackup(data, 5))).filters).toEqual([filter]);
+  });
+
+  it("imports older backups without filters and drops broken ones", () => {
+    const old = JSON.stringify({ app: "notesflow", version: 2, items: [], lists: [], folders: [] });
+    expect(parseBackup(old).filters).toEqual([]);
+    const broken = JSON.stringify({
+      app: "notesflow",
+      version: 2,
+      filters: [{ id: "x", name: "" }, { name: "No id" }, { id: "y", name: "Bare" }, 7],
+    });
+    expect(parseBackup(broken, 9).filters).toEqual([
+      { id: "y", name: "Bare", criteria: EMPTY_CRITERIA, createdAt: 9, updatedAt: 9 },
+    ]);
   });
 });
