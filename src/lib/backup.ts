@@ -137,6 +137,10 @@ export function parseList(raw: unknown, now: number): TaskList | null {
     folderId: asString(r.folderId) || null,
     createdAt: asTime(r.createdAt, now),
     updatedAt: asTime(r.updatedAt, asTime(r.createdAt, now)),
+    // Only written while archived, so older records stay unchanged.
+    ...(typeof r.archivedAt === "number" && Number.isFinite(r.archivedAt) && r.archivedAt > 0
+      ? { archivedAt: r.archivedAt }
+      : {}),
   };
 }
 

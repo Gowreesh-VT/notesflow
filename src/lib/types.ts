@@ -107,6 +107,8 @@ export type TaskList = {
   folderId: string | null;
   createdAt: number;
   updatedAt: number;
+  /** Set while the list is archived: hidden from the sidebar's lists, pickers and smart views. */
+  archivedAt?: number | null;
 };
 
 export type Folder = {

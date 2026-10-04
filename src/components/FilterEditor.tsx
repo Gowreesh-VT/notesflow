@@ -11,7 +11,7 @@ import {
   FILTER_PRIORITIES,
   FILTER_STATUS_OPTIONS,
 } from "@/lib/filters";
-import { collectTags, ENERGY_OPTIONS } from "@/lib/items-logic";
+import { collectTags, ENERGY_OPTIONS, isArchived } from "@/lib/items-logic";
 import {
   INBOX_ID,
   type FilterCriteria,
@@ -79,7 +79,11 @@ export function FilterEditor({
     () => [...new Set([...collectTags(items).map((t) => t.tag), ...criteria.tags])],
     [items, criteria.tags],
   );
-  const listChoices = [{ id: INBOX_ID, name: "Inbox" }, ...lists];
+  // Archived lists are only offered when the filter already uses them.
+  const listChoices = [
+    { id: INBOX_ID, name: "Inbox" },
+    ...lists.filter((l) => !isArchived(l) || criteria.lists.includes(l.id)),
+  ];
   const update = (patch: Partial<FilterCriteria>) => setCriteria((c) => ({ ...c, ...patch }));
 
   const save = (event: React.FormEvent) => {

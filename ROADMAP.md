@@ -52,7 +52,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 - [ ] [BIG] Multi-select with batch edit: set date, priority, list, tags or energy, complete, and delete many tasks at once
 - [x] [BIG] Saved filters: combine list, tag, priority, due range, energy and status; pinned in the sidebar under "Filters"
 - [ ] Rename or merge a tag across all items from the sidebar
-- [ ] Archive lists: hide finished lists in an "Archived lists" section, restorable
+- [x] Archive lists: hide finished lists in an "Archived lists" section, restorable
 - [ ] Drag-and-drop ordering of tasks within a list or section, and of lists in the sidebar
 - [ ] Group a list by due date, priority, section or tag
 - [ ] Note-to-task: turn the unchecked checklist lines of a note into real tasks

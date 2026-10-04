@@ -28,7 +28,14 @@ import {
   X,
 } from "lucide-react";
 import clsx from "clsx";
-import { collectTags, countInView, sameView, SMART_VIEWS } from "@/lib/items-logic";
+import {
+  activeLists,
+  archivedListIds,
+  collectTags,
+  countInView,
+  sameView,
+  SMART_VIEWS,
+} from "@/lib/items-logic";
 import { exportBackup, importBackupFile, importMarkdownFiles } from "@/lib/data-actions";
 import { useToday } from "@/lib/hooks";
 import { INBOX_ID, type SmartViewId, type View } from "@/lib/types";
@@ -36,6 +43,7 @@ import { useUi, type Theme } from "@/store/ui";
 import { AccountMenu } from "./AccountMenu";
 import { InstallButton } from "./InstallButton";
 import { LogoMark } from "./Logo";
+import { SidebarArchivedLists } from "./SidebarArchivedLists";
 import { SidebarFilters } from "./SidebarFilters";
 import { useWorkspace } from "@/store/workspace";
 
@@ -108,7 +116,7 @@ const THEMES: { value: Theme; label: string; icon: React.ReactNode }[] = [
 
 export function Sidebar() {
   const items = useWorkspace((s) => s.items);
-  const lists = useWorkspace((s) => s.lists);
+  const allLists = useWorkspace((s) => s.lists);
   const folders = useWorkspace((s) => s.folders);
   const addList = useWorkspace((s) => s.addList);
   const addFolder = useWorkspace((s) => s.addFolder);
@@ -128,14 +136,20 @@ export function Sidebar() {
   const backupInput = useRef<HTMLInputElement>(null);
   const markdownInput = useRef<HTMLInputElement>(null);
 
+  // Archived lists live in their own section; their items stay out of smart views, counts and tags.
+  const lists = useMemo(() => activeLists(allLists), [allLists]);
+  const archived = useMemo(() => archivedListIds(allLists), [allLists]);
   const smartCounts = useMemo(
     () =>
       Object.fromEntries(
-        SMART_VIEWS.map((v) => [v.id, countInView(items, { kind: "smart", id: v.id }, today)]),
+        SMART_VIEWS.map((v) => [
+          v.id,
+          countInView(items, { kind: "smart", id: v.id }, today, { archived }),
+        ]),
       ) as Record<SmartViewId, number>,
-    [items, today],
+    [items, today, archived],
   );
-  const tags = useMemo(() => collectTags(items), [items]);
+  const tags = useMemo(() => collectTags(items, archived), [items, archived]);
 
   const listCount = (id: string) => countInView(items, { kind: "list", id }, today);
   const topLevelLists = lists.filter(
@@ -386,6 +400,7 @@ export function Sidebar() {
               onClick={() => goTo({ kind: "smart", id: v.id })}
             />
           ))}
+          <SidebarArchivedLists />
         </nav>
 
         <div className="space-y-2 border-t border-stone-200 p-3 dark:border-stone-800">

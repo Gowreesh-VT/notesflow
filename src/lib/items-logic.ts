@@ -47,8 +47,24 @@ export function itemTags(item: Pick<Item, "title" | "body">): string[] {
   return extractTags(`${item.title}\n${item.body}`);
 }
 
-/** What some views need besides the items: saved filters for filter views. */
-export type ViewContext = { filters?: SavedFilter[] };
+/**
+ * What some views need besides the items: saved filters for filter views, and the ids of archived lists, whose
+ * items only show up in the list itself (and in filters that name it).
+ */
+export type ViewContext = { filters?: SavedFilter[]; archived?: ReadonlySet<string> };
+
+export const isArchived = (list: Pick<TaskList, "archivedAt">): boolean => Boolean(list.archivedAt);
+
+/** Lists that are not archived, for the sidebar, pickers and quick add. */
+export const activeLists = <T extends Pick<TaskList, "archivedAt">>(lists: T[]): T[] =>
+  lists.filter((l) => !isArchived(l));
+
+/** Archived lists, most recently archived first. */
+export const archivedLists = <T extends Pick<TaskList, "archivedAt">>(lists: T[]): T[] =>
+  lists.filter(isArchived).sort((a, b) => (b.archivedAt ?? 0) - (a.archivedAt ?? 0));
+
+export const archivedListIds = (lists: TaskList[]): ReadonlySet<string> =>
+  new Set(archivedLists(lists).map((l) => l.id));
 
 export function sameView(a: View, b: View): boolean {
   if (a.kind !== b.kind) return false;
@@ -75,8 +91,9 @@ function matchesView(item: Item, view: View, today: string, ctx: ViewContext): b
   if (view.kind === "list") return item.listId === view.id;
   if (view.kind === "filter") {
     const filter = findFilter(ctx.filters ?? [], view.id);
-    return filter ? matchesCriteria(item, filter.criteria, today) : false;
+    return filter ? matchesCriteria(item, filter.criteria, today, ctx.archived) : false;
   }
+  if (ctx.archived?.has(item.listId)) return false;
   if (view.kind === "tag") {
     return (item.kind === "note" || isOpenTask(item)) && itemTags(item).includes(view.tag);
   }
@@ -186,10 +203,13 @@ export function countInView(
     : matches.length;
 }
 
-export function collectTags(items: Item[]): { tag: string; count: number }[] {
+export function collectTags(
+  items: Item[],
+  archived: ReadonlySet<string> = new Set(),
+): { tag: string; count: number }[] {
   const counts = new Map<string, number>();
   for (const item of items) {
-    if (item.deletedAt !== null || item.template) continue;
+    if (item.deletedAt !== null || item.template || archived.has(item.listId)) continue;
     if (!(item.kind === "note" || isOpenTask(item))) continue;
     for (const tag of itemTags(item)) counts.set(tag, (counts.get(tag) ?? 0) + 1);
   }

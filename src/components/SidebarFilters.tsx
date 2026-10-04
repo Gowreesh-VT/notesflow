@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Funnel, Pencil, Plus, X } from "lucide-react";
 import clsx from "clsx";
 import { sortFilters } from "@/lib/filters";
-import { countInView, sameView } from "@/lib/items-logic";
+import { archivedListIds, countInView, sameView } from "@/lib/items-logic";
 import { useToday } from "@/lib/hooks";
 import type { SavedFilter } from "@/lib/types";
 import { useUi } from "@/store/ui";
@@ -15,6 +15,7 @@ import { FilterEditor } from "./FilterEditor";
 export function SidebarFilters() {
   const items = useWorkspace((s) => s.items);
   const filters = useWorkspace((s) => s.filters);
+  const lists = useWorkspace((s) => s.lists);
   const deleteFilter = useWorkspace((s) => s.deleteFilter);
   const view = useUi((s) => s.view);
   const setView = useUi((s) => s.setView);
@@ -22,16 +23,12 @@ export function SidebarFilters() {
   const [editing, setEditing] = useState<SavedFilter | "new" | null>(null);
 
   const sorted = useMemo(() => sortFilters(filters), [filters]);
-  const counts = useMemo(
-    () =>
-      new Map(
-        filters.map((f) => [
-          f.id,
-          countInView(items, { kind: "filter", id: f.id }, today, { filters }),
-        ]),
-      ),
-    [items, filters, today],
-  );
+  const counts = useMemo(() => {
+    const ctx = { filters, archived: archivedListIds(lists) };
+    return new Map(
+      filters.map((f) => [f.id, countInView(items, { kind: "filter", id: f.id }, today, ctx)]),
+    );
+  }, [items, filters, lists, today]);
 
   return (
     <>

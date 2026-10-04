@@ -127,6 +127,8 @@ type WorkspaceState = WorkspaceData & {
   addList: (name: string, folderId?: string | null) => string | null;
   renameList: (id: string, name: string) => void;
   moveList: (id: string, folderId: string | null) => void;
+  /** Archives a list (hiding it and its items from smart views) or restores it. */
+  setListArchived: (id: string, archived: boolean) => void;
   deleteList: (id: string) => void;
   addSection: (listId: string, name: string) => string | null;
   renameSection: (listId: string, sectionId: string, name: string) => void;
@@ -721,6 +723,19 @@ export const useWorkspace = create<WorkspaceState>()(
       moveList: (id, folderId) =>
         set((s) => ({
           lists: s.lists.map((l) => (l.id === id ? { ...l, folderId, updatedAt: Date.now() } : l)),
+        })),
+
+      setListArchived: (id, archived) =>
+        set((s) => ({
+          lists: s.lists.map((l) => {
+            if (l.id !== id || Boolean(l.archivedAt) === archived) return l;
+            const now = Date.now();
+            const next: TaskList = { ...l, updatedAt: now };
+            // The field is only stored while archived.
+            if (archived) next.archivedAt = now;
+            else delete next.archivedAt;
+            return next;
+          }),
         })),
 
       // Items in a deleted list are kept and moved to the Inbox.

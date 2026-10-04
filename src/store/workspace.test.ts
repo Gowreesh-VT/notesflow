@@ -117,6 +117,29 @@ describe("nested subtasks", () => {
   });
 });
 
+describe("archiving lists", () => {
+  it("archives and restores a list, bumping updatedAt and keeping its items", () => {
+    const id = state().addList("Done project")!;
+    state().addItem({ kind: "task", title: "T", listId: id });
+    useWorkspace.setState({ lists: state().lists.map((l) => ({ ...l, updatedAt: 1 })) });
+
+    state().setListArchived(id, true);
+    const archived = state().lists[0];
+    expect(archived.archivedAt).toEqual(expect.any(Number));
+    expect(archived.updatedAt).toBeGreaterThan(1);
+    expect(state().items[0].listId).toBe(id);
+
+    // Archiving again changes nothing.
+    state().setListArchived(id, true);
+    expect(state().lists[0]).toBe(archived);
+
+    useWorkspace.setState({ lists: state().lists.map((l) => ({ ...l, updatedAt: 1 })) });
+    state().setListArchived(id, false);
+    expect(state().lists[0]).not.toHaveProperty("archivedAt");
+    expect(state().lists[0].updatedAt).toBeGreaterThan(1);
+  });
+});
+
 describe("lists and folders", () => {
   it("creates, renames and ignores blank names", () => {
     expect(state().addList("   ")).toBeNull();

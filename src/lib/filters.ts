@@ -125,9 +125,17 @@ function matchesDue(due: string | null, c: FilterCriteria, today: string): boole
   }
 }
 
-/** Does a live (not trashed, not template) item satisfy the criteria? */
-export function matchesCriteria(item: Item, c: FilterCriteria, today: string): boolean {
-  if (c.lists.length > 0 && !c.lists.includes(item.listId)) return false;
+/**
+ * Does a live (not trashed, not template) item satisfy the criteria? `archived` holds archived list ids: their items
+ * only match when the filter names that list explicitly.
+ */
+export function matchesCriteria(
+  item: Item,
+  c: FilterCriteria,
+  today: string,
+  archived: ReadonlySet<string> = new Set(),
+): boolean {
+  if (c.lists.length > 0 ? !c.lists.includes(item.listId) : archived.has(item.listId)) return false;
   if (c.tags.length > 0) {
     const tags = extractTags(`${item.title}\n${item.body}`);
     if (!c.tags.some((t) => tags.includes(t))) return false;

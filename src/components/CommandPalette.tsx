@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { exportBackup } from "@/lib/data-actions";
 import { sortFilters } from "@/lib/filters";
-import { filterItems, SMART_VIEWS } from "@/lib/items-logic";
+import { activeLists, filterItems, SMART_VIEWS } from "@/lib/items-logic";
 import { useToday } from "@/lib/hooks";
 import { INBOX_ID, type Item } from "@/lib/types";
 import { displayTitle } from "@/lib/utils";
@@ -59,7 +59,7 @@ function PaletteDialog({ onClose }: { onClose: () => void }) {
         label: `Go to ${v.label}`,
         run: () => ui.setView({ kind: "smart", id: v.id }),
       })),
-      ...lists.map((l) => ({
+      ...activeLists(lists).map((l) => ({
         id: `list-${l.id}`,
         label: `Open list: ${l.name}`,
         run: () => ui.setView({ kind: "list", id: l.id }),

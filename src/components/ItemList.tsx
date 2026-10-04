@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import {
+  Archive,
+  ArchiveRestore,
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
@@ -25,6 +27,8 @@ import {
 } from "lucide-react";
 import clsx from "clsx";
 import {
+  activeLists,
+  archivedListIds,
   dueBucket,
   ENERGY_OPTIONS,
   filterByEnergy,
@@ -309,6 +313,7 @@ export function ItemList() {
   const emptyTrash = useWorkspace((s) => s.emptyTrash);
   const renameList = useWorkspace((s) => s.renameList);
   const moveList = useWorkspace((s) => s.moveList);
+  const setListArchived = useWorkspace((s) => s.setListArchived);
   const deleteList = useWorkspace((s) => s.deleteList);
   const addSection = useWorkspace((s) => s.addSection);
   const renameSection = useWorkspace((s) => s.renameSection);
@@ -331,8 +336,15 @@ export function ItemList() {
   const energyFilter = useUi((s) => s.energyFilter);
   const setEnergyFilter = useUi((s) => s.setEnergyFilter);
   const visible = useMemo(
-    () => filterByEnergy(filterItems(items, view, query, today, sort, { filters }), energyFilter),
-    [items, view, query, today, sort, energyFilter, filters],
+    () =>
+      filterByEnergy(
+        filterItems(items, view, query, today, sort, {
+          filters,
+          archived: archivedListIds(lists),
+        }),
+        energyFilter,
+      ),
+    [items, view, query, today, sort, energyFilter, filters, lists],
   );
 
   const isContainer = view.kind === "list" || (view.kind === "smart" && view.id === "inbox");
@@ -372,7 +384,7 @@ export function ItemList() {
     if (kind === "note") {
       selectItem(addItem({ kind, title: `${draft.trim()}${tagSuffix}`, listId }));
     } else {
-      const parsed = parseQuickAdd(draft, today, lists);
+      const parsed = parseQuickAdd(draft, today, activeLists(lists));
       addItem({
         kind,
         title: `${parsed.title}${tagSuffix}`,
@@ -386,7 +398,8 @@ export function ItemList() {
     setDraft("");
   };
 
-  const preview = kind === "task" && draft.trim() ? parseQuickAdd(draft, today, lists) : null;
+  const preview =
+    kind === "task" && draft.trim() ? parseQuickAdd(draft, today, activeLists(lists)) : null;
   const previewParts = preview
     ? [
         preview.due ? formatDueWithTime(preview.due, preview.dueTime, today) : "",
@@ -519,6 +532,11 @@ export function ItemList() {
         <h1 className="heading-display min-w-0 max-w-full truncate text-2xl font-semibold">
           {title}
         </h1>
+        {currentList?.archivedAt ? (
+          <span className="mt-1 rounded-md bg-stone-100 px-1.5 py-0.5 text-xs font-medium text-stone-600 dark:bg-stone-800 dark:text-stone-300">
+            Archived
+          </span>
+        ) : null}
         {!isReadOnlyView && openCount > 0 && (
           <span className="mt-1 text-sm tabular-nums text-stone-400 dark:text-stone-500">
             {openCount}
@@ -667,6 +685,24 @@ export function ItemList() {
                         ))}
                       </select>
                     </label>
+                    <MenuItem
+                      onClick={() => {
+                        setMenuOpen(false);
+                        const archive = !currentList.archivedAt;
+                        setListArchived(currentList.id, archive);
+                        if (archive) setView({ kind: "smart", id: "inbox" });
+                      }}
+                    >
+                      {currentList.archivedAt ? (
+                        <>
+                          <ArchiveRestore size={15} aria-hidden /> Restore list
+                        </>
+                      ) : (
+                        <>
+                          <Archive size={15} aria-hidden /> Archive list
+                        </>
+                      )}
+                    </MenuItem>
                     <div className="my-1 border-t border-stone-200 dark:border-stone-700" />
                     <MenuItem
                       danger
