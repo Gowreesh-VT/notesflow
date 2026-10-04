@@ -44,7 +44,7 @@ import { EnergyIcon } from "./EnergyField";
 import { TemplatesMenu } from "./TemplatesMenu";
 import { runningEntry } from "@/lib/time-tracking";
 import { INBOX_ID, type Item, type ItemKind, type ItemSort, type Priority } from "@/lib/types";
-import { addDays, displayTitle, formatDueWithTime, getSnippet } from "@/lib/utils";
+import { addDays, displayTitle, formatDueRange, formatDueWithTime, getSnippet } from "@/lib/utils";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
 
@@ -196,7 +196,7 @@ function ItemRow({
                     : "",
               )}
             >
-              {formatDueWithTime(item.due, item.dueTime, today)}
+              {formatDueRange(item.due, item.dueTime, item.startDate, today)}
             </span>
           )}
         </span>

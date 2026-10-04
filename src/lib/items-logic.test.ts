@@ -321,3 +321,18 @@ describe("smarter quick add", () => {
     expect(parseClock("24:00")).toBeNull();
   });
 });
+
+describe("multi-day tasks", () => {
+  it("show in Today and Next 7 Days once they have started", () => {
+    const list = [
+      make("running", { startDate: "2026-05-08", due: "2026-05-20" }),
+      make("later", { startDate: "2026-05-14", due: "2026-05-20" }),
+      make("far", { startDate: "2026-05-30", due: "2026-06-02" }),
+    ];
+    expect(filterItems(list, smart("today"), "", today).map((i) => i.id)).toEqual(["running"]);
+    expect(filterItems(list, smart("week"), "", today).map((i) => i.id)).toEqual([
+      "running",
+      "later",
+    ]);
+  });
+});

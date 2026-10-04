@@ -35,6 +35,9 @@ export function dueBucket(item: Pick<Item, "due">, today: string): DueBucket {
   return "upcoming";
 }
 
+/** A multi-day task that has started by `day`. */
+const startedBy = (item: Item, day: string) => Boolean(item.startDate && item.startDate <= day);
+
 export const isOpenTask = (item: Item): boolean => item.kind === "task" && item.status === "open";
 
 /** Unique, lower-cased #tags found in an item's title and body. */
@@ -71,11 +74,15 @@ function matchesView(item: Item, view: View, today: string): boolean {
     case "inbox":
       return item.listId === INBOX_ID;
     case "today":
-      return isOpenTask(item) && item.due !== null && item.due <= today;
+      return isOpenTask(item) && item.due !== null && (item.due <= today || startedBy(item, today));
     case "tomorrow":
       return isOpenTask(item) && item.due === addDays(today, 1);
     case "week":
-      return isOpenTask(item) && item.due !== null && item.due <= addDays(today, 6);
+      return (
+        isOpenTask(item) &&
+        item.due !== null &&
+        (item.due <= addDays(today, 6) || startedBy(item, addDays(today, 6)))
+      );
     case "all":
       return item.kind === "note" || isOpenTask(item);
     case "completed":

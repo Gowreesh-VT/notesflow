@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   addDays,
+  daysBetween,
+  formatDueRange,
   displayTitle,
   extractTags,
   formatDueLabel,
@@ -69,5 +71,14 @@ describe("dates", () => {
     expect(formatRelativeTime(now - 5 * 60_000, now)).toBe("5m ago");
     expect(formatRelativeTime(now - 3 * 3_600_000, now)).toBe("3h ago");
     expect(formatRelativeTime(now - 2 * 86_400_000, now)).toBe("2d ago");
+  });
+});
+
+describe("date ranges", () => {
+  it("counts days and formats ranges", () => {
+    expect(daysBetween("2026-02-27", "2026-03-02")).toBe(3);
+    expect(daysBetween("2026-03-02", "2026-02-27")).toBe(-3);
+    expect(formatDueRange("2026-05-10", null, null, "2026-05-10")).toBe("Today");
+    expect(formatDueRange("2026-05-11", null, "2026-05-10", "2026-05-10")).toBe("Today – Tomorrow");
   });
 });

@@ -32,7 +32,7 @@ import {
   type TaskStatus,
   type Tombstone,
 } from "@/lib/types";
-import { createId, toDateKey } from "@/lib/utils";
+import { addDays, createId, daysBetween, toDateKey } from "@/lib/utils";
 
 export const WORKSPACE_KEY = "notesflow:workspace";
 const LEGACY_NOTES_KEY = "notesflow:notes";
@@ -58,6 +58,7 @@ type ItemPatch = Partial<
     | "priority"
     | "due"
     | "dueTime"
+    | "startDate"
     | "estimate"
     | "energy"
     | "constantReminder"
@@ -150,6 +151,7 @@ const mapItem = (items: Item[], id: string, fn: (item: Item) => Item): Item[] =>
 /** Optional item fields are removed rather than stored as null, keeping records small and stable. */
 const OPTIONAL_FIELDS = [
   "dueTime",
+  "startDate",
   "estimate",
   "timeEntries",
   "outcome",
@@ -264,8 +266,22 @@ export const useWorkspace = create<WorkspaceState>()(
                   : item.sectionId;
             // A time only makes sense with a date: clearing the date clears the time too.
             const due = patch.due !== undefined ? patch.due : item.due;
+            // A start date needs a due date on or after it: moving the start later pushes the due date along,
+            // and moving the due date before the start drops the start.
+            let startDate = patch.startDate !== undefined ? patch.startDate : item.startDate;
+            let nextDue = due;
+            if (startDate && nextDue && startDate > nextDue) {
+              if (patch.startDate !== undefined) nextDue = startDate;
+              else startDate = null;
+            }
             return dropEmptyOptionals(
-              touch(item, { ...patch, sectionId, ...(due ? {} : { dueTime: null }) }),
+              touch(item, {
+                ...patch,
+                sectionId,
+                due: nextDue,
+                startDate: nextDue ? startDate : null,
+                ...(nextDue ? {} : { dueTime: null }),
+              }),
             );
           }),
         })),
@@ -289,9 +305,16 @@ export const useWorkspace = create<WorkspaceState>()(
             snoozedUntil: null,
             outcome: null,
           });
+          const nextDue = nextDueDate(item.due, item.repeat, toDateKey(new Date(now)));
+          // A multi-day task keeps its length: the start date moves by as many days as the due date.
+          const startDate =
+            item.startDate && item.due
+              ? addDays(item.startDate, daysBetween(item.due, nextDue))
+              : null;
           const next = dropEmptyOptionals(
             touch(item, {
-              due: nextDueDate(item.due, item.repeat, toDateKey(new Date(now))),
+              due: nextDue,
+              startDate,
               subtasks: item.subtasks.map((st) => setDoneDeep(st, false)),
               timeEntries: [],
               snoozedUntil: null,

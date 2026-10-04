@@ -525,3 +525,29 @@ describe("recurring tasks", () => {
     expect(state().items).toHaveLength(1);
   });
 });
+
+describe("start date", () => {
+  it("keeps the start on or before the due date", () => {
+    const id = state().addItem({ kind: "task", title: "Trip", due: "2026-05-10" });
+    state().updateItem(id, { startDate: "2026-05-07" });
+    expect(state().items[0]).toMatchObject({ startDate: "2026-05-07", due: "2026-05-10" });
+    state().updateItem(id, { startDate: "2026-05-12" });
+    expect(state().items[0]).toMatchObject({ startDate: "2026-05-12", due: "2026-05-12" });
+    state().updateItem(id, { due: "2026-05-11" });
+    expect(state().items[0]).not.toHaveProperty("startDate");
+    state().updateItem(id, { startDate: "2026-05-09" });
+    state().updateItem(id, { due: null });
+    expect(state().items[0]).not.toHaveProperty("startDate");
+  });
+
+  it("moves with a repeating task", () => {
+    const today = toDateKey(new Date());
+    const id = state().addItem({ kind: "task", title: "Sprint", due: today });
+    state().updateItem(id, { startDate: addDays(today, -4), repeat: { unit: "week", every: 2 } });
+    state().toggleDone(id);
+    expect(state().items.find((i) => i.id === id)).toMatchObject({
+      due: addDays(today, 14),
+      startDate: addDays(today, 10),
+    });
+  });
+});

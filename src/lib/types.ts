@@ -35,6 +35,8 @@ export type Item = {
   due: string | null;
   /** Local time as HH:MM on the due date; absent or null means all-day. */
   dueTime?: string | null;
+  /** First day of a multi-day task (YYYY-MM-DD); only kept while there is a due date on or after it. */
+  startDate?: string | null;
   /** Estimated effort in minutes; absent when not set. */
   estimate?: number | null;
   /** Tracked time; at most one entry is running across the whole workspace. */

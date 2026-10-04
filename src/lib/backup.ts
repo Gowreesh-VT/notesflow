@@ -101,6 +101,9 @@ function optionalItemFields(r: Record<string, unknown>): Partial<Item> {
   const fields: Partial<Item> = {};
   const dueTime = asDue(r.due) ? asClock(r.dueTime) : null;
   if (dueTime) fields.dueTime = dueTime;
+  const due = asDue(r.due);
+  const startDate = asDue(r.startDate);
+  if (due && startDate && startDate <= due) fields.startDate = startDate;
   const estimate = asMinutes(r.estimate);
   if (estimate) fields.estimate = estimate;
   const timeEntries = parseTimeEntries(r.timeEntries);

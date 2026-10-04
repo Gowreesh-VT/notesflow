@@ -180,6 +180,38 @@ export function TaskDetail({ item }: { item: Item }) {
 
         {item.due && (
           <>
+            <dt className="text-stone-500 dark:text-stone-400">Starts</dt>
+            <dd className="flex flex-wrap items-center gap-1.5">
+              <input
+                type="date"
+                aria-label="Start date"
+                value={item.startDate ?? ""}
+                max={item.due}
+                disabled={trashed}
+                onChange={(e) => updateItem(item.id, { startDate: e.target.value || null })}
+                className="field w-auto"
+              />
+              {item.startDate ? (
+                !trashed && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost px-2 py-1 text-xs"
+                    onClick={() => updateItem(item.id, { startDate: null })}
+                  >
+                    <X size={12} aria-hidden /> Same day
+                  </button>
+                )
+              ) : (
+                <span className="text-xs text-stone-500 dark:text-stone-400">
+                  Optional, for tasks that span several days
+                </span>
+              )}
+            </dd>
+          </>
+        )}
+
+        {item.due && (
+          <>
             <dt className="text-stone-500 dark:text-stone-400">Time</dt>
             <dd className="flex flex-wrap items-center gap-1.5">
               <input
