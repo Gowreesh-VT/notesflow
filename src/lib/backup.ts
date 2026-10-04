@@ -11,6 +11,7 @@ import {
   type TaskStatus,
 } from "./types";
 import { asMinutes } from "./duration";
+import { isEnergy } from "./items-logic";
 import { parseOutcome } from "./outcomes";
 import { MAX_SUBTASK_DEPTH, rollUp } from "./subtasks";
 import { parseTimeEntries } from "./time-tracking";
@@ -104,6 +105,7 @@ function optionalItemFields(r: Record<string, unknown>): Partial<Item> {
   if (timeEntries.length) fields.timeEntries = timeEntries;
   const outcome = r.status === "done" ? parseOutcome(r.outcome, Date.now()) : null;
   if (outcome) fields.outcome = outcome;
+  if (isEnergy(r.energy)) fields.energy = r.energy;
   return fields;
 }
 

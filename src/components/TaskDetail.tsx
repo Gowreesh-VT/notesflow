@@ -11,6 +11,7 @@ import { useUi, type EditorMode } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
 import { ListSelect } from "./ListSelect";
 import { MarkdownEditor, ModeSwitch } from "./MarkdownEditor";
+import { EnergyField } from "./EnergyField";
 import { EstimateField } from "./EstimateField";
 import { MakeSubtask } from "./MakeSubtask";
 import { OutcomeField } from "./Outcome";
@@ -218,6 +219,15 @@ export function TaskDetail({ item }: { item: Item }) {
             value={item.estimate}
             disabled={trashed}
             onChange={(estimate) => updateItem(item.id, { estimate })}
+          />
+        </dd>
+
+        <dt className="text-stone-500 dark:text-stone-400">Energy</dt>
+        <dd>
+          <EnergyField
+            value={item.energy}
+            disabled={trashed}
+            onChange={(energy) => updateItem(item.id, { energy })}
           />
         </dd>
 

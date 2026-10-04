@@ -410,3 +410,15 @@ describe("outcomes", () => {
     expect(state().items[0]).not.toHaveProperty("outcome");
   });
 });
+
+describe("energy", () => {
+  it("sets, copies and clears the energy tag", () => {
+    const id = state().addItem({ kind: "task", title: "Inbox zero" });
+    state().updateItem(id, { energy: "quick" });
+    expect(state().items[0].energy).toBe("quick");
+    const copy = state().duplicateItem(id)!;
+    expect(state().items.find((i) => i.id === copy)!.energy).toBe("quick");
+    state().updateItem(id, { energy: null });
+    expect(state().items.find((i) => i.id === id)).not.toHaveProperty("energy");
+  });
+});

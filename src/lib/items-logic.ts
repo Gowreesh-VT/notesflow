@@ -1,5 +1,6 @@
 import {
   INBOX_ID,
+  type Energy,
   type Item,
   type ItemSort,
   type ListSection,
@@ -230,6 +231,20 @@ export function moveSectionBy(sections: ListSection[], id: string, delta: -1 | 1
   const next = [...sections];
   [next[from], next[to]] = [next[to], next[from]];
   return next;
+}
+
+export const ENERGY_OPTIONS: { value: Energy; label: string }[] = [
+  { value: "quick", label: "Quick win" },
+  { value: "deep", label: "Deep work" },
+  { value: "low", label: "Low energy" },
+];
+
+export const isEnergy = (value: unknown): value is Energy =>
+  ENERGY_OPTIONS.some((o) => o.value === value);
+
+/** Keeps only tasks tagged with `energy` (notes have no energy, so they are hidden too). */
+export function filterByEnergy(items: Item[], energy: Energy | null): Item[] {
+  return energy ? items.filter((i) => i.kind === "task" && i.energy === energy) : items;
 }
 
 export type DueGroupId = "overdue" | "today" | "tomorrow" | "week" | "later" | "nodate" | "notes";

@@ -196,3 +196,27 @@ describe("estimates in backups", () => {
     expect(parse("45")).not.toHaveProperty("estimate");
   });
 });
+
+describe("energy and outcomes in backups", () => {
+  const parse = (fields: object) =>
+    parseBackup(
+      JSON.stringify({
+        app: "notesflow",
+        version: 2,
+        items: [{ ...item, ...fields }],
+        lists: [],
+        folders: [],
+      }),
+    ).items[0];
+
+  it("keeps known energy tags only", () => {
+    expect(parse({ energy: "deep" }).energy).toBe("deep");
+    expect(parse({ energy: "turbo" })).not.toHaveProperty("energy");
+  });
+
+  it("keeps outcomes on done tasks only", () => {
+    const outcome = { label: "Went well", note: "", at: 1 };
+    expect(parse({ status: "done", outcome }).outcome).toEqual(outcome);
+    expect(parse({ status: "open", outcome })).not.toHaveProperty("outcome");
+  });
+});

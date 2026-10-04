@@ -3,9 +3,11 @@ import {
   collectTags,
   countInView,
   dueBucket,
+  filterByEnergy,
   filterItems,
   groupByDue,
   groupBySections,
+  isEnergy,
   moveSectionBy,
   parseQuickAdd,
   subtaskProgress,
@@ -243,5 +245,20 @@ describe("due time ordering", () => {
       today,
     );
     expect(sorted.map((i) => i.id)).toEqual(["yesterday", "allday", "early", "late"]);
+  });
+});
+
+describe("energy filter", () => {
+  it("keeps only tasks with the chosen energy", () => {
+    const list = [
+      make("q", { energy: "quick" }),
+      make("d", { energy: "deep" }),
+      make("none"),
+      make("n", { kind: "note" }),
+    ];
+    expect(filterByEnergy(list, "quick").map((i) => i.id)).toEqual(["q"]);
+    expect(filterByEnergy(list, null)).toBe(list);
+    expect(isEnergy("deep")).toBe(true);
+    expect(isEnergy("hyper")).toBe(false);
   });
 });

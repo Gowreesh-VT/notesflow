@@ -3,6 +3,8 @@ export const INBOX_ID = "inbox";
 export type ItemKind = "task" | "note";
 export type TaskStatus = "open" | "done" | "wontdo";
 export type Priority = "none" | "low" | "medium" | "high";
+/** Energy or effort a task needs: a quick win, focused deep work, or something for a low-energy moment. */
+export type Energy = "quick" | "deep" | "low";
 
 export type Subtask = {
   id: string;
@@ -39,6 +41,7 @@ export type Item = {
   timeEntries?: TimeEntry[];
   /** Set when a finished task was tagged with how it went; cleared when the task is reopened. */
   outcome?: Outcome | null;
+  energy?: Energy | null;
   subtasks: Subtask[];
   /** Section of the item's list it belongs to, or null for the unsectioned top of the list. */
   sectionId: string | null;

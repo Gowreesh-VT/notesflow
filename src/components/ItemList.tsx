@@ -19,11 +19,15 @@ import {
   Plus,
   Search,
   Trash2,
+  Zap,
 } from "lucide-react";
 import clsx from "clsx";
 import {
   dueBucket,
+  ENERGY_OPTIONS,
+  filterByEnergy,
   filterItems,
+  isEnergy,
   groupByDue,
   groupBySections,
   itemTags,
@@ -33,6 +37,7 @@ import {
 } from "@/lib/items-logic";
 import { formatDuration } from "@/lib/duration";
 import { useToday } from "@/lib/hooks";
+import { EnergyIcon } from "./EnergyField";
 import { runningEntry } from "@/lib/time-tracking";
 import { INBOX_ID, type Item, type ItemKind, type ItemSort, type Priority } from "@/lib/types";
 import { addDays, displayTitle, formatDueWithTime, getSnippet } from "@/lib/utils";
@@ -132,6 +137,12 @@ function ItemRow({
           )}
         </span>
         <span className="flex shrink-0 items-center gap-2 text-xs text-stone-400 dark:text-stone-500">
+          {isTask && item.energy && (
+            <span className="hidden items-center gap-1 @lg:inline-flex">
+              <EnergyIcon energy={item.energy} />
+              {ENERGY_OPTIONS.find((o) => o.value === item.energy)?.label}
+            </span>
+          )}
           {isTask && runningEntry(item) && (
             <span className="inline-flex items-center gap-1 font-medium text-accent-600 dark:text-accent-400">
               <span className="size-1.5 animate-pulse rounded-full bg-accent-500" aria-hidden />
@@ -305,9 +316,11 @@ export function ItemList() {
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set(["finished"]));
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const energyFilter = useUi((s) => s.energyFilter);
+  const setEnergyFilter = useUi((s) => s.setEnergyFilter);
   const visible = useMemo(
-    () => filterItems(items, view, query, today, sort),
-    [items, view, query, today, sort],
+    () => filterByEnergy(filterItems(items, view, query, today, sort), energyFilter),
+    [items, view, query, today, sort, energyFilter],
   );
 
   const isContainer = view.kind === "list" || (view.kind === "smart" && view.id === "inbox");
@@ -360,18 +373,21 @@ export function ItemList() {
     setDraft("");
   };
 
-  const emptyMessage = query
-    ? `Nothing matches “${query}”.`
-    : view.kind === "smart" && view.id === "trash"
-      ? "Trash is empty."
-      : view.kind === "smart" && view.id === "completed"
-        ? "Completed tasks will show up here."
-        : view.kind === "smart" && view.id === "wontdo"
-          ? "Tasks you mark as Won’t Do show up here."
-          : view.kind === "smart" &&
-              (view.id === "today" || view.id === "tomorrow" || view.id === "week")
-            ? "Nothing due. Enjoy the calm."
-            : "Nothing here yet. Add a task or note above.";
+  const energyLabel = ENERGY_OPTIONS.find((o) => o.value === energyFilter)?.label;
+  const emptyMessage = energyLabel
+    ? `No ${energyLabel.toLowerCase()} tasks here.`
+    : query
+      ? `Nothing matches “${query}”.`
+      : view.kind === "smart" && view.id === "trash"
+        ? "Trash is empty."
+        : view.kind === "smart" && view.id === "completed"
+          ? "Completed tasks will show up here."
+          : view.kind === "smart" && view.id === "wontdo"
+            ? "Tasks you mark as Won’t Do show up here."
+            : view.kind === "smart" &&
+                (view.id === "today" || view.id === "tomorrow" || view.id === "week")
+              ? "Nothing due. Enjoy the calm."
+              : "Nothing here yet. Add a task or note above.";
 
   const rows = (group: Item[], showList: boolean) => (
     <ul>
@@ -463,7 +479,7 @@ export function ItemList() {
 
   return (
     <div className="@container flex h-full flex-col">
-      <header className="flex items-center gap-2 px-4 pb-3 pt-4 sm:px-6 sm:pt-5">
+      <header className="flex flex-wrap items-center gap-x-2 gap-y-1 px-4 pb-3 pt-4 sm:px-6 sm:pt-5">
         <button
           type="button"
           className="btn btn-ghost -ml-2 px-2 md:hidden"
@@ -472,14 +488,16 @@ export function ItemList() {
         >
           <Menu size={20} />
         </button>
-        <h1 className="heading-display min-w-0 truncate text-2xl font-semibold">{title}</h1>
+        <h1 className="heading-display min-w-0 max-w-full truncate text-2xl font-semibold">
+          {title}
+        </h1>
         {!isReadOnlyView && openCount > 0 && (
           <span className="mt-1 text-sm tabular-nums text-stone-400 dark:text-stone-500">
             {openCount}
           </span>
         )}
-        <div className="ml-auto flex items-center gap-1">
-          <div className="relative hidden sm:block">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-1">
+          <div className="relative hidden @xl:block">
             <Search
               size={15}
               aria-hidden
@@ -495,6 +513,35 @@ export function ItemList() {
               className="field w-40 border-transparent bg-stone-100 pl-8 transition-[width] focus:w-56 dark:border-transparent dark:bg-stone-800"
             />
           </div>
+          <label className="relative">
+            <span className="sr-only">Energy filter</span>
+            <Zap
+              size={15}
+              aria-hidden
+              className={clsx(
+                "pointer-events-none absolute left-2.5 top-2.5",
+                energyFilter ? "text-accent-600 dark:text-accent-400" : "text-stone-500",
+              )}
+            />
+            <select
+              aria-label="Energy filter"
+              value={energyFilter ?? ""}
+              onChange={(e) => setEnergyFilter(isEnergy(e.target.value) ? e.target.value : null)}
+              className={clsx(
+                "cursor-pointer appearance-none rounded-xl py-1.5 pl-8 pr-2 text-sm focus-visible:outline-2 focus-visible:outline-accent-500",
+                energyFilter
+                  ? "bg-accent-50 font-medium text-accent-800 dark:bg-accent-950 dark:text-accent-200"
+                  : "bg-transparent text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800",
+              )}
+            >
+              <option value="">Any energy</option>
+              {ENERGY_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
           <label className="relative">
             <span className="sr-only">Sort by</span>
             <ArrowUpDown

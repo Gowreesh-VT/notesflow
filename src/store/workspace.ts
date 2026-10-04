@@ -49,7 +49,15 @@ type NewItem = {
 type ItemPatch = Partial<
   Pick<
     Item,
-    "title" | "body" | "listId" | "priority" | "due" | "dueTime" | "estimate" | "sectionId"
+    | "title"
+    | "body"
+    | "listId"
+    | "priority"
+    | "due"
+    | "dueTime"
+    | "estimate"
+    | "energy"
+    | "sectionId"
   >
 >;
 
@@ -121,7 +129,7 @@ const mapItem = (items: Item[], id: string, fn: (item: Item) => Item): Item[] =>
   items.map((item) => (item.id === id ? fn(item) : item));
 
 /** Optional item fields are removed rather than stored as null, keeping records small and stable. */
-const OPTIONAL_FIELDS = ["dueTime", "estimate", "timeEntries", "outcome"] as const;
+const OPTIONAL_FIELDS = ["dueTime", "estimate", "timeEntries", "outcome", "energy"] as const;
 
 const dropEmptyOptionals = (item: Item): Item => {
   const next = { ...item };
@@ -278,6 +286,7 @@ export const useWorkspace = create<WorkspaceState>()(
             ...item,
             sectionId: source.sectionId,
             ...(source.estimate ? { estimate: source.estimate } : {}),
+            ...(source.energy ? { energy: source.energy } : {}),
             subtasks: cloneSubtasks(source.subtasks, true),
           })),
         }));

@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { cleanOutcomeLabels, DEFAULT_OUTCOME_LABELS } from "@/lib/outcomes";
-import type { ItemSort, View } from "@/lib/types";
+import type { Energy, ItemSort, View } from "@/lib/types";
 
 export type Theme = "system" | "light" | "dark";
 export type EditorMode = "edit" | "split" | "preview";
@@ -22,6 +22,8 @@ type UiState = {
   sidebarCollapsed: boolean;
   /** Task that was just completed and is waiting for an optional outcome. */
   outcomePromptId: string | null;
+  /** Shows only tasks with this energy tag, in every view. */
+  energyFilter: Energy | null;
   /** Editable outcome choices (kept on this device). */
   outcomeLabels: string[];
   setTheme: (theme: Theme) => void;
@@ -35,6 +37,7 @@ type UiState = {
   setSidebarOpen: (open: boolean) => void;
   toggleSidebarCollapsed: () => void;
   promptOutcome: (id: string | null) => void;
+  setEnergyFilter: (energy: Energy | null) => void;
   setOutcomeLabels: (labels: string[]) => void;
 };
 
@@ -52,6 +55,7 @@ export const useUi = create<UiState>()(
       sidebarOpen: false,
       sidebarCollapsed: false,
       outcomePromptId: null,
+      energyFilter: null,
       outcomeLabels: DEFAULT_OUTCOME_LABELS,
       setTheme: (theme) => set({ theme }),
       setEditorMode: (editorMode) => set({ editorMode }),
@@ -64,6 +68,7 @@ export const useUi = create<UiState>()(
       setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
       toggleSidebarCollapsed: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
       promptOutcome: (outcomePromptId) => set({ outcomePromptId }),
+      setEnergyFilter: (energyFilter) => set({ energyFilter }),
       setOutcomeLabels: (labels) => set({ outcomeLabels: cleanOutcomeLabels(labels) }),
     }),
     {
