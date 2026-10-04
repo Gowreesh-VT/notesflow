@@ -8,6 +8,7 @@ import {
   groupByDue,
   groupBySections,
   isEnergy,
+  listTemplates,
   moveSectionBy,
   parseQuickAdd,
   subtaskProgress,
@@ -260,5 +261,19 @@ describe("energy filter", () => {
     expect(filterByEnergy(list, null)).toBe(list);
     expect(isEnergy("deep")).toBe(true);
     expect(isEnergy("hyper")).toBe(false);
+  });
+});
+
+describe("templates are hidden from views", () => {
+  it("never shows templates in views, counts or tags, but lists them", () => {
+    const list = [
+      make("t", { template: true, title: "Tpl #work" }),
+      make("real", { title: "Real #work" }),
+    ];
+    expect(filterItems(list, smart("all"), "", today).map((i) => i.id)).toEqual(["real"]);
+    expect(filterItems(list, smart("inbox"), "", today).map((i) => i.id)).toEqual(["real"]);
+    expect(countInView(list, smart("inbox"), today)).toBe(1);
+    expect(collectTags(list)).toEqual([{ tag: "work", count: 1 }]);
+    expect(listTemplates(list).map((i) => i.id)).toEqual(["t"]);
   });
 });

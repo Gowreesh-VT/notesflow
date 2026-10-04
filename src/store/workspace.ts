@@ -84,6 +84,11 @@ type WorkspaceState = WorkspaceData & {
   addSubtask: (itemId: string, title: string, parentId?: string | null) => string | null;
   renameSubtask: (itemId: string, subtaskId: string, title: string) => void;
   /** Starts the timer on a task, stopping any timer running on another task. */
+  /** Saves a copy of a task (with fresh, unchecked subtasks) as a template; returns the template id. */
+  saveAsTemplate: (itemId: string) => string | null;
+  /** Creates a new open task from a template in the given list; returns the new task id. */
+  createFromTemplate: (templateId: string, listId: string, due?: string | null) => string | null;
+  deleteTemplate: (templateId: string) => void;
   /** Tags a finished task with how it went; a null or blank label clears it. */
   setOutcome: (itemId: string, label: string | null, note?: string) => void;
   startTimer: (itemId: string) => void;
@@ -141,6 +146,16 @@ const dropEmptyOptionals = (item: Item): Item => {
   }
   return next;
 };
+
+/** The parts of a task that a template keeps: content, priority, estimate, energy and fresh subtasks. */
+const templateFields = (source: Item) => ({
+  title: source.title,
+  body: source.body,
+  priority: source.priority,
+  subtasks: cloneSubtasks(source.subtasks, true),
+  ...(source.estimate ? { estimate: source.estimate } : {}),
+  ...(source.energy ? { energy: source.energy } : {}),
+});
 
 /** Finishing or trashing a task stops its timer. */
 const stopTimerPatch = (item: Item, stop: boolean): Partial<Item> =>
@@ -329,6 +344,64 @@ export const useWorkspace = create<WorkspaceState>()(
           ),
         }));
       },
+
+      saveAsTemplate: (itemId) => {
+        const source = get().items.find((i) => i.id === itemId);
+        if (!source || source.kind !== "task") return null;
+        const now = Date.now();
+        const template: Item = {
+          ...templateFields(source),
+          id: createId(),
+          kind: "task",
+          listId: INBOX_ID,
+          createdAt: now,
+          updatedAt: now,
+          deletedAt: null,
+          pinned: false,
+          status: "open",
+          completedAt: null,
+          due: null,
+          sectionId: null,
+          template: true,
+        };
+        set((s) => ({ items: [template, ...s.items] }));
+        return template.id;
+      },
+
+      createFromTemplate: (templateId, listId, due = null) => {
+        const template = get().items.find((i) => i.id === templateId && i.template);
+        if (!template) return null;
+        const now = Date.now();
+        const exists = listId === INBOX_ID || get().lists.some((l) => l.id === listId);
+        const task: Item = {
+          ...templateFields(template),
+          id: createId(),
+          kind: "task",
+          listId: exists ? listId : INBOX_ID,
+          createdAt: now,
+          updatedAt: now,
+          deletedAt: null,
+          pinned: false,
+          status: "open",
+          completedAt: null,
+          due,
+          sectionId: null,
+        };
+        set((s) => ({ items: [task, ...s.items] }));
+        return task.id;
+      },
+
+      deleteTemplate: (templateId) =>
+        set((s) => {
+          if (!s.items.some((i) => i.id === templateId && i.template)) return s;
+          return {
+            items: s.items.filter((i) => i.id !== templateId),
+            tombstones: [
+              ...s.tombstones,
+              { collection: "item" as const, id: templateId, at: Date.now() },
+            ],
+          };
+        }),
 
       setOutcome: (itemId, label, note = "") =>
         set((s) => ({

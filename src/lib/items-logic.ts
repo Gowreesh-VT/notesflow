@@ -59,7 +59,7 @@ export function viewTitle(view: View, lists: TaskList[]): string {
 /** Does the item belong in the view at all (before hiding finished tasks)? */
 function matchesView(item: Item, view: View, today: string): boolean {
   if (view.kind === "smart" && view.id === "trash") return item.deletedAt !== null;
-  if (item.deletedAt !== null) return false;
+  if (item.deletedAt !== null || item.template) return false;
 
   if (view.kind === "list") return item.listId === view.id;
   if (view.kind === "tag") {
@@ -161,7 +161,8 @@ export function countInView(items: Item[], view: View, today: string): number {
 export function collectTags(items: Item[]): { tag: string; count: number }[] {
   const counts = new Map<string, number>();
   for (const item of items) {
-    if (item.deletedAt !== null || !(item.kind === "note" || isOpenTask(item))) continue;
+    if (item.deletedAt !== null || item.template) continue;
+    if (!(item.kind === "note" || isOpenTask(item))) continue;
     for (const tag of itemTags(item)) counts.set(tag, (counts.get(tag) ?? 0) + 1);
   }
   return [...counts.entries()]
@@ -246,6 +247,12 @@ export const isEnergy = (value: unknown): value is Energy =>
 export function filterByEnergy(items: Item[], energy: Energy | null): Item[] {
   return energy ? items.filter((i) => i.kind === "task" && i.energy === energy) : items;
 }
+
+/** Saved task templates, by name. */
+export const listTemplates = (items: Item[]): Item[] =>
+  items
+    .filter((i) => i.template && i.deletedAt === null)
+    .sort((a, b) => displayTitle(a).localeCompare(displayTitle(b)));
 
 export type DueGroupId = "overdue" | "today" | "tomorrow" | "week" | "later" | "nodate" | "notes";
 export type DueGroup = { id: DueGroupId; label: string; items: Item[] };

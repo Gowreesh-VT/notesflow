@@ -53,6 +53,10 @@ database migration — but it must be added to (1) the types in `src/lib/types.t
 sync), (3) the store's `addItem`/mutations, which must bump `updatedAt` (last write wins), and (4) a persisted-store
 `version` + `migrate` if existing local data needs a default. Add a test for each. Permanent deletions must create a
 tombstone. A feature that is not synced is incomplete.
+Prefer **optional** item fields (`dueTime`, `estimate`, `timeEntries`, `outcome`, `energy`, `template`): write them
+in `optionalItemFields` in `backup.ts` only when set, and list them in `OPTIONAL_FIELDS` in `src/store/workspace.ts`
+so a null or empty value is deleted instead of stored. Then no store migration or fixture changes are needed.
+Templates are items with `template: true`; every view, count and tag list must keep excluding them.
 Keep logic in `src/lib` as pure functions with tests; keep components thin.
 
 The Next.js version in this repo has breaking changes. Before using a Next.js API you are unsure about,

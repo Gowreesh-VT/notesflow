@@ -38,6 +38,7 @@ import {
 import { formatDuration } from "@/lib/duration";
 import { useToday } from "@/lib/hooks";
 import { EnergyIcon } from "./EnergyField";
+import { TemplatesMenu } from "./TemplatesMenu";
 import { runningEntry } from "@/lib/time-tracking";
 import { INBOX_ID, type Item, type ItemKind, type ItemSort, type Priority } from "@/lib/types";
 import { addDays, displayTitle, formatDueWithTime, getSnippet } from "@/lib/utils";
@@ -346,16 +347,17 @@ export function ItemList() {
       return next;
     });
 
+  const listId = view.kind === "list" ? view.id : INBOX_ID;
+  const defaultDue =
+    view.kind === "smart" && (view.id === "today" || view.id === "week")
+      ? today
+      : view.kind === "smart" && view.id === "tomorrow"
+        ? addDays(today, 1)
+        : null;
+
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
     if (!draft.trim()) return;
-    const listId = view.kind === "list" ? view.id : INBOX_ID;
-    const defaultDue =
-      view.kind === "smart" && (view.id === "today" || view.id === "week")
-        ? today
-        : view.kind === "smart" && view.id === "tomorrow"
-          ? addDays(today, 1)
-          : null;
     const tagSuffix = view.kind === "tag" ? ` #${view.tag}` : "";
 
     if (kind === "note") {
@@ -680,6 +682,7 @@ export function ItemList() {
               aria-label={kind === "task" ? "New task" : "New note"}
               className="min-w-0 flex-1 bg-transparent py-2.5 text-sm outline-none placeholder:text-stone-400"
             />
+            <TemplatesMenu listId={listId} due={defaultDue} />
             <div
               role="radiogroup"
               aria-label="Add as"

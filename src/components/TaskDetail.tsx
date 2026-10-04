@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, Ban, Check, Copy, RotateCcw, Trash2, X } from "lucide-react";
+import { ArrowLeft, Ban, Check, Copy, LayoutTemplate, RotateCcw, Trash2, X } from "lucide-react";
 import clsx from "clsx";
 import { itemTags } from "@/lib/items-logic";
 import { useToday } from "@/lib/hooks";
@@ -42,6 +42,7 @@ export function TaskDetail({ item }: { item: Item }) {
   const [descriptionMode, setDescriptionMode] = useState<EditorMode>("edit");
   const selectItem = useUi((s) => s.selectItem);
   const promptOutcome = useUi((s) => s.promptOutcome);
+  const [notice, setNotice] = useState("");
   const {
     updateItem,
     setStatus,
@@ -50,6 +51,7 @@ export function TaskDetail({ item }: { item: Item }) {
     restoreItem,
     deleteForever,
     duplicateItem,
+    saveAsTemplate,
   } = useWorkspace.getState();
 
   const sections = useWorkspace((s) => s.lists.find((l) => l.id === item.listId)?.sections) ?? [];
@@ -325,6 +327,13 @@ export function TaskDetail({ item }: { item: Item }) {
         }
       />
 
+      <p
+        role="status"
+        aria-live="polite"
+        className="px-4 text-xs text-accent-700 empty:hidden dark:text-accent-300"
+      >
+        {notice}
+      </p>
       {!trashed && (
         <div className="flex flex-wrap justify-end gap-1 border-t border-stone-200 px-3 py-2 dark:border-stone-800">
           <button
@@ -345,6 +354,16 @@ export function TaskDetail({ item }: { item: Item }) {
             <Copy size={15} aria-hidden /> Duplicate
           </button>
           <MakeSubtask item={item} />
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => {
+              if (saveAsTemplate(item.id))
+                setNotice("Saved as a template. Use it from the quick-add bar.");
+            }}
+          >
+            <LayoutTemplate size={15} aria-hidden /> Save as template
+          </button>
           <button
             type="button"
             className="btn btn-danger"

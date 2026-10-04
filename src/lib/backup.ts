@@ -106,6 +106,7 @@ function optionalItemFields(r: Record<string, unknown>): Partial<Item> {
   const outcome = r.status === "done" ? parseOutcome(r.outcome, Date.now()) : null;
   if (outcome) fields.outcome = outcome;
   if (isEnergy(r.energy)) fields.energy = r.energy;
+  if (r.template === true && r.kind === "task") fields.template = true;
   return fields;
 }
 

@@ -422,3 +422,35 @@ describe("energy", () => {
     expect(state().items.find((i) => i.id === id)).not.toHaveProperty("energy");
   });
 });
+
+describe("templates", () => {
+  it("saves a template, creates fresh tasks from it and deletes it with a tombstone", () => {
+    const listId = state().addList("Work")!;
+    const id = state().addItem({ kind: "task", title: "Weekly report", listId, priority: "high" });
+    state().updateItem(id, { estimate: 45, energy: "deep", due: "2026-05-10" });
+    const sub = state().addSubtask(id, "Collect numbers")!;
+    state().toggleSubtask(id, sub);
+
+    const templateId = state().saveAsTemplate(id)!;
+    const template = state().items.find((i) => i.id === templateId)!;
+    expect(template).toMatchObject({ template: true, due: null, estimate: 45, energy: "deep" });
+    expect(template.subtasks[0]).toMatchObject({ title: "Collect numbers", done: false });
+
+    const created = state().createFromTemplate(templateId, listId, "2026-06-01")!;
+    const task = state().items.find((i) => i.id === created)!;
+    expect(task).toMatchObject({
+      title: "Weekly report",
+      listId,
+      priority: "high",
+      due: "2026-06-01",
+    });
+    expect(task).not.toHaveProperty("template");
+    expect(task.subtasks[0].id).not.toBe(template.subtasks[0].id);
+
+    state().deleteTemplate(templateId);
+    expect(state().items.some((i) => i.id === templateId)).toBe(false);
+    expect(state().tombstones).toContainEqual(expect.objectContaining({ id: templateId }));
+    state().deleteTemplate(created);
+    expect(state().items.some((i) => i.id === created)).toBe(true);
+  });
+});

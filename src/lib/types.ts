@@ -42,6 +42,8 @@ export type Item = {
   /** Set when a finished task was tagged with how it went; cleared when the task is reopened. */
   outcome?: Outcome | null;
   energy?: Energy | null;
+  /** A reusable task template: hidden from every view and only used to create new tasks. */
+  template?: boolean;
   subtasks: Subtask[];
   /** Section of the item's list it belongs to, or null for the unsectioned top of the list. */
   sectionId: string | null;

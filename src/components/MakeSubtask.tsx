@@ -23,7 +23,11 @@ export function MakeSubtask({ item }: { item: Item }) {
       items
         .filter(
           (i) =>
-            i.id !== item.id && i.kind === "task" && i.status === "open" && i.deletedAt === null,
+            i.id !== item.id &&
+            i.kind === "task" &&
+            i.status === "open" &&
+            i.deletedAt === null &&
+            !i.template,
         )
         .sort(
           (a, b) =>
