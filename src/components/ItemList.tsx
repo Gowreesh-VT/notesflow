@@ -9,6 +9,7 @@ import {
   Bell,
   Check,
   ChevronRight,
+  CopyPlus,
   FileText,
   FolderInput,
   Hourglass,
@@ -40,7 +41,9 @@ import {
 import { formatDuration } from "@/lib/duration";
 import { useToday } from "@/lib/hooks";
 import { describeRepeat } from "@/lib/recurrence";
+import { CopyToListForm } from "./CopyToList";
 import { EnergyIcon } from "./EnergyField";
+import { ListSelect } from "./ListSelect";
 import { TemplatesMenu } from "./TemplatesMenu";
 import { runningEntry } from "@/lib/time-tracking";
 import { INBOX_ID, type Item, type ItemKind, type ItemSort, type Priority } from "@/lib/types";
@@ -68,8 +71,10 @@ function ItemRow({
 }) {
   const lists = useWorkspace((s) => s.lists);
   const toggleDone = useWorkspace((s) => s.toggleDone);
+  const updateItem = useWorkspace((s) => s.updateItem);
   const selectItem = useUi((s) => s.selectItem);
   const promptOutcome = useUi((s) => s.promptOutcome);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const isTask = item.kind === "task";
   const closed = isTask && item.status !== "open";
@@ -82,8 +87,13 @@ function ItemRow({
 
   return (
     <li
+      onContextMenu={(e) => {
+        if (trashed) return;
+        e.preventDefault();
+        setMenuOpen(true);
+      }}
       className={clsx(
-        "group flex min-h-11 items-center gap-3 rounded-lg px-3 py-1.5 transition-colors",
+        "group relative flex min-h-11 items-center gap-3 rounded-lg px-3 py-1.5 transition-colors",
         selected
           ? "bg-accent-50 dark:bg-accent-950/50"
           : "hover:bg-stone-100 dark:hover:bg-stone-800/60",
@@ -201,6 +211,65 @@ function ItemRow({
           )}
         </span>
       </button>
+      {!trashed && (
+        <button
+          type="button"
+          aria-label={`More actions for “${displayTitle(item)}”`}
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen(!menuOpen)}
+          className={clsx(
+            "-mr-1.5 shrink-0 rounded-md p-1 text-stone-400 hover:bg-stone-200 hover:text-stone-700 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-accent-500 dark:hover:bg-stone-700 dark:hover:text-stone-200",
+            menuOpen ? "opacity-100" : "md:opacity-0 md:group-hover:opacity-100",
+          )}
+        >
+          <MoreHorizontal size={16} aria-hidden />
+        </button>
+      )}
+      {menuOpen && (
+        <>
+          <button
+            type="button"
+            aria-label="Close item actions"
+            tabIndex={-1}
+            className="fixed inset-0 z-10 cursor-default"
+            onClick={() => setMenuOpen(false)}
+          />
+          <div
+            role="menu"
+            aria-label={`Actions for “${displayTitle(item)}”`}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setMenuOpen(false);
+            }}
+            className="absolute right-2 top-full z-20 mt-1 w-72 max-w-[calc(100vw-2rem)] space-y-2 rounded-xl border border-stone-200 bg-white p-2.5 text-sm shadow-lift dark:border-stone-700 dark:bg-stone-900"
+          >
+            <label className="flex items-center gap-2 text-stone-700 dark:text-stone-200">
+              <FolderInput size={15} aria-hidden className="shrink-0" />
+              <span className="w-16 shrink-0">Move to</span>
+              <ListSelect
+                label="Move to list"
+                value={item.listId}
+                onChange={(listId) => {
+                  updateItem(item.id, { listId });
+                  setMenuOpen(false);
+                }}
+                className="field w-auto min-w-0 flex-1 py-1"
+              />
+            </label>
+            <div className="flex items-center gap-2 text-stone-700 dark:text-stone-200">
+              <CopyPlus size={15} aria-hidden className="shrink-0" />
+              <span className="w-16 shrink-0">Copy to</span>
+              <CopyToListForm
+                item={item}
+                onCopied={(copyId) => {
+                  setMenuOpen(false);
+                  selectItem(copyId);
+                }}
+              />
+            </div>
+          </div>
+        </>
+      )}
     </li>
   );
 }

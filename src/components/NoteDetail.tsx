@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { ArrowLeft, Copy, Download, Pin, PinOff, RotateCcw, Trash2, X } from "lucide-react";
 import clsx from "clsx";
 import { exportNoteMarkdown } from "@/lib/data-actions";
@@ -7,6 +8,7 @@ import type { Item } from "@/lib/types";
 import { displayTitle, readingMinutes, wordCount } from "@/lib/utils";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
+import { CopyToList } from "./CopyToList";
 import { ListSelect } from "./ListSelect";
 import { MarkdownEditor, ModeSwitch } from "./MarkdownEditor";
 
@@ -17,6 +19,7 @@ export function NoteDetail({ item }: { item: Item }) {
   const { updateItem, togglePin, trashItem, restoreItem, deleteForever, duplicateItem } =
     useWorkspace.getState();
 
+  const [notice, setNotice] = useState("");
   const trashed = item.deletedAt !== null;
 
   const iconButton = (
@@ -107,13 +110,21 @@ export function NoteDetail({ item }: { item: Item }) {
       </div>
 
       {!trashed && (
-        <div className="flex items-center gap-2 px-3 pb-2 text-sm text-stone-500 dark:text-stone-400">
+        <div className="flex flex-wrap items-center gap-2 px-3 pb-2 text-sm text-stone-500 dark:text-stone-400">
           <span>List</span>
           <ListSelect
             value={item.listId}
             onChange={(listId) => updateItem(item.id, { listId })}
             className="field w-auto py-1"
           />
+          <CopyToList item={item} onCopied={(listName) => setNotice(`Copied to ${listName}.`)} />
+          <p
+            role="status"
+            aria-live="polite"
+            className="text-xs text-accent-700 empty:hidden dark:text-accent-300"
+          >
+            {notice}
+          </p>
         </div>
       )}
 

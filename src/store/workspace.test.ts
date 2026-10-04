@@ -74,6 +74,65 @@ describe("items", () => {
     expect(state().duplicateItem("missing")).toBeNull();
   });
 
+  it("copies items into another list, keeping their details and leaving the original", () => {
+    const work = state().addList("Work")!;
+    const home = state().addList("Home")!;
+    const section = state().addSection(work, "Soon")!;
+    const id = state().addItem({
+      kind: "task",
+      title: "Plan",
+      body: "b",
+      listId: work,
+      priority: "high",
+      due: "2026-01-02",
+      dueTime: "09:00",
+      estimate: 30,
+    });
+    state().updateItem(id, { sectionId: section, energy: "deep" });
+    state().addReminder(id, 15);
+    state().addSubtask(id, "step");
+    state().toggleSubtask(id, state().items[0].subtasks[0].id);
+    const copyId = state().copyItem(id, home)!;
+    const original = state().items.find((i) => i.id === id)!;
+    const copy = state().items.find((i) => i.id === copyId)!;
+    expect(copy).toMatchObject({
+      title: "Plan",
+      body: "b",
+      listId: home,
+      sectionId: null,
+      priority: "high",
+      due: "2026-01-02",
+      dueTime: "09:00",
+      estimate: 30,
+      energy: "deep",
+      status: "open",
+    });
+    expect(copy.subtasks[0]).toMatchObject({ title: "step", done: false });
+    expect(copy.reminders?.[0].before).toBe(15);
+    expect(copy.reminders?.[0].id).not.toBe(original.reminders?.[0].id);
+    expect(original).toMatchObject({ listId: work, sectionId: section });
+    expect(state().copyItem("missing", home)).toBeNull();
+  });
+
+  it("copies into the same list as a titled copy in the same section", () => {
+    const work = state().addList("Work")!;
+    const section = state().addSection(work, "Soon")!;
+    const id = state().addItem({ kind: "note", title: "Idea", listId: work });
+    state().updateItem(id, { sectionId: section });
+    const copyId = state().copyItem(id, work);
+    const copy = state().items.find((i) => i.id === copyId)!;
+    expect(copy).toMatchObject({ kind: "note", title: "Idea (copy)", sectionId: section });
+  });
+
+  it("moves items to another list, leaving their section", () => {
+    const work = state().addList("Work")!;
+    const section = state().addSection(work, "Soon")!;
+    const id = state().addItem({ kind: "task", title: "Move me", listId: work });
+    state().updateItem(id, { sectionId: section });
+    state().updateItem(id, { listId: INBOX_ID });
+    expect(state().items[0]).toMatchObject({ listId: INBOX_ID, sectionId: null });
+  });
+
   it("manages subtasks and ignores blank ones", () => {
     const id = state().addItem({ kind: "task", title: "Parent" });
     state().addSubtask(id, "  ");

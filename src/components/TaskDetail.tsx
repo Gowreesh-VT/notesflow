@@ -9,6 +9,7 @@ import type { Item, Priority } from "@/lib/types";
 import { addDays, formatDueLabel } from "@/lib/utils";
 import { useUi, type EditorMode } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
+import { CopyToList } from "./CopyToList";
 import { ListSelect } from "./ListSelect";
 import { MarkdownEditor, ModeSwitch } from "./MarkdownEditor";
 import { EnergyField } from "./EnergyField";
@@ -405,6 +406,7 @@ export function TaskDetail({ item }: { item: Item }) {
           >
             <Copy size={15} aria-hidden /> Duplicate
           </button>
+          <CopyToList item={item} onCopied={(listName) => setNotice(`Copied to ${listName}.`)} />
           <MakeSubtask item={item} />
           <button
             type="button"

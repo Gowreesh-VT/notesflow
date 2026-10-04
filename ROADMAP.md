@@ -48,7 +48,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 
 ### Phase 3 — Organise (days 20–28)
 
-- [ ] Move or copy a task to another list, from the detail panel and the list context
+- [x] Move or copy a task to another list, from the detail panel and the list context
 - [ ] [BIG] Multi-select with batch edit: set date, priority, list, tags or energy, complete, and delete many tasks at once
 - [ ] [BIG] Saved filters: combine list, tag, priority, due range, energy and status; pinned in the sidebar under "Filters"
 - [ ] Rename or merge a tag across all items from the sidebar

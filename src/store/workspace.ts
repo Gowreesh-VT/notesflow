@@ -89,6 +89,11 @@ type WorkspaceState = WorkspaceData & {
   deleteForever: (id: string) => void;
   emptyTrash: () => void;
   duplicateItem: (id: string) => string | null;
+  /**
+   * Copies an item into a list, with fresh, unchecked subtasks. A copy in the same list gets a "(copy)" title
+   * and keeps its section; returns the new item id.
+   */
+  copyItem: (id: string, listId: string) => string | null;
 
   /** Adds a subtask under the task, or under another subtask when `parentId` is given (up to 5 levels). */
   addSubtask: (itemId: string, title: string, parentId?: string | null) => string | null;
@@ -382,12 +387,18 @@ export const useWorkspace = create<WorkspaceState>()(
 
       duplicateItem: (id) => {
         const source = get().items.find((item) => item.id === id);
+        return source ? get().copyItem(id, source.listId) : null;
+      },
+
+      copyItem: (id, listId) => {
+        const source = get().items.find((item) => item.id === id);
         if (!source) return null;
+        const sameList = listId === source.listId;
         const newId = get().addItem({
           kind: source.kind,
-          title: source.title ? `${source.title} (copy)` : "",
+          title: sameList && source.title ? `${source.title} (copy)` : source.title,
           body: source.body,
-          listId: source.listId,
+          listId,
           priority: source.priority,
           due: source.due,
           dueTime: source.dueTime,
@@ -395,7 +406,7 @@ export const useWorkspace = create<WorkspaceState>()(
         set((s) => ({
           items: mapItem(s.items, newId, (item) => ({
             ...item,
-            sectionId: source.sectionId,
+            sectionId: item.listId === source.listId ? source.sectionId : null,
             ...(source.estimate ? { estimate: source.estimate } : {}),
             ...(source.energy ? { energy: source.energy } : {}),
             ...copyReminders(source),
