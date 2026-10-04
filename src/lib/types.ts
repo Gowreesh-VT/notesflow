@@ -8,6 +8,8 @@ export type Subtask = {
   id: string;
   title: string;
   done: boolean;
+  /** Nested subtasks, up to MAX_SUBTASK_DEPTH levels; absent when there are none. */
+  children?: Subtask[];
 };
 
 /**

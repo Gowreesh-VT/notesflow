@@ -134,3 +134,29 @@ describe("backup", () => {
     expect(result.folders).toEqual([]);
   });
 });
+
+describe("nested subtasks in backups", () => {
+  it("keeps nesting, drops levels beyond five and rolls done up", () => {
+    let deep: unknown = { id: "x6", title: "six", done: true };
+    for (let level = 5; level >= 1; level--) {
+      deep = { id: `x${level}`, title: `L${level}`, done: false, children: [deep] };
+    }
+    const raw = JSON.stringify({
+      app: "notesflow",
+      version: 2,
+      items: [{ ...item, subtasks: [deep] }],
+      lists: [],
+      folders: [],
+    });
+    const [parsed] = parseBackup(raw).items;
+    let node = parsed.subtasks[0];
+    let levels = 1;
+    while (node.children?.length) {
+      node = node.children[0];
+      levels++;
+    }
+    expect(levels).toBe(5);
+    expect(node.title).toBe("L5");
+    expect(parsed.subtasks[0].done).toBe(false);
+  });
+});

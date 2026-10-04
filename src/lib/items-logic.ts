@@ -8,6 +8,7 @@ import {
   type TaskList,
   type View,
 } from "./types";
+import { countSubtasks, flattenSubtasks } from "./subtasks";
 import { addDays, displayTitle, extractTags } from "./utils";
 
 export const SMART_VIEWS: { id: SmartViewId; label: string }[] = [
@@ -138,7 +139,7 @@ export function filterItems(
         (item) =>
           item.title.toLowerCase().includes(q) ||
           item.body.toLowerCase().includes(q) ||
-          item.subtasks.some((s) => s.title.toLowerCase().includes(q)),
+          flattenSubtasks(item.subtasks).some((s) => s.title.toLowerCase().includes(q)),
       )
     : inView;
   return [...matching].sort((a, b) => compareItems(a, b, sort));
@@ -164,8 +165,9 @@ export function collectTags(items: Item[]): { tag: string; count: number }[] {
     .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
 }
 
+/** Progress across every level of subtasks. */
 export function subtaskProgress(item: Pick<Item, "subtasks">): { done: number; total: number } {
-  return { done: item.subtasks.filter((s) => s.done).length, total: item.subtasks.length };
+  return countSubtasks(item.subtasks);
 }
 
 const PRIORITY_WORDS: Record<string, Priority> = {

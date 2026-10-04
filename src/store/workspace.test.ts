@@ -86,6 +86,35 @@ describe("items", () => {
   });
 });
 
+describe("nested subtasks", () => {
+  it("nests up to five levels and rolls progress up to the parent", () => {
+    const id = state().addItem({ kind: "task", title: "T" });
+    let parent = state().addSubtask(id, "L1");
+    const ids = [parent];
+    for (let level = 2; level <= 5; level++) {
+      parent = state().addSubtask(id, `L${level}`, parent);
+      ids.push(parent);
+    }
+    expect(ids.every(Boolean)).toBe(true);
+    expect(state().addSubtask(id, "L6", parent)).toBeNull();
+
+    const sibling = state().addSubtask(id, "Sibling", ids[3]);
+    state().toggleSubtask(id, ids[4]!);
+    expect(state().items[0].subtasks[0].done).toBe(false);
+    state().toggleSubtask(id, sibling!);
+    // Both children of L4 are done, so L4 and every ancestor roll up to done.
+    expect(state().items[0].subtasks[0].done).toBe(true);
+
+    state().toggleSubtask(id, ids[0]!);
+    expect(JSON.stringify(state().items[0].subtasks)).not.toContain('"done":true');
+
+    state().renameSubtask(id, ids[2]!, "  Renamed ");
+    expect(JSON.stringify(state().items[0].subtasks)).toContain('"title":"Renamed"');
+    state().deleteSubtask(id, ids[1]!);
+    expect(state().items[0].subtasks[0].children).toBeUndefined();
+  });
+});
+
 describe("lists and folders", () => {
   it("creates, renames and ignores blank names", () => {
     expect(state().addList("   ")).toBeNull();

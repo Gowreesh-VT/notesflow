@@ -1,6 +1,14 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { moveSectionBy } from "@/lib/items-logic";
+import {
+  cloneSubtasks,
+  findSubtask,
+  MAX_SUBTASK_DEPTH,
+  rollUp,
+  setDoneDeep,
+  updateSubtask,
+} from "@/lib/subtasks";
 import { migrateLegacyData, type LegacyNote, type LegacyTask } from "@/lib/migrate";
 import {
   INBOX_ID,
@@ -8,6 +16,7 @@ import {
   type Item,
   type ItemKind,
   type Priority,
+  type Subtask,
   type TaskList,
   type TaskStatus,
   type Tombstone,
@@ -50,7 +59,9 @@ type WorkspaceState = WorkspaceData & {
   emptyTrash: () => void;
   duplicateItem: (id: string) => string | null;
 
-  addSubtask: (itemId: string, title: string) => void;
+  /** Adds a subtask under the task, or under another subtask when `parentId` is given (up to 5 levels). */
+  addSubtask: (itemId: string, title: string, parentId?: string | null) => string | null;
+  renameSubtask: (itemId: string, subtaskId: string, title: string) => void;
   toggleSubtask: (itemId: string, subtaskId: string) => void;
   deleteSubtask: (itemId: string, subtaskId: string) => void;
 
@@ -206,30 +217,56 @@ export const useWorkspace = create<WorkspaceState>()(
           items: mapItem(s.items, newId, (item) => ({
             ...item,
             sectionId: source.sectionId,
-            subtasks: source.subtasks.map((st) => ({ ...st, id: createId(), done: false })),
+            subtasks: cloneSubtasks(source.subtasks, true),
           })),
         }));
         return newId;
       },
 
-      addSubtask: (itemId, title) => {
+      addSubtask: (itemId, title, parentId = null) => {
+        const trimmed = title.trim();
+        const item = get().items.find((i) => i.id === itemId);
+        if (!trimmed || !item) return null;
+        const node = { id: createId(), title: trimmed, done: false };
+        let subtasks: Subtask[];
+        if (parentId) {
+          const parent = findSubtask(item.subtasks, parentId);
+          if (!parent || parent.depth >= MAX_SUBTASK_DEPTH) return null;
+          subtasks = updateSubtask(item.subtasks, parentId, (p) => ({
+            ...p,
+            children: [...(p.children ?? []), node],
+          }));
+        } else {
+          subtasks = [...item.subtasks, node];
+        }
+        set((s) => ({
+          items: mapItem(s.items, itemId, (i) => touch(i, { subtasks: rollUp(subtasks) })),
+        }));
+        return node.id;
+      },
+
+      renameSubtask: (itemId, subtaskId, title) => {
         const trimmed = title.trim();
         if (!trimmed) return;
         set((s) => ({
           items: mapItem(s.items, itemId, (item) =>
             touch(item, {
-              subtasks: [...item.subtasks, { id: createId(), title: trimmed, done: false }],
+              subtasks: updateSubtask(item.subtasks, subtaskId, (st) => ({
+                ...st,
+                title: trimmed,
+              })),
             }),
           ),
         }));
       },
 
+      // Toggling a subtask also toggles everything below it; parents follow their children.
       toggleSubtask: (itemId, subtaskId) =>
         set((s) => ({
           items: mapItem(s.items, itemId, (item) =>
             touch(item, {
-              subtasks: item.subtasks.map((st) =>
-                st.id === subtaskId ? { ...st, done: !st.done } : st,
+              subtasks: rollUp(
+                updateSubtask(item.subtasks, subtaskId, (st) => setDoneDeep(st, !st.done)),
               ),
             }),
           ),
@@ -238,7 +275,9 @@ export const useWorkspace = create<WorkspaceState>()(
       deleteSubtask: (itemId, subtaskId) =>
         set((s) => ({
           items: mapItem(s.items, itemId, (item) =>
-            touch(item, { subtasks: item.subtasks.filter((st) => st.id !== subtaskId) }),
+            touch(item, {
+              subtasks: rollUp(updateSubtask(item.subtasks, subtaskId, () => null)),
+            }),
           ),
         })),
 

@@ -5,10 +5,12 @@ import {
   type Folder,
   type Item,
   type ListSection,
+  type Subtask,
   type Priority,
   type TaskList,
   type TaskStatus,
 } from "./types";
+import { MAX_SUBTASK_DEPTH, rollUp } from "./subtasks";
 import { createId } from "./utils";
 
 const PRIORITIES: Priority[] = ["none", "low", "medium", "high"];
@@ -26,14 +28,21 @@ function asDue(value: unknown): string | null {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
 }
 
-function parseSubtasks(raw: unknown) {
-  if (!Array.isArray(raw)) return [];
-  return raw.flatMap((s: unknown) => {
+function parseSubtasks(raw: unknown, levels = MAX_SUBTASK_DEPTH): Subtask[] {
+  if (!Array.isArray(raw) || levels <= 0) return [];
+  const subtasks = raw.flatMap((s: unknown): Subtask[] => {
     if (!s || typeof s !== "object") return [];
     const sub = s as Record<string, unknown>;
     if (typeof sub.title !== "string") return [];
-    return [{ id: asString(sub.id) || createId(), title: sub.title, done: sub.done === true }];
+    const children = parseSubtasks(sub.children, levels - 1);
+    const node: Subtask = {
+      id: asString(sub.id) || createId(),
+      title: sub.title,
+      done: sub.done === true,
+    };
+    return [children.length ? { ...node, children } : node];
   });
+  return levels === MAX_SUBTASK_DEPTH ? rollUp(subtasks) : subtasks;
 }
 
 function parseSections(raw: unknown): ListSection[] {

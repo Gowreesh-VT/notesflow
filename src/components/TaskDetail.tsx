@@ -11,6 +11,7 @@ import { useUi, type EditorMode } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
 import { ListSelect } from "./ListSelect";
 import { MarkdownEditor, ModeSwitch } from "./MarkdownEditor";
+import { SubtaskTree } from "./SubtaskTree";
 
 const PRIORITIES: { value: Priority; label: string; active: string }[] = [
   { value: "none", label: "None", active: "bg-stone-200 dark:bg-stone-700" },
@@ -33,7 +34,6 @@ const PRIORITIES: { value: Priority; label: string; active: string }[] = [
 
 export function TaskDetail({ item }: { item: Item }) {
   const today = useToday();
-  const [subtaskDraft, setSubtaskDraft] = useState("");
   const [descriptionMode, setDescriptionMode] = useState<EditorMode>("edit");
   const selectItem = useUi((s) => s.selectItem);
   const {
@@ -44,9 +44,6 @@ export function TaskDetail({ item }: { item: Item }) {
     restoreItem,
     deleteForever,
     duplicateItem,
-    addSubtask,
-    toggleSubtask,
-    deleteSubtask,
   } = useWorkspace.getState();
 
   const sections = useWorkspace((s) => s.lists.find((l) => l.id === item.listId)?.sections) ?? [];
@@ -241,61 +238,7 @@ export function TaskDetail({ item }: { item: Item }) {
         )}
       </dl>
 
-      <section aria-label="Subtasks" className="px-4 pb-3">
-        <h2 className="mb-1 text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
-          Subtasks
-        </h2>
-        <ul className="space-y-1">
-          {item.subtasks.map((sub) => (
-            <li key={sub.id} className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={sub.done}
-                disabled={trashed}
-                onChange={() => toggleSubtask(item.id, sub.id)}
-                aria-label={`Subtask: ${sub.title}`}
-                className="size-4 accent-accent-600"
-              />
-              <span
-                className={clsx("flex-1 break-words", sub.done && "text-stone-400 line-through")}
-              >
-                {sub.title}
-              </span>
-              {!trashed && (
-                <button
-                  type="button"
-                  className="btn btn-ghost px-1 py-0.5"
-                  aria-label={`Remove subtask ${sub.title}`}
-                  onClick={() => deleteSubtask(item.id, sub.id)}
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
-        {!trashed && (
-          <form
-            className="mt-2 flex gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              addSubtask(item.id, subtaskDraft);
-              setSubtaskDraft("");
-            }}
-          >
-            <input
-              value={subtaskDraft}
-              onChange={(e) => setSubtaskDraft(e.target.value)}
-              placeholder="Add a subtask"
-              aria-label="New subtask"
-              className="field py-1"
-            />
-            <button type="submit" className="btn btn-ghost" disabled={!subtaskDraft.trim()}>
-              Add
-            </button>
-          </form>
-        )}
-      </section>
+      <SubtaskTree item={item} readOnly={trashed} />
 
       <MarkdownEditor
         label="Task description"
