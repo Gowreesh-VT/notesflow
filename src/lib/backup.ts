@@ -13,6 +13,7 @@ import {
 import { asMinutes } from "./duration";
 import { isEnergy } from "./items-logic";
 import { parseOutcome } from "./outcomes";
+import { parseReminders } from "./reminders";
 import { MAX_SUBTASK_DEPTH, rollUp } from "./subtasks";
 import { parseTimeEntries } from "./time-tracking";
 import { createId } from "./utils";
@@ -107,6 +108,8 @@ function optionalItemFields(r: Record<string, unknown>): Partial<Item> {
   if (outcome) fields.outcome = outcome;
   if (isEnergy(r.energy)) fields.energy = r.energy;
   if (r.template === true && r.kind === "task") fields.template = true;
+  const reminders = parseReminders(r.reminders);
+  if (reminders.length) fields.reminders = reminders;
   return fields;
 }
 

@@ -15,6 +15,7 @@ import { EnergyField } from "./EnergyField";
 import { EstimateField } from "./EstimateField";
 import { MakeSubtask } from "./MakeSubtask";
 import { OutcomeField } from "./Outcome";
+import { RemindersField } from "./RemindersField";
 import { SubtaskTree } from "./SubtaskTree";
 import { TimeTracker } from "./TimeTracker";
 
@@ -201,6 +202,15 @@ export function TaskDetail({ item }: { item: Item }) {
               ) : (
                 <span className="text-xs text-stone-500 dark:text-stone-400">All day</span>
               )}
+            </dd>
+          </>
+        )}
+
+        {item.due && (
+          <>
+            <dt className="self-start pt-1.5 text-stone-500 dark:text-stone-400">Reminders</dt>
+            <dd>
+              <RemindersField item={item} readOnly={trashed} />
             </dd>
           </>
         )}

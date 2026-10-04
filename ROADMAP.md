@@ -36,7 +36,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 
 ### Phase 2 — Reminders and recurrence (days 11–19)
 
-- [ ] Multiple reminders per task: at the due time, minutes or hours before, or a day before
+- [x] Multiple reminders per task: at the due time, minutes or hours before, or a day before
 - [ ] Browser notifications for reminders while the app is open, with a clear permission flow
 - [ ] Constant reminder: a persistent notification that repeats until the task is completed or snoozed
 - [ ] Snooze for reminders (10 minutes, 1 hour, tomorrow morning)

@@ -44,9 +44,17 @@ export type Item = {
   energy?: Energy | null;
   /** A reusable task template: hidden from every view and only used to create new tasks. */
   template?: boolean;
+  /** Up to five reminders relative to the due date and time. */
+  reminders?: Reminder[];
   subtasks: Subtask[];
   /** Section of the item's list it belongs to, or null for the unsectioned top of the list. */
   sectionId: string | null;
+};
+
+/** A reminder `before` minutes ahead of the task's due moment (0 = at the due time). */
+export type Reminder = {
+  id: string;
+  before: number;
 };
 
 /** A stretch of time spent on a task. `end` is null while the timer is running. */

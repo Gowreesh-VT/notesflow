@@ -454,3 +454,14 @@ describe("templates", () => {
     expect(state().items.some((i) => i.id === created)).toBe(true);
   });
 });
+
+describe("reminders", () => {
+  it("adds up to five distinct reminders and removes them", () => {
+    const id = state().addItem({ kind: "task", title: "Dentist", due: "2026-05-10" });
+    for (const before of [0, 15, 15, 60, 1440, 120, 30]) state().addReminder(id, before);
+    const reminders = state().items[0].reminders!;
+    expect(reminders.map((r) => r.before)).toEqual([1440, 120, 60, 15, 0]);
+    for (const r of reminders) state().removeReminder(id, r.id);
+    expect(state().items[0]).not.toHaveProperty("reminders");
+  });
+});

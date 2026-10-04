@@ -6,6 +6,7 @@ import {
   ArrowUp,
   ArrowUpDown,
   Ban,
+  Bell,
   Check,
   ChevronRight,
   FileText,
@@ -138,6 +139,9 @@ function ItemRow({
           )}
         </span>
         <span className="flex shrink-0 items-center gap-2 text-xs text-stone-400 dark:text-stone-500">
+          {isTask && item.due && item.reminders?.length ? (
+            <Bell size={12} aria-label="Has reminders" className="shrink-0" />
+          ) : null}
           {isTask && item.energy && (
             <span className="hidden items-center gap-1 @lg:inline-flex">
               <EnergyIcon energy={item.energy} />

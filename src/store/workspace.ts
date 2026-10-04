@@ -18,6 +18,7 @@ import {
   stopEntries,
 } from "@/lib/time-tracking";
 import { makeOutcome } from "@/lib/outcomes";
+import { makeReminder, MAX_REMINDERS, parseReminders } from "@/lib/reminders";
 import { migrateLegacyData, type LegacyNote, type LegacyTask } from "@/lib/migrate";
 import {
   INBOX_ID,
@@ -89,6 +90,9 @@ type WorkspaceState = WorkspaceData & {
   /** Creates a new open task from a template in the given list; returns the new task id. */
   createFromTemplate: (templateId: string, listId: string, due?: string | null) => string | null;
   deleteTemplate: (templateId: string) => void;
+  /** Adds a reminder `before` minutes ahead of the due moment (ignored if it already exists or five are set). */
+  addReminder: (itemId: string, before: number) => void;
+  removeReminder: (itemId: string, reminderId: string) => void;
   /** Tags a finished task with how it went; a null or blank label clears it. */
   setOutcome: (itemId: string, label: string | null, note?: string) => void;
   startTimer: (itemId: string) => void;
@@ -134,7 +138,14 @@ const mapItem = (items: Item[], id: string, fn: (item: Item) => Item): Item[] =>
   items.map((item) => (item.id === id ? fn(item) : item));
 
 /** Optional item fields are removed rather than stored as null, keeping records small and stable. */
-const OPTIONAL_FIELDS = ["dueTime", "estimate", "timeEntries", "outcome", "energy"] as const;
+const OPTIONAL_FIELDS = [
+  "dueTime",
+  "estimate",
+  "timeEntries",
+  "outcome",
+  "energy",
+  "reminders",
+] as const;
 
 const dropEmptyOptionals = (item: Item): Item => {
   const next = { ...item };
@@ -155,7 +166,15 @@ const templateFields = (source: Item) => ({
   subtasks: cloneSubtasks(source.subtasks, true),
   ...(source.estimate ? { estimate: source.estimate } : {}),
   ...(source.energy ? { energy: source.energy } : {}),
+  ...copyReminders(source),
 });
+
+/** Reminders with fresh ids, for copies of a task. */
+function copyReminders(source: Item): Partial<Item> {
+  return source.reminders?.length
+    ? { reminders: source.reminders.map((r) => makeReminder(r.before)) }
+    : {};
+}
 
 /** Finishing or trashing a task stops its timer. */
 const stopTimerPatch = (item: Item, stop: boolean): Partial<Item> =>
@@ -302,6 +321,7 @@ export const useWorkspace = create<WorkspaceState>()(
             sectionId: source.sectionId,
             ...(source.estimate ? { estimate: source.estimate } : {}),
             ...(source.energy ? { energy: source.energy } : {}),
+            ...copyReminders(source),
             subtasks: cloneSubtasks(source.subtasks, true),
           })),
         }));
@@ -402,6 +422,26 @@ export const useWorkspace = create<WorkspaceState>()(
             ],
           };
         }),
+
+      addReminder: (itemId, before) =>
+        set((s) => ({
+          items: mapItem(s.items, itemId, (item) => {
+            const current = item.reminders ?? [];
+            if (current.some((r) => r.before === before) || current.length >= MAX_REMINDERS)
+              return item;
+            const reminders = parseReminders([...current, makeReminder(before)]);
+            return reminders.length > current.length ? touch(item, { reminders }) : item;
+          }),
+        })),
+
+      removeReminder: (itemId, reminderId) =>
+        set((s) => ({
+          items: mapItem(s.items, itemId, (item) =>
+            dropEmptyOptionals(
+              touch(item, { reminders: (item.reminders ?? []).filter((r) => r.id !== reminderId) }),
+            ),
+          ),
+        })),
 
       setOutcome: (itemId, label, note = "") =>
         set((s) => ({
