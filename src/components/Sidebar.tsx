@@ -31,6 +31,7 @@ import clsx from "clsx";
 import { collectTags, countInView, sameView, SMART_VIEWS } from "@/lib/items-logic";
 import { exportBackup, importBackupFile, importMarkdownFiles } from "@/lib/data-actions";
 import { useToday } from "@/lib/hooks";
+import { cleanTagName } from "@/lib/tags";
 import { INBOX_ID, type SmartViewId, type View } from "@/lib/types";
 import { useUi, type Theme } from "@/store/ui";
 import { AccountMenu } from "./AccountMenu";
@@ -113,6 +114,7 @@ export function Sidebar() {
   const addFolder = useWorkspace((s) => s.addFolder);
   const renameFolder = useWorkspace((s) => s.renameFolder);
   const deleteFolder = useWorkspace((s) => s.deleteFolder);
+  const renameTag = useWorkspace((s) => s.renameTag);
   const { view, theme, sidebarOpen, sidebarCollapsed } = useUi();
   const setView = useUi((s) => s.setView);
   const setTheme = useUi((s) => s.setTheme);
@@ -150,6 +152,35 @@ export function Sidebar() {
   };
 
   const goTo = (target: View) => setView(target);
+
+  const promptRenameTag = (tag: string) => {
+    const input = window.prompt(`Rename #${tag} (an existing tag name merges them)`, tag);
+    if (input === null) return;
+    const name = cleanTagName(input);
+    if (!name) {
+      setStatus("A tag starts with a letter and uses letters, digits, - or _.");
+      return;
+    }
+    const merged = tags.some((t) => t.tag === name.toLowerCase() && t.tag !== tag);
+    const changed = renameTag(tag, name);
+    setStatus(
+      `${merged ? "Merged" : "Renamed"} #${tag} ${merged ? "into" : "to"} #${name} in ${changed} item${changed === 1 ? "" : "s"}.`,
+    );
+    if (sameView(view, { kind: "tag", tag })) goTo({ kind: "tag", tag: name.toLowerCase() });
+  };
+
+  const removeTag = (tag: string, count: number) => {
+    if (
+      !window.confirm(
+        `Remove #${tag} from ${count} item${count === 1 ? "" : "s"}? The word stays, without the #.`,
+      )
+    ) {
+      return;
+    }
+    const changed = renameTag(tag, null);
+    setStatus(`Removed #${tag} from ${changed} item${changed === 1 ? "" : "s"}.`);
+    if (sameView(view, { kind: "tag", tag })) goTo({ kind: "smart", id: "inbox" });
+  };
 
   const submitAdd = (event: React.FormEvent) => {
     event.preventDefault();
@@ -361,14 +392,35 @@ export function Sidebar() {
                 Tags
               </h2>
               {tags.map(({ tag, count }) => (
-                <NavItem
-                  key={tag}
-                  icon={<Hash size={16} />}
-                  label={tag}
-                  count={count}
-                  active={sameView(view, { kind: "tag", tag })}
-                  onClick={() => goTo({ kind: "tag", tag })}
-                />
+                <div key={tag} className="group flex items-center">
+                  <div className="min-w-0 flex-1">
+                    <NavItem
+                      icon={<Hash size={16} />}
+                      label={tag}
+                      count={count}
+                      active={sameView(view, { kind: "tag", tag })}
+                      onClick={() => goTo({ kind: "tag", tag })}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-ghost px-1 py-0.5 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
+                    aria-label={`Rename tag ${tag}`}
+                    title="Rename or merge tag"
+                    onClick={() => promptRenameTag(tag)}
+                  >
+                    <Pencil size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost px-1 py-0.5 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
+                    aria-label={`Remove tag ${tag}`}
+                    title="Remove tag"
+                    onClick={() => removeTag(tag, count)}
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
               ))}
             </>
           )}

@@ -20,6 +20,7 @@ import {
 import { makeOutcome } from "@/lib/outcomes";
 import { nextDueDate } from "@/lib/recurrence";
 import { makeReminder, MAX_REMINDERS, parseReminders } from "@/lib/reminders";
+import { renameTagInText } from "@/lib/tags";
 import { migrateLegacyData, type LegacyNote, type LegacyTask } from "@/lib/migrate";
 import {
   INBOX_ID,
@@ -124,6 +125,12 @@ type WorkspaceState = WorkspaceData & {
   taskToSubtask: (taskId: string, targetId: string, parentSubtaskId?: string | null) => boolean;
   toggleSubtask: (itemId: string, subtaskId: string) => void;
   deleteSubtask: (itemId: string, subtaskId: string) => void;
+
+  /**
+   * Renames the tag `from` to `to` in every item (not templates); renaming to an existing tag merges them, and
+   * a null name removes the tag but keeps the word. Returns how many items changed.
+   */
+  renameTag: (from: string, to: string | null) => number;
 
   addList: (name: string, folderId?: string | null) => string | null;
   renameList: (id: string, name: string) => void;
@@ -688,6 +695,21 @@ export const useWorkspace = create<WorkspaceState>()(
             }),
           ),
         })),
+
+      renameTag: (from, to) => {
+        let changed = 0;
+        const now = Date.now();
+        const items = get().items.map((item) => {
+          if (item.template) return item;
+          const title = renameTagInText(item.title, from, to);
+          const body = renameTagInText(item.body, from, to);
+          if (title === item.title && body === item.body) return item;
+          changed++;
+          return { ...item, title, body, updatedAt: now };
+        });
+        if (changed) set({ items });
+        return changed;
+      },
 
       addList: (name, folderId = null) => {
         const trimmed = name.trim();

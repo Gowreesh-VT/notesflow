@@ -175,6 +175,35 @@ describe("nested subtasks", () => {
   });
 });
 
+describe("renaming tags", () => {
+  it("renames a tag in titles and bodies, touching only the items that change", () => {
+    const a = state().addItem({ kind: "task", title: "Call #Work" });
+    const b = state().addItem({ kind: "note", title: "Notes", body: "#work and #workshop" });
+    const c = state().addItem({ kind: "task", title: "Other #home" });
+    const template = state().saveAsTemplate(a)!;
+    useWorkspace.setState({
+      items: state().items.map((i) => ({ ...i, updatedAt: 1 })),
+    });
+    expect(state().renameTag("work", "job")).toBe(2);
+    const find = (id: string) => state().items.find((i) => i.id === id)!;
+    expect(find(a).title).toBe("Call #job");
+    expect(find(b).body).toBe("#job and #workshop");
+    expect(find(a).updatedAt).toBeGreaterThan(1);
+    expect(find(c).updatedAt).toBe(1);
+    expect(find(template)).toMatchObject({ title: "Call #Work", updatedAt: 1 });
+    expect(state().renameTag("missing", "x")).toBe(0);
+  });
+
+  it("merges into an existing tag and removes tags", () => {
+    const a = state().addItem({ kind: "task", title: "A #house" });
+    const b = state().addItem({ kind: "task", title: "B #home" });
+    state().renameTag("house", "home");
+    expect(state().items.find((i) => i.id === a)!.title).toBe("A #home");
+    expect(state().renameTag("home", null)).toBe(2);
+    expect(state().items.find((i) => i.id === b)!.title).toBe("B home");
+  });
+});
+
 describe("lists and folders", () => {
   it("creates, renames and ignores blank names", () => {
     expect(state().addList("   ")).toBeNull();
