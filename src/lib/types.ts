@@ -33,6 +33,8 @@ export type Item = {
   due: string | null;
   /** Local time as HH:MM on the due date; absent or null means all-day. */
   dueTime?: string | null;
+  /** Estimated effort in minutes; absent when not set. */
+  estimate?: number | null;
   subtasks: Subtask[];
   /** Section of the item's list it belongs to, or null for the unsectioned top of the list. */
   sectionId: string | null;

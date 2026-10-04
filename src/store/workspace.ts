@@ -39,7 +39,10 @@ type NewItem = {
 };
 
 type ItemPatch = Partial<
-  Pick<Item, "title" | "body" | "listId" | "priority" | "due" | "dueTime" | "sectionId">
+  Pick<
+    Item,
+    "title" | "body" | "listId" | "priority" | "due" | "dueTime" | "estimate" | "sectionId"
+  >
 >;
 
 export type WorkspaceData = {
@@ -101,6 +104,16 @@ type WorkspaceState = WorkspaceData & {
 
 const mapItem = (items: Item[], id: string, fn: (item: Item) => Item): Item[] =>
   items.map((item) => (item.id === id ? fn(item) : item));
+
+/** Optional item fields are removed rather than stored as null, keeping records small and stable. */
+const OPTIONAL_FIELDS = ["dueTime", "estimate"] as const;
+
+const dropEmptyOptionals = (item: Item): Item => {
+  const next = { ...item };
+  for (const key of OPTIONAL_FIELDS)
+    if (next[key] === null || next[key] === undefined) delete next[key];
+  return next;
+};
 
 const touch = (item: Item, patch: Partial<Item>): Item => ({
   ...item,
@@ -165,15 +178,9 @@ export const useWorkspace = create<WorkspaceState>()(
                   : item.sectionId;
             // A time only makes sense with a date: clearing the date clears the time too.
             const due = patch.due !== undefined ? patch.due : item.due;
-            const dueTime = due
-              ? patch.dueTime !== undefined
-                ? patch.dueTime
-                : item.dueTime
-              : null;
-            const next = touch(item, { ...patch, sectionId });
-            if (dueTime) return { ...next, dueTime };
-            delete next.dueTime;
-            return next;
+            return dropEmptyOptionals(
+              touch(item, { ...patch, sectionId, ...(due ? {} : { dueTime: null }) }),
+            );
           }),
         })),
 
@@ -239,6 +246,7 @@ export const useWorkspace = create<WorkspaceState>()(
           items: mapItem(s.items, newId, (item) => ({
             ...item,
             sectionId: source.sectionId,
+            ...(source.estimate ? { estimate: source.estimate } : {}),
             subtasks: cloneSubtasks(source.subtasks, true),
           })),
         }));

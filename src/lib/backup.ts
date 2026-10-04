@@ -10,6 +10,7 @@ import {
   type TaskList,
   type TaskStatus,
 } from "./types";
+import { asMinutes } from "./duration";
 import { MAX_SUBTASK_DEPTH, rollUp } from "./subtasks";
 import { createId } from "./utils";
 
@@ -95,6 +96,8 @@ function optionalItemFields(r: Record<string, unknown>): Partial<Item> {
   const fields: Partial<Item> = {};
   const dueTime = asDue(r.due) ? asClock(r.dueTime) : null;
   if (dueTime) fields.dueTime = dueTime;
+  const estimate = asMinutes(r.estimate);
+  if (estimate) fields.estimate = estimate;
   return fields;
 }
 

@@ -11,6 +11,7 @@ import { useUi, type EditorMode } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
 import { ListSelect } from "./ListSelect";
 import { MarkdownEditor, ModeSwitch } from "./MarkdownEditor";
+import { EstimateField } from "./EstimateField";
 import { MakeSubtask } from "./MakeSubtask";
 import { SubtaskTree } from "./SubtaskTree";
 
@@ -194,6 +195,16 @@ export function TaskDetail({ item }: { item: Item }) {
             </dd>
           </>
         )}
+
+        <dt className="text-stone-500 dark:text-stone-400">Estimate</dt>
+        <dd>
+          <EstimateField
+            label="Estimated time"
+            value={item.estimate}
+            disabled={trashed}
+            onChange={(estimate) => updateItem(item.id, { estimate })}
+          />
+        </dd>
 
         <dt className="text-stone-500 dark:text-stone-400">Priority</dt>
         <dd>

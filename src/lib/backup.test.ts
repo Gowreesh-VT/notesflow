@@ -178,3 +178,21 @@ describe("due time in backups", () => {
     );
   });
 });
+
+describe("estimates in backups", () => {
+  it("keeps valid minute counts only", () => {
+    const parse = (estimate: unknown) =>
+      parseBackup(
+        JSON.stringify({
+          app: "notesflow",
+          version: 2,
+          items: [{ ...item, estimate }],
+          lists: [],
+          folders: [],
+        }),
+      ).items[0];
+    expect(parse(45).estimate).toBe(45);
+    expect(parse(-1)).not.toHaveProperty("estimate");
+    expect(parse("45")).not.toHaveProperty("estimate");
+  });
+});

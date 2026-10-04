@@ -360,3 +360,15 @@ describe("due time", () => {
     expect(state().items[0]).not.toHaveProperty("dueTime");
   });
 });
+
+describe("estimates", () => {
+  it("sets, copies and clears an estimate", () => {
+    const id = state().addItem({ kind: "task", title: "Write" });
+    state().updateItem(id, { estimate: 90 });
+    expect(state().items[0].estimate).toBe(90);
+    const copy = state().duplicateItem(id)!;
+    expect(state().items.find((i) => i.id === copy)!.estimate).toBe(90);
+    state().updateItem(id, { estimate: null });
+    expect(state().items.find((i) => i.id === id)).not.toHaveProperty("estimate");
+  });
+});

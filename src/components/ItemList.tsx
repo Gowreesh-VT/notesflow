@@ -10,6 +10,7 @@ import {
   ChevronRight,
   FileText,
   FolderInput,
+  Hourglass,
   ListChecks,
   Menu,
   MoreHorizontal,
@@ -30,6 +31,7 @@ import {
   subtaskProgress,
   viewTitle,
 } from "@/lib/items-logic";
+import { formatDuration } from "@/lib/duration";
 import { useToday } from "@/lib/hooks";
 import { INBOX_ID, type Item, type ItemKind, type ItemSort, type Priority } from "@/lib/types";
 import { addDays, displayTitle, formatDueWithTime, getSnippet } from "@/lib/utils";
@@ -125,6 +127,13 @@ function ItemRow({
           )}
         </span>
         <span className="flex shrink-0 items-center gap-2 text-xs text-stone-400 dark:text-stone-500">
+          {isTask && item.estimate && (
+            <span className="inline-flex items-center gap-1" title="Estimated time">
+              <Hourglass size={12} aria-hidden />
+              <span className="sr-only">Estimate </span>
+              {formatDuration(item.estimate)}
+            </span>
+          )}
           {progress.total > 0 && (
             <span className="inline-flex items-center gap-1">
               <ListChecks size={13} aria-hidden />
