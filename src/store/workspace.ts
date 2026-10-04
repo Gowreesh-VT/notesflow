@@ -1,6 +1,12 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { moveSectionBy } from "@/lib/items-logic";
+import { itemTags, moveSectionBy } from "@/lib/items-logic";
+import {
+  addTagToTitle,
+  normalizeTag,
+  removeTagFromText,
+  removeTagFromTitle,
+} from "@/lib/selection";
 import {
   cloneSubtasks,
   findSubtask,
@@ -67,6 +73,9 @@ type ItemPatch = Partial<
   >
 >;
 
+/** Fields a batch edit can set on many items at once; date, priority and energy only apply to tasks. */
+export type BatchPatch = Partial<Pick<Item, "listId" | "priority" | "due" | "energy">>;
+
 export type WorkspaceData = {
   items: Item[];
   lists: TaskList[];
@@ -89,6 +98,19 @@ type WorkspaceState = WorkspaceData & {
   deleteForever: (id: string) => void;
   emptyTrash: () => void;
   duplicateItem: (id: string) => string | null;
+
+  /** Applies one edit to many items in a single update; unchanged, trashed and template items are skipped. */
+  updateItems: (ids: string[], patch: BatchPatch) => void;
+  /** Appends ` #tag` to each item's title unless the item already has the tag. */
+  addTagToItems: (ids: string[], tag: string) => void;
+  /** Removes `#tag` from each item's title and body. */
+  removeTagFromItems: (ids: string[], tag: string) => void;
+  /**
+   * Sets the status of many tasks. Repeating tasks go through `setStatus` so they move to their next date.
+   * Returns the ids of the items that are now finished.
+   */
+  setStatusMany: (ids: string[], status: TaskStatus) => string[];
+  trashItems: (ids: string[]) => void;
 
   /** Adds a subtask under the task, or under another subtask when `parentId` is given (up to 5 levels). */
   addSubtask: (itemId: string, title: string, parentId?: string | null) => string | null;
@@ -207,6 +229,65 @@ const touch = (item: Item, patch: Partial<Item>): Item => ({
   updatedAt: Date.now(),
 });
 
+/**
+ * Applies an edit to one item. Moving an item to another list takes it out of its section, unless a section is
+ * given; a time only makes sense with a date; a start date needs a due date on or after it.
+ */
+function patchItem(item: Item, patch: ItemPatch, lists: TaskList[]): Item {
+  const moved = patch.listId !== undefined && patch.listId !== item.listId;
+  const sections = lists.find((l) => l.id === (patch.listId ?? item.listId))?.sections;
+  const sectionId =
+    patch.sectionId !== undefined
+      ? patch.sectionId !== null && sections?.some((x) => x.id === patch.sectionId)
+        ? patch.sectionId
+        : null
+      : moved
+        ? null
+        : item.sectionId;
+  // Clearing the date clears the time too.
+  const due = patch.due !== undefined ? patch.due : item.due;
+  // Moving the start later pushes the due date along, and moving the due date before the start drops the start.
+  let startDate = patch.startDate !== undefined ? patch.startDate : item.startDate;
+  let nextDue = due;
+  if (startDate && nextDue && startDate > nextDue) {
+    if (patch.startDate !== undefined) nextDue = startDate;
+    else startDate = null;
+  }
+  return dropEmptyOptionals(
+    touch(item, {
+      ...patch,
+      sectionId,
+      due: nextDue,
+      startDate: nextDue ? startDate : null,
+      ...(nextDue ? {} : { dueTime: null }),
+    }),
+  );
+}
+
+/** The status change for a task that does not repeat (or is being reopened). */
+const statusPatch = (item: Item, status: TaskStatus, now: number): Item =>
+  dropEmptyOptionals(
+    touch(item, {
+      status,
+      completedAt: status === "open" ? null : now,
+      ...stopTimerPatch(item, status !== "open"),
+      // An outcome describes a finished task, so it goes away when the task is reopened or skipped.
+      ...(status !== "done" ? { outcome: null } : {}),
+      ...(status !== "open" ? { snoozedUntil: null } : {}),
+    }),
+  );
+
+/** Items a batch edit may change: live (not trashed) items that are not templates. */
+const batchTargets = (items: Item[], ids: string[]): Set<string> => {
+  const wanted = new Set(ids);
+  return new Set(
+    items.filter((i) => wanted.has(i.id) && i.deletedAt === null && !i.template).map((i) => i.id),
+  );
+};
+
+/** Task-only fields a batch edit leaves alone on notes. */
+const TASK_ONLY_FIELDS = ["priority", "due", "energy"] as const;
+
 export const useWorkspace = create<WorkspaceState>()(
   persist(
     (set, get) => ({
@@ -250,41 +331,8 @@ export const useWorkspace = create<WorkspaceState>()(
         return item.id;
       },
 
-      // Moving an item to another list takes it out of its section, unless a section is given.
       updateItem: (id, patch) =>
-        set((s) => ({
-          items: mapItem(s.items, id, (item) => {
-            const moved = patch.listId !== undefined && patch.listId !== item.listId;
-            const sections = s.lists.find((l) => l.id === (patch.listId ?? item.listId))?.sections;
-            const sectionId =
-              patch.sectionId !== undefined
-                ? patch.sectionId !== null && sections?.some((x) => x.id === patch.sectionId)
-                  ? patch.sectionId
-                  : null
-                : moved
-                  ? null
-                  : item.sectionId;
-            // A time only makes sense with a date: clearing the date clears the time too.
-            const due = patch.due !== undefined ? patch.due : item.due;
-            // A start date needs a due date on or after it: moving the start later pushes the due date along,
-            // and moving the due date before the start drops the start.
-            let startDate = patch.startDate !== undefined ? patch.startDate : item.startDate;
-            let nextDue = due;
-            if (startDate && nextDue && startDate > nextDue) {
-              if (patch.startDate !== undefined) nextDue = startDate;
-              else startDate = null;
-            }
-            return dropEmptyOptionals(
-              touch(item, {
-                ...patch,
-                sectionId,
-                due: nextDue,
-                startDate: nextDue ? startDate : null,
-                ...(nextDue ? {} : { dueTime: null }),
-              }),
-            );
-          }),
-        })),
+        set((s) => ({ items: mapItem(s.items, id, (item) => patchItem(item, patch, s.lists)) })),
 
       setStatus: (id, status) => {
         const item = get().items.find((i) => i.id === id);
@@ -325,18 +373,7 @@ export const useWorkspace = create<WorkspaceState>()(
           return copy.id;
         }
         set((s) => ({
-          items: mapItem(s.items, id, (current) =>
-            dropEmptyOptionals(
-              touch(current, {
-                status,
-                completedAt: status === "open" ? null : Date.now(),
-                ...stopTimerPatch(current, status !== "open"),
-                // An outcome describes a finished task, so it goes away when the task is reopened or skipped.
-                ...(status !== "done" ? { outcome: null } : {}),
-                ...(status !== "open" ? { snoozedUntil: null } : {}),
-              }),
-            ),
-          ),
+          items: mapItem(s.items, id, (current) => statusPatch(current, status, Date.now())),
         }));
         return status === "open" ? null : id;
       },
@@ -405,6 +442,107 @@ export const useWorkspace = create<WorkspaceState>()(
         }));
         return newId;
       },
+
+      updateItems: (ids, patch) =>
+        set((s) => {
+          const targets = batchTargets(s.items, ids);
+          const listOk =
+            patch.listId === undefined ||
+            patch.listId === INBOX_ID ||
+            s.lists.some((l) => l.id === patch.listId);
+          const base: BatchPatch = listOk ? patch : { ...patch, listId: undefined };
+          return {
+            items: s.items.map((item) => {
+              if (!targets.has(item.id)) return item;
+              const own: BatchPatch = { ...base };
+              if (item.kind !== "task") for (const key of TASK_ONLY_FIELDS) delete own[key];
+              const keys = (Object.keys(own) as (keyof BatchPatch)[]).filter(
+                (key) => own[key] !== undefined && (item[key] ?? null) !== own[key],
+              );
+              if (!keys.length) return item;
+              return patchItem(
+                item,
+                Object.fromEntries(keys.map((k) => [k, own[k]])) as BatchPatch,
+                s.lists,
+              );
+            }),
+          };
+        }),
+
+      addTagToItems: (ids, tag) => {
+        const name = normalizeTag(tag);
+        if (!name) return;
+        set((s) => {
+          const targets = batchTargets(s.items, ids);
+          return {
+            items: s.items.map((item) => {
+              if (!targets.has(item.id) || itemTags(item).includes(name)) return item;
+              // A note without a title shows its first line instead, so the tag goes into its body.
+              if (item.kind === "note" && !item.title.trim()) {
+                return touch(item, {
+                  body: item.body.trimEnd() ? `${item.body.trimEnd()} #${name}` : `#${name}`,
+                });
+              }
+              return touch(item, { title: addTagToTitle(item.title, name) });
+            }),
+          };
+        });
+      },
+
+      removeTagFromItems: (ids, tag) => {
+        const name = normalizeTag(tag);
+        if (!name) return;
+        set((s) => {
+          const targets = batchTargets(s.items, ids);
+          return {
+            items: s.items.map((item) => {
+              if (!targets.has(item.id)) return item;
+              const title = removeTagFromTitle(item.title, name);
+              const body = removeTagFromText(item.body, name);
+              return title === item.title && body === item.body
+                ? item
+                : touch(item, { title, body });
+            }),
+          };
+        });
+      },
+
+      setStatusMany: (ids, status) => {
+        const { items } = get();
+        const targets = batchTargets(items, ids);
+        const tasks = items.filter(
+          (i) => targets.has(i.id) && i.kind === "task" && i.status !== status,
+        );
+        const repeating = tasks.filter((i) => status !== "open" && i.status === "open" && i.repeat);
+        const plain = new Set(tasks.filter((i) => !repeating.includes(i)).map((i) => i.id));
+        if (plain.size) {
+          const now = Date.now();
+          set((s) => ({
+            items: s.items.map((item) =>
+              plain.has(item.id) ? statusPatch(item, status, now) : item,
+            ),
+          }));
+        }
+        const finished = status === "open" ? [] : [...plain];
+        for (const task of repeating) {
+          const copyId = get().setStatus(task.id, status);
+          if (copyId) finished.push(copyId);
+        }
+        return finished;
+      },
+
+      trashItems: (ids) =>
+        set((s) => {
+          const targets = batchTargets(s.items, ids);
+          const now = Date.now();
+          return {
+            items: s.items.map((item) =>
+              targets.has(item.id)
+                ? touch(item, { deletedAt: now, pinned: false, ...stopTimerPatch(item, true) })
+                : item,
+            ),
+          };
+        }),
 
       addSubtask: (itemId, title, parentId = null) => {
         const trimmed = title.trim();

@@ -9,7 +9,9 @@ const SHORTCUTS: { keys: string; label: string }[] = [
   { keys: "Alt + T", label: "New task" },
   { keys: "/", label: "Search the current list" },
   { keys: "?", label: "Show this help" },
-  { keys: "Esc", label: "Close dialogs" },
+  { keys: "Ctrl/⌘ + click", label: "Select several items" },
+  { keys: "Shift + click", label: "Select a range of items" },
+  { keys: "Esc", label: "Close dialogs or clear the selection" },
 ];
 
 function HelpDialog({ onClose }: { onClose: () => void }) {
