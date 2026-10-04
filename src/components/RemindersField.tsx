@@ -2,6 +2,7 @@
 
 import { Bell, X } from "lucide-react";
 import { parseDuration } from "@/lib/duration";
+import { useNow } from "@/lib/hooks";
 import {
   MAX_REMINDER_LEAD,
   MAX_REMINDERS,
@@ -27,6 +28,8 @@ export function RemindersField({ item, readOnly }: { item: Item; readOnly: boole
   const addReminder = useWorkspace((s) => s.addReminder);
   const removeReminder = useWorkspace((s) => s.removeReminder);
   const updateItem = useWorkspace((s) => s.updateItem);
+  const snooze = useWorkspace((s) => s.snooze);
+  const now = useNow(Boolean(item.snoozedUntil), 30_000);
   const times = reminderTimes(item);
   const used = new Set((item.reminders ?? []).map((r) => r.before));
   const full = used.size >= MAX_REMINDERS;
@@ -90,6 +93,20 @@ export function RemindersField({ item, readOnly }: { item: Item; readOnly: boole
           <option value="custom">Custom…</option>
         </select>
       )}
+      {item.snoozedUntil && item.snoozedUntil > now ? (
+        <p className="flex items-center gap-2 text-xs text-stone-600 dark:text-stone-300">
+          Snoozed until {formatWhen(item.snoozedUntil)}
+          {!readOnly && (
+            <button
+              type="button"
+              className="btn btn-ghost px-1.5 py-0.5 text-xs"
+              onClick={() => snooze(item.id, null)}
+            >
+              Unsnooze
+            </button>
+          )}
+        </p>
+      ) : null}
       {times.length > 0 && (
         <label className="flex items-center gap-2 text-sm">
           <input

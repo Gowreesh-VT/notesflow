@@ -62,3 +62,19 @@ export function parseReminders(raw: unknown): Reminder[] {
   });
   return reminders.sort((a, b) => b.before - a.before).slice(0, MAX_REMINDERS);
 }
+
+export type SnoozeOption = { label: string; until: (now: number, defaultTime?: string) => number };
+
+/** 10 minutes, 1 hour, or tomorrow at the default reminder time. */
+export const SNOOZE_OPTIONS: SnoozeOption[] = [
+  { label: "10 minutes", until: (now) => now + 10 * 60_000 },
+  { label: "1 hour", until: (now) => now + 60 * 60_000 },
+  {
+    label: "Tomorrow morning",
+    until: (now, defaultTime = DEFAULT_REMINDER_TIME) => {
+      const d = new Date(now);
+      const [h, m] = defaultTime.split(":").map(Number);
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, h, m).getTime();
+    },
+  },
+];

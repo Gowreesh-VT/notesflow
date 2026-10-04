@@ -8,7 +8,7 @@ import {
   REPEAT_FOR_MS,
   STALE_AFTER_MS,
 } from "./alarms";
-import { atLocal } from "./reminders";
+import { atLocal, SNOOZE_OPTIONS } from "./reminders";
 import { INBOX_ID, type Item } from "./types";
 
 const task = (id: string, patch: Partial<Item> = {}): Item => ({
@@ -81,5 +81,24 @@ describe("repeatAlarms", () => {
     expect(repeatAlarms([task("a")], later, { a: fireAt })).toEqual([]);
     expect(repeatAlarms([{ ...constant, status: "done" }], later, { a: fireAt })).toEqual([]);
     expect(repeatAlarms([constant], fireAt + REPEAT_FOR_MS, { a: fireAt })).toEqual([]);
+  });
+});
+
+describe("snooze", () => {
+  it("silences a task until the snooze ends, then rings once", () => {
+    const until = fireAt + 10 * 60_000;
+    const snoozed = task("a", { snoozedUntil: until });
+    expect(dueAlarms([snoozed], fireAt + 60_000, {})).toEqual([]);
+    const [ring] = dueAlarms([snoozed], until + 1000, {});
+    expect(ring).toMatchObject({ label: "Snoozed", at: until });
+    expect(dueAlarms([snoozed], until + 2000, { [ring.key]: until })).toEqual([]);
+    const constant = { ...snoozed, constantReminder: true };
+    expect(repeatAlarms([constant], until - 1000, { a: fireAt })).toEqual([]);
+  });
+
+  it("offers tomorrow morning at the reminder time", () => {
+    const now = new Date(2026, 4, 10, 22, 15).getTime();
+    expect(SNOOZE_OPTIONS[2].until(now)).toBe(new Date(2026, 4, 11, 9, 0).getTime());
+    expect(SNOOZE_OPTIONS[0].until(now)).toBe(now + 600_000);
   });
 });

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { Bell, Check, ExternalLink, X } from "lucide-react";
 import { dueAlarms, pruneFired, repeatAlarms } from "@/lib/alarms";
 import { showNotification } from "@/lib/notifications";
+import { SNOOZE_OPTIONS } from "@/lib/reminders";
 import { useAlarms } from "@/store/alarms";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
@@ -59,8 +60,16 @@ export function ReminderRunner() {
     document.addEventListener("visibilitychange", onVisible);
     // Clicking a notification shown by the service worker focuses this tab and asks it to open the task.
     const onMessage = (event: MessageEvent) => {
-      if (event.data?.type === "open-item" && typeof event.data.itemId === "string") {
-        openItem(event.data.itemId);
+      const { type, itemId } = (event.data ?? {}) as { type?: string; itemId?: unknown };
+      if (typeof itemId !== "string") return;
+      if (type === "open-item") openItem(itemId);
+      if (type === "snooze") {
+        useWorkspace.getState().snooze(itemId, SNOOZE_OPTIONS[0].until(Date.now()));
+        useAlarms.getState().dismissItem(itemId);
+      }
+      if (type === "done") {
+        const task = item(itemId);
+        if (task?.status === "open") useWorkspace.getState().toggleDone(itemId);
       }
     };
     navigator.serviceWorker?.addEventListener("message", onMessage);
@@ -87,6 +96,8 @@ export function ReminderRunner() {
 function ReminderCards() {
   const shown = useAlarms((s) => s.active);
   const dismiss = useAlarms((s) => s.dismiss);
+  const dismissItem = useAlarms((s) => s.dismissItem);
+  const snooze = useWorkspace((s) => s.snooze);
   const toggleDone = useWorkspace((s) => s.toggleDone);
   if (!shown.length) return null;
   return (
@@ -122,7 +133,28 @@ function ReminderCards() {
               <X size={15} />
             </button>
           </div>
-          <div className="mt-2 flex flex-wrap justify-end gap-1">
+          <div className="mt-2 flex flex-wrap items-center justify-end gap-1">
+            <label className="sr-only" htmlFor={`snooze-${alarm.key}`}>
+              Snooze
+            </label>
+            <select
+              id={`snooze-${alarm.key}`}
+              value=""
+              onChange={(e) => {
+                const option = SNOOZE_OPTIONS[Number(e.target.value)];
+                if (!option) return;
+                snooze(alarm.itemId, option.until(Date.now()));
+                dismissItem(alarm.itemId);
+              }}
+              className="mr-auto cursor-pointer rounded-lg bg-stone-100 px-2 py-1 text-xs font-medium text-stone-700 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700"
+            >
+              <option value="">Snooze…</option>
+              {SNOOZE_OPTIONS.map((o, i) => (
+                <option key={o.label} value={i}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
             <button
               type="button"
               className="btn btn-ghost px-2 py-1 text-xs"

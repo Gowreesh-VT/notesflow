@@ -48,6 +48,8 @@ export type Item = {
   reminders?: Reminder[];
   /** Once a reminder fires, keep repeating it until the task is completed or snoozed. */
   constantReminder?: boolean;
+  /** Reminders are silenced until this time, then ring once more; cleared when the task is finished. */
+  snoozedUntil?: number | null;
   subtasks: Subtask[];
   /** Section of the item's list it belongs to, or null for the unsectioned top of the list. */
   sectionId: string | null;

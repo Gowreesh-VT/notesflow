@@ -475,3 +475,16 @@ describe("constant reminder", () => {
     expect(state().items[0]).not.toHaveProperty("constantReminder");
   });
 });
+
+describe("snooze", () => {
+  it("snoozes, unsnoozes and clears the snooze when the task is finished", () => {
+    const id = state().addItem({ kind: "task", title: "Call" });
+    state().snooze(id, 123);
+    expect(state().items[0].snoozedUntil).toBe(123);
+    state().snooze(id, null);
+    expect(state().items[0]).not.toHaveProperty("snoozedUntil");
+    state().snooze(id, 456);
+    state().toggleDone(id);
+    expect(state().items[0]).not.toHaveProperty("snoozedUntil");
+  });
+});

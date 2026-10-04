@@ -94,6 +94,8 @@ type WorkspaceState = WorkspaceData & {
   /** Adds a reminder `before` minutes ahead of the due moment (ignored if it already exists or five are set). */
   addReminder: (itemId: string, before: number) => void;
   removeReminder: (itemId: string, reminderId: string) => void;
+  /** Silences a task's reminders until `until`; null clears the snooze. */
+  snooze: (itemId: string, until: number | null) => void;
   /** Tags a finished task with how it went; a null or blank label clears it. */
   setOutcome: (itemId: string, label: string | null, note?: string) => void;
   startTimer: (itemId: string) => void;
@@ -147,6 +149,7 @@ const OPTIONAL_FIELDS = [
   "energy",
   "reminders",
   "constantReminder",
+  "snoozedUntil",
 ] as const;
 
 const dropEmptyOptionals = (item: Item): Item => {
@@ -266,6 +269,7 @@ export const useWorkspace = create<WorkspaceState>()(
                 ...stopTimerPatch(item, status !== "open"),
                 // An outcome describes a finished task, so it goes away when the task is reopened or skipped.
                 ...(status !== "done" ? { outcome: null } : {}),
+                ...(status !== "open" ? { snoozedUntil: null } : {}),
               }),
             ),
           ),
@@ -447,6 +451,13 @@ export const useWorkspace = create<WorkspaceState>()(
             dropEmptyOptionals(
               touch(item, { reminders: (item.reminders ?? []).filter((r) => r.id !== reminderId) }),
             ),
+          ),
+        })),
+
+      snooze: (itemId, until) =>
+        set((s) => ({
+          items: mapItem(s.items, itemId, (item) =>
+            dropEmptyOptionals(touch(item, { snoozedUntil: until })),
           ),
         })),
 

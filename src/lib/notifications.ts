@@ -36,10 +36,18 @@ export async function showNotification(
     badge: "/icons/icon-192",
     data: { itemId },
   };
+  // Buttons on the notification itself (service-worker notifications only).
+  const withActions = {
+    ...options,
+    actions: [
+      { action: "done", title: "Done" },
+      { action: "snooze", title: "Snooze 10 min" },
+    ],
+  } as NotificationOptions;
   try {
     const registration = await navigator.serviceWorker?.getRegistration();
     if (registration) {
-      await registration.showNotification(title, options);
+      await registration.showNotification(title, withActions);
       return true;
     }
     const notification = new Notification(title, options);

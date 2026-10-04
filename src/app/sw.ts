@@ -36,14 +36,15 @@ serwist.addEventListeners();
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const itemId = (event.notification.data as { itemId?: string } | null)?.itemId;
+  const action = event.action === "done" || event.action === "snooze" ? event.action : "open-item";
   event.waitUntil(
     (async () => {
       const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
       const client = windows.find((w) => new URL(w.url).pathname.startsWith("/app")) ?? windows[0];
       if (client) {
-        await client.focus();
-        if (itemId) client.postMessage({ type: "open-item", itemId });
-      } else {
+        if (action === "open-item") await client.focus();
+        if (itemId) client.postMessage({ type: action, itemId });
+      } else if (action === "open-item") {
         await self.clients.openWindow("/app");
       }
     })(),

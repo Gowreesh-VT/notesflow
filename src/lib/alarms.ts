@@ -34,7 +34,22 @@ export function dueAlarms(
   const alarms: Alarm[] = [];
   for (const item of items) {
     if (!isActiveTask(item)) continue;
+    // While snoozed nothing rings; when the snooze ends it rings once more.
+    if (item.snoozedUntil) {
+      if (item.snoozedUntil > now) continue;
+      const key = `${item.id}:snooze:${item.snoozedUntil}`;
+      if (!fired[key] && now - item.snoozedUntil <= STALE_AFTER_MS) {
+        alarms.push({
+          key,
+          itemId: item.id,
+          title: item.title,
+          label: "Snoozed",
+          at: item.snoozedUntil,
+        });
+      }
+    }
     for (const { reminder, at } of reminderTimes(item, defaultTime)) {
+      if (item.snoozedUntil && at <= item.snoozedUntil) continue;
       const key = `${item.id}:${reminder.id}:${at}`;
       if (at > now || now - at > STALE_AFTER_MS || fired[key]) continue;
       alarms.push({
@@ -68,11 +83,14 @@ export function repeatAlarms(
   const alarms: Alarm[] = [];
   for (const item of items) {
     if (!item.constantReminder || !isActiveTask(item)) continue;
+    if (item.snoozedUntil && item.snoozedUntil > now) continue;
     const last = lastShown[item.id];
     if (last === undefined || now - last < REPEAT_EVERY_MS) continue;
-    const rang = reminderTimes(item, defaultTime).filter(
-      ({ at }) => at <= now && now - at < REPEAT_FOR_MS,
-    );
+    const rings = [
+      ...reminderTimes(item, defaultTime).map((r) => r.at),
+      ...(item.snoozedUntil ? [item.snoozedUntil] : []),
+    ];
+    const rang = rings.filter((at) => at <= now && now - at < REPEAT_FOR_MS);
     if (!rang.length) continue;
     alarms.push({
       key: `${item.id}:repeat:${now}`,
