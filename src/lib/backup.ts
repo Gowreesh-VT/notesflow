@@ -117,6 +117,8 @@ function optionalItemFields(r: Record<string, unknown>): Partial<Item> {
   if (r.constantReminder === true) fields.constantReminder = true;
   const repeat = r.kind === "task" ? parseRepeat(r.repeat) : null;
   if (repeat) fields.repeat = repeat;
+  const dailyNote = r.kind === "note" ? asDue(r.dailyNote) : null;
+  if (dailyNote) fields.dailyNote = dailyNote;
   if (typeof r.snoozedUntil === "number" && Number.isFinite(r.snoozedUntil) && r.snoozedUntil > 0) {
     fields.snoozedUntil = r.snoozedUntil;
   }

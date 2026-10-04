@@ -56,7 +56,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 - [ ] Drag-and-drop ordering of tasks within a list or section, and of lists in the sidebar
 - [ ] Group a list by due date, priority, section or tag
 - [x] Note-to-task: turn the unchecked checklist lines of a note into real tasks
-- [ ] Daily notes: one note per day, created from the command palette
+- [x] Daily notes: one note per day, created from the command palette
 
 ### Phase 4 — Views (days 29–40)
 

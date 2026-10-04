@@ -617,6 +617,34 @@ describe("snooze", () => {
   });
 });
 
+describe("daily notes", () => {
+  it("creates one note per day and opens the same one again", () => {
+    const id = state().openDailyNote("2026-10-04");
+    const note = state().items.find((i) => i.id === id)!;
+    expect(note).toMatchObject({ kind: "note", listId: INBOX_ID, dailyNote: "2026-10-04" });
+    expect(note.title).toContain("2026");
+    state().updateItem(id, { title: "Renamed" });
+    expect(state().openDailyNote("2026-10-04")).toBe(id);
+    expect(state().openDailyNote("2026-10-05")).not.toBe(id);
+    expect(state().items).toHaveLength(2);
+  });
+
+  it("restores a trashed daily note instead of creating another", () => {
+    const id = state().openDailyNote("2026-10-04");
+    state().trashItem(id);
+    expect(state().openDailyNote("2026-10-04")).toBe(id);
+    expect(state().items.find((i) => i.id === id)!.deletedAt).toBeNull();
+    expect(state().items).toHaveLength(1);
+  });
+
+  it("does not copy the daily marker to duplicates", () => {
+    const id = state().openDailyNote("2026-10-04");
+    const copy = state().duplicateItem(id)!;
+    expect(state().items.find((i) => i.id === copy)).not.toHaveProperty("dailyNote");
+    expect(state().openDailyNote("2026-10-04")).toBe(id);
+  });
+});
+
 describe("recurring tasks", () => {
   it("logs a finished copy and moves the task to its next due date", () => {
     const today = toDateKey(new Date());

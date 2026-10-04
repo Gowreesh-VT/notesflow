@@ -7,6 +7,7 @@ const SHORTCUTS: { keys: string; label: string }[] = [
   { keys: "Ctrl/⌘ + K", label: "Open the command palette" },
   { keys: "Alt + N", label: "New note" },
   { keys: "Alt + T", label: "New task" },
+  { keys: "Alt + J", label: "Open today’s daily note" },
   { keys: "/", label: "Search the current list" },
   { keys: "?", label: "Show this help" },
   { keys: "Esc", label: "Close dialogs" },

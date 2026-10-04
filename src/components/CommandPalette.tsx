@@ -5,7 +5,7 @@ import { exportBackup } from "@/lib/data-actions";
 import { filterItems, SMART_VIEWS } from "@/lib/items-logic";
 import { useToday } from "@/lib/hooks";
 import { INBOX_ID, type Item } from "@/lib/types";
-import { displayTitle } from "@/lib/utils";
+import { displayTitle, toDateKey } from "@/lib/utils";
 import { useUi, type Theme } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
 
@@ -19,6 +19,14 @@ function openItem(item: Item) {
     item.listId === INBOX_ID ? { kind: "smart", id: "inbox" } : { kind: "list", id: item.listId },
   );
   ui.selectItem(item.id);
+}
+
+/** Opens (creating it the first time) the daily note for a date, today by default. */
+export function openDailyNote(date = toDateKey(new Date())) {
+  const workspace = useWorkspace.getState();
+  const id = workspace.openDailyNote(date);
+  const note = useWorkspace.getState().items.find((i) => i.id === id);
+  if (note) openItem(note);
 }
 
 function PaletteDialog({ onClose }: { onClose: () => void }) {
@@ -51,6 +59,12 @@ function PaletteDialog({ onClose }: { onClose: () => void }) {
           const listId = ui.view.kind === "list" ? ui.view.id : INBOX_ID;
           ui.selectItem(useWorkspace.getState().addItem({ kind: "note", listId }));
         },
+      },
+      {
+        id: "daily-note",
+        label: "Open today’s daily note",
+        hint: "Alt+J",
+        run: () => openDailyNote(today),
       },
       ...SMART_VIEWS.map((v) => ({
         id: `go-${v.id}`,

@@ -257,3 +257,22 @@ describe("reminder and repeat fields in backups", () => {
     }
   });
 });
+
+describe("daily notes in backups", () => {
+  const parse = (fields: object) =>
+    parseBackup(
+      JSON.stringify({
+        app: "notesflow",
+        version: 2,
+        items: [{ ...item, ...fields }],
+        lists: [],
+        folders: [],
+      }),
+    ).items[0];
+
+  it("keeps a valid daily note date on notes only", () => {
+    expect(parse({ kind: "note", dailyNote: "2026-10-04" }).dailyNote).toBe("2026-10-04");
+    expect(parse({ kind: "note", dailyNote: "today" })).not.toHaveProperty("dailyNote");
+    expect(parse({ kind: "task", dailyNote: "2026-10-04" })).not.toHaveProperty("dailyNote");
+  });
+});

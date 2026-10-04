@@ -11,7 +11,7 @@ import { OutcomePrompt } from "./Outcome";
 import { ReminderRunner } from "./ReminderRunner";
 import { ReminderSettings } from "./ReminderSettings";
 import { SyncBanner } from "./SyncBanner";
-import { CommandPalette } from "./CommandPalette";
+import { CommandPalette, openDailyNote } from "./CommandPalette";
 import { ShortcutHelp } from "./ShortcutHelp";
 import { Sidebar } from "./Sidebar";
 import { Workspace } from "./Workspace";
@@ -66,6 +66,9 @@ export function AppShell() {
           ui.setView({ kind: "smart", id: "inbox" });
         }
         window.setTimeout(() => document.getElementById("quick-add")?.focus(), 0);
+      } else if (event.altKey && event.code === "KeyJ") {
+        event.preventDefault();
+        openDailyNote();
       } else if (event.key === "/" && !isTypingTarget(event.target)) {
         event.preventDefault();
         document.getElementById("list-search")?.focus();

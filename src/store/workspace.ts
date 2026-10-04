@@ -22,6 +22,7 @@ import { nextDueDate } from "@/lib/recurrence";
 import { makeReminder, MAX_REMINDERS, parseReminders } from "@/lib/reminders";
 import { renameTagInText } from "@/lib/tags";
 import { takeChecklist } from "@/lib/checklist";
+import { dailyNoteTitle, findDailyNote } from "@/lib/daily-notes";
 import { migrateLegacyData, type LegacyNote, type LegacyTask } from "@/lib/migrate";
 import {
   INBOX_ID,
@@ -96,6 +97,12 @@ type WorkspaceState = WorkspaceData & {
    * and keeps its section; returns the new item id.
    */
   copyItem: (id: string, listId: string) => string | null;
+
+  /**
+   * Returns the daily note for a date (YYYY-MM-DD), restoring it from the trash if needed, or creates it in the
+   * Inbox. Its title can be edited freely: the note is found by its `dailyNote` date.
+   */
+  openDailyNote: (date: string) => string;
 
   /** Adds a subtask under the task, or under another subtask when `parentId` is given (up to 5 levels). */
   addSubtask: (itemId: string, title: string, parentId?: string | null) => string | null;
@@ -178,6 +185,7 @@ const OPTIONAL_FIELDS = [
   "constantReminder",
   "snoozedUntil",
   "repeat",
+  "dailyNote",
 ] as const;
 
 const dropEmptyOptionals = (item: Item): Item => {
@@ -428,6 +436,17 @@ export const useWorkspace = create<WorkspaceState>()(
           })),
         }));
         return newId;
+      },
+
+      openDailyNote: (date) => {
+        const existing = findDailyNote(get().items, date);
+        if (existing) {
+          if (existing.deletedAt !== null) get().restoreItem(existing.id);
+          return existing.id;
+        }
+        const id = get().addItem({ kind: "note", title: dailyNoteTitle(date), listId: INBOX_ID });
+        set((s) => ({ items: mapItem(s.items, id, (item) => ({ ...item, dailyNote: date })) }));
+        return id;
       },
 
       addSubtask: (itemId, title, parentId = null) => {

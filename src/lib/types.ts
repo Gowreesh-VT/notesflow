@@ -54,6 +54,8 @@ export type Item = {
   snoozedUntil?: number | null;
   /** Repeat rule: finishing the task logs a finished copy and moves this task to its next due date. */
   repeat?: Repeat | null;
+  /** Notes only: marks the daily note for this local date (YYYY-MM-DD); at most one is opened per day. */
+  dailyNote?: string | null;
   subtasks: Subtask[];
   /** Section of the item's list it belongs to, or null for the unsectioned top of the list. */
   sectionId: string | null;
