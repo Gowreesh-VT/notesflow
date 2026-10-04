@@ -268,6 +268,7 @@ export function ItemList() {
   const renameSection = useWorkspace((s) => s.renameSection);
   const deleteSection = useWorkspace((s) => s.deleteSection);
   const moveSection = useWorkspace((s) => s.moveSection);
+  const toggleSectionCollapsed = useWorkspace((s) => s.toggleSectionCollapsed);
   const { view, query, sort, selectedItemId } = useUi();
   const setQuery = useUi((s) => s.setQuery);
   const setSort = useUi((s) => s.setSort);
@@ -371,8 +372,8 @@ export function ItemList() {
             <GroupHeader
               label={section.name}
               count={group.length}
-              open={!collapsed.has(section.id)}
-              onToggle={() => toggleGroup(section.id)}
+              open={!section.collapsed}
+              onToggle={() => toggleSectionCollapsed(currentList.id, section.id)}
             >
               <SectionButton
                 label={`Move section ${section.name} up`}
@@ -410,7 +411,7 @@ export function ItemList() {
                 <Trash2 size={14} aria-hidden />
               </SectionButton>
             </GroupHeader>
-            {!collapsed.has(section.id) && rows(group, false)}
+            {!section.collapsed && rows(group, false)}
           </section>
         ) : (
           group.length > 0 && (

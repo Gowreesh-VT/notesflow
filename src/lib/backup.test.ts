@@ -51,7 +51,13 @@ describe("backup", () => {
         {
           id: "a",
           name: "A",
-          sections: [{ id: "s", name: " X " }, { id: "s", name: "dup" }, 1, { id: "t" }],
+          sections: [
+            { id: "s", name: " X ", collapsed: true },
+            { id: "s", name: "dup" },
+            1,
+            { id: "t" },
+            { id: "u", name: "U", collapsed: "yes" },
+          ],
         },
         { id: "b", name: "B", sections: "nope" },
       ],
@@ -59,7 +65,13 @@ describe("backup", () => {
     });
     const parsed = parseBackup(text);
     expect(parsed.items.map((i) => i.sectionId)).toEqual([null, null]);
-    expect(parsed.lists.map((l) => l.sections)).toEqual([[{ id: "s", name: "X" }], []]);
+    expect(parsed.lists.map((l) => l.sections)).toEqual([
+      [
+        { id: "s", name: "X", collapsed: true },
+        { id: "u", name: "U" },
+      ],
+      [],
+    ]);
   });
 
   it("imports the original notes+tasks format", () => {

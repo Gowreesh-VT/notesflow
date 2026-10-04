@@ -37,6 +37,8 @@ export type Item = {
 export type ListSection = {
   id: string;
   name: string;
+  /** Set only while the section is folded away; absent means expanded. */
+  collapsed?: boolean;
 };
 
 export type TaskList = {

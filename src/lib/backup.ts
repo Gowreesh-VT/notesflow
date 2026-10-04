@@ -46,7 +46,7 @@ function parseSections(raw: unknown): ListSection[] {
     const name = asString(sec.name).trim();
     if (!id || !name || seen.has(id)) return [];
     seen.add(id);
-    return [{ id, name }];
+    return [sec.collapsed === true ? { id, name, collapsed: true } : { id, name }];
   });
 }
 
