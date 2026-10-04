@@ -10,36 +10,36 @@
 }
 
 /*
- * Warm minimal palette. "stone" is overridden with warm sand neutrals (the same scale is used in light and dark
- * mode, with dark: variants picking the deep end), and "accent" is a terracotta scale.
+ * Cool minimal palette. "stone" is overridden with cool slate neutrals (the same scale is used in light and dark
+ * mode, with dark: variants picking the deep end), and "accent" is a calm blue scale.
  */
 @theme {
-  --color-stone-50: #faf7f2;
-  --color-stone-100: #f4efe6;
-  --color-stone-200: #e9e1d3;
-  --color-stone-300: #d9cebb;
-  --color-stone-400: #a99d88;
-  --color-stone-500: #766a58;
-  --color-stone-600: #5f5446;
-  --color-stone-700: #4a4136;
-  --color-stone-800: #352e26;
-  --color-stone-900: #231e19;
-  --color-stone-950: #171310;
+  --color-stone-50: #f8fafc;
+  --color-stone-100: #f1f4f8;
+  --color-stone-200: #e3e8ef;
+  --color-stone-300: #cdd5df;
+  --color-stone-400: #97a3b4;
+  --color-stone-500: #66728a;
+  --color-stone-600: #4a5568;
+  --color-stone-700: #353e4f;
+  --color-stone-800: #222834;
+  --color-stone-900: #161a22;
+  --color-stone-950: #0e1117;
 
-  --color-accent-50: #fdf3ef;
-  --color-accent-100: #fbe5dc;
-  --color-accent-200: #f6c9b8;
-  --color-accent-300: #efa58b;
-  --color-accent-400: #e57c5c;
-  --color-accent-500: #d95f3b;
-  --color-accent-600: #c24a2a;
-  --color-accent-700: #a13b22;
-  --color-accent-800: #84321f;
-  --color-accent-900: #6c2d1e;
-  --color-accent-950: #3b150d;
+  --color-accent-50: #eff3fe;
+  --color-accent-100: #e0e8fd;
+  --color-accent-200: #c6d4fb;
+  --color-accent-300: #a1b7f8;
+  --color-accent-400: #7792f3;
+  --color-accent-500: #5872ee;
+  --color-accent-600: #4259e2;
+  --color-accent-700: #3647c9;
+  --color-accent-800: #2f3ca3;
+  --color-accent-900: #2c3881;
+  --color-accent-950: #1d234e;
 
-  --shadow-soft: 0 1px 2px rgb(60 40 20 / 0.05), 0 4px 16px rgb(60 40 20 / 0.06);
-  --shadow-lift: 0 2px 4px rgb(60 40 20 / 0.06), 0 12px 32px rgb(60 40 20 / 0.12);
+  --shadow-soft: 0 1px 2px rgb(15 23 42 / 0.05), 0 4px 16px rgb(15 23 42 / 0.06);
+  --shadow-lift: 0 2px 4px rgb(15 23 42 / 0.06), 0 12px 32px rgb(15 23 42 / 0.12);
 }
 
 html {

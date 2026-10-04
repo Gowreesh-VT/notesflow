@@ -16,7 +16,7 @@ export default function OpenGraphImage() {
         justifyContent: "center",
         padding: 80,
         background: BRAND_PAPER,
-        color: "#231e19",
+        color: "#161a22",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
@@ -49,7 +49,7 @@ export default function OpenGraphImage() {
       >
         A calmer way to get things done.
       </div>
-      <div style={{ fontSize: 34, color: "#5f5446", marginTop: 28 }}>
+      <div style={{ fontSize: 34, color: "#4a5568", marginTop: 28 }}>
         Tasks and notes in one place. Offline. Syncs when you want it.
       </div>
     </div>,

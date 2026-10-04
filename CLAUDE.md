@@ -164,13 +164,14 @@ product or business decision the roadmap does not already make.
 
 ### UI rules
 
-- Preserve the existing design language, "warm minimal": sand neutrals (the `stone-*` scale is overridden with warm
-  tones in `src/app/globals.css`), a terracotta accent (`accent-*` scale), rounded-xl controls and rounded-2xl panels,
-  soft shadows (`shadow-soft`, `shadow-lift`), Geist for UI text and Fraunces for headings (`heading-display`), and
-  the `btn` / `btn-primary` / `btn-ghost` / `btn-danger` / `field` classes. Use the scales and classes, never raw hex
-  colours; there is no `indigo`.
-- Surfaces: the app has a sidebar, an item list on the page background, and the detail panel as a white card.
-  Rows are rounded and borderless; selected rows use `accent-50` with an `accent-200` ring.
+- Preserve the existing design language, "cool minimal": slate neutrals (the `stone-*` scale is overridden with cool
+  slate tones in `src/app/globals.css`), a calm blue accent (`accent-*` scale), rounded-xl controls and rounded-2xl
+  panels, soft shadows (`shadow-soft`, `shadow-lift`), Geist for UI text and Fraunces for headings
+  (`heading-display`), and the `btn` / `btn-primary` / `btn-ghost` / `btn-danger` / `field` classes. Use the scales
+  and classes, never raw hex colours (brand hex values live only in `src/lib/brand.ts`); there is no `indigo`.
+- Layout (TickTick-style): a slim icon rail (`NavRail`), the lists sidebar, a full-width item list grouped by date
+  or section with collapsible group headers, and a detail panel that opens beside the list only when an item is
+  selected. Task checkboxes are rounded squares coloured by priority; selected rows use `accent-50`.
 - Preserve colours and typography unless fixing a real contrast/accessibility problem (keep text at 4.5:1 or better).
 - Everything must work on desktop and mobile, in light and dark mode, and with the keyboard.
 - Read the neighbouring components before changing UI and stay consistent with them.
