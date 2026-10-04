@@ -54,6 +54,8 @@ export type Item = {
   snoozedUntil?: number | null;
   /** Repeat rule: finishing the task logs a finished copy and moves this task to its next due date. */
   repeat?: Repeat | null;
+  /** Manual (drag-and-drop) position within its list or section; absent until the item is first moved. */
+  order?: number | null;
   subtasks: Subtask[];
   /** Section of the item's list it belongs to, or null for the unsectioned top of the list. */
   sectionId: string | null;
@@ -105,6 +107,8 @@ export type TaskList = {
   /** Ordered sections; they are stored on the list, so they sync with it. */
   sections: ListSection[];
   folderId: string | null;
+  /** Manual position in the sidebar; absent until the list is first moved. */
+  order?: number;
   createdAt: number;
   updatedAt: number;
 };
@@ -131,7 +135,7 @@ export type SmartViewId =
 export type View =
   { kind: "smart"; id: SmartViewId } | { kind: "list"; id: string } | { kind: "tag"; tag: string };
 
-export type ItemSort = "default" | "due" | "priority" | "title" | "updated";
+export type ItemSort = "default" | "manual" | "due" | "priority" | "title" | "updated";
 
 export type Backup = {
   app: "notesflow";

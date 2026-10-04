@@ -38,9 +38,11 @@ import {
   viewTitle,
 } from "@/lib/items-logic";
 import { formatDuration } from "@/lib/duration";
+import { planMove, planStep } from "@/lib/ordering";
 import { useToday } from "@/lib/hooks";
 import { describeRepeat } from "@/lib/recurrence";
 import { EnergyIcon } from "./EnergyField";
+import { DragHandle, DropLine, useReorder } from "./Reorder";
 import { TemplatesMenu } from "./TemplatesMenu";
 import { runningEntry } from "@/lib/time-tracking";
 import { INBOX_ID, type Item, type ItemKind, type ItemSort, type Priority } from "@/lib/types";
@@ -55,16 +57,26 @@ const PRIORITY_BOX: Record<Priority, string> = {
   high: "border-red-500 bg-red-500/10",
 };
 
+/** Drag-and-drop wiring for a row in manual order. */
+type RowReorder = {
+  row: React.HTMLAttributes<HTMLLIElement>;
+  handle: React.HTMLAttributes<HTMLSpanElement>;
+  line: "top" | "bottom" | null;
+  dragging: boolean;
+};
+
 function ItemRow({
   item,
   today,
   showList,
   selected,
+  reorder,
 }: {
   item: Item;
   today: string;
   showList: boolean;
   selected: boolean;
+  reorder?: RowReorder;
 }) {
   const lists = useWorkspace((s) => s.lists);
   const toggleDone = useWorkspace((s) => s.toggleDone);
@@ -82,13 +94,17 @@ function ItemRow({
 
   return (
     <li
+      {...reorder?.row}
       className={clsx(
-        "group flex min-h-11 items-center gap-3 rounded-lg px-3 py-1.5 transition-colors",
+        "group relative flex min-h-11 items-center gap-3 rounded-lg px-3 py-1.5 transition-colors",
         selected
           ? "bg-accent-50 dark:bg-accent-950/50"
           : "hover:bg-stone-100 dark:hover:bg-stone-800/60",
+        reorder?.dragging && "opacity-50",
       )}
     >
+      {reorder && <DragHandle label="Drag to reorder" {...reorder.handle} />}
+      {reorder?.line && <DropLine at={reorder.line} />}
       {isTask ? (
         <button
           type="button"
@@ -293,6 +309,7 @@ function MenuItem({
 
 const SORTS: { value: ItemSort; label: string }[] = [
   { value: "default", label: "Smart order" },
+  { value: "manual", label: "Manual order" },
   { value: "due", label: "Due date" },
   { value: "priority", label: "Priority" },
   { value: "title", label: "Title" },
@@ -313,6 +330,7 @@ export function ItemList() {
   const deleteSection = useWorkspace((s) => s.deleteSection);
   const moveSection = useWorkspace((s) => s.moveSection);
   const toggleSectionCollapsed = useWorkspace((s) => s.toggleSectionCollapsed);
+  const reorderItems = useWorkspace((s) => s.reorderItems);
   const { view, query, sort, selectedItemId } = useUi();
   const setQuery = useUi((s) => s.setQuery);
   const setSort = useUi((s) => s.setSort);
@@ -415,73 +433,142 @@ export function ItemList() {
               ? "Nothing due. Enjoy the calm."
               : "Nothing here yet. Add a task or note above.";
 
-  const rows = (group: Item[], showList: boolean) => (
-    <ul>
-      {group.map((item) => (
-        <ItemRow
-          key={item.id}
-          item={item}
-          today={today}
-          showList={showList}
-          selected={item.id === selectedItemId}
-        />
-      ))}
-    </ul>
-  );
+  // Manual order can be changed by dragging (or Alt+Arrow keys) in a list or the Inbox, when nothing is hidden by a
+  // search or filter. Elsewhere the order is still shown, just not editable.
+  const reorderable =
+    sort === "manual" && isContainer && !isReadOnlyView && !query.trim() && !energyFilter;
+  // Rows as displayed per drag group, filled in while rendering. Section groups are "section:<id>" ("section:" for
+  // the unsectioned part); a row may only be dragged into another section, never into another kind of group.
+  const shown: Record<string, Item[]> = {};
+  const isSectionGroup = (group: string) => group.startsWith("section:");
+  const reorder = useReorder({
+    canDrop: (from, to) => from === to || (isSectionGroup(from) && isSectionGroup(to)),
+    onDrop: (id, from, target) => {
+      const moved = items.find((i) => i.id === id);
+      if (!moved) return;
+      const changes = planMove(shown[target.group] ?? [], moved, target.index);
+      const sectionId = target.group.slice("section:".length) || null;
+      reorderItems(
+        changes,
+        from !== target.group && isSectionGroup(target.group) ? { id, sectionId } : undefined,
+      );
+    },
+  });
+
+  const rows = (group: Item[], showList: boolean, dragGroup?: string) => {
+    if (dragGroup) shown[dragGroup] = group;
+    const step = (item: Item, index: number) => (delta: -1 | 1) => {
+      const changes = planStep(group, item.id, delta);
+      if (Object.keys(changes).length === 0) return null;
+      reorderItems(changes);
+      return `Moved “${displayTitle(item)}” to position ${index + delta + 1} of ${group.length}.`;
+    };
+    return (
+      <ul>
+        {group.map((item, index) => (
+          <ItemRow
+            key={item.id}
+            item={item}
+            today={today}
+            showList={showList}
+            selected={item.id === selectedItemId}
+            reorder={
+              reorderable && dragGroup
+                ? {
+                    row: reorder.rowProps(dragGroup, index, step(item, index)),
+                    handle: reorder.handleProps(item.id, dragGroup),
+                    line: reorder.isTarget(dragGroup, index)
+                      ? "top"
+                      : index === group.length - 1 && reorder.isTarget(dragGroup, group.length)
+                        ? "bottom"
+                        : null,
+                    dragging: reorder.dragging === item.id,
+                  }
+                : undefined
+            }
+          />
+        ))}
+      </ul>
+    );
+  };
 
   const renderGroups = () => {
     if (currentList && currentList.sections.length > 0) {
       return groupBySections(main, currentList.sections).map(({ section, items: group }) =>
         section ? (
           <section key={section.id} aria-label={section.name}>
-            <GroupHeader
-              label={section.name}
-              count={group.length}
-              open={!section.collapsed}
-              onToggle={() => toggleSectionCollapsed(currentList.id, section.id)}
+            <div
+              {...(reorderable ? reorder.zoneProps(`section:${section.id}`, 0) : {})}
+              className={clsx(
+                "rounded-lg",
+                (section.collapsed || group.length === 0) &&
+                  reorder.isTarget(`section:${section.id}`, 0) &&
+                  "bg-accent-50 dark:bg-accent-950/50",
+              )}
             >
-              <SectionButton
-                label={`Move section ${section.name} up`}
-                onClick={() => moveSection(currentList.id, section.id, -1)}
+              <GroupHeader
+                label={section.name}
+                count={group.length}
+                open={!section.collapsed}
+                onToggle={() => toggleSectionCollapsed(currentList.id, section.id)}
               >
-                <ArrowUp size={14} aria-hidden />
-              </SectionButton>
-              <SectionButton
-                label={`Move section ${section.name} down`}
-                onClick={() => moveSection(currentList.id, section.id, 1)}
-              >
-                <ArrowDown size={14} aria-hidden />
-              </SectionButton>
-              <SectionButton
-                label={`Rename section ${section.name}`}
-                onClick={() => {
-                  const name = window.prompt("Rename section", section.name);
-                  if (name) renameSection(currentList.id, section.id, name);
-                }}
-              >
-                <Pencil size={14} aria-hidden />
-              </SectionButton>
-              <SectionButton
-                label={`Delete section ${section.name}`}
-                onClick={() => {
-                  if (
-                    window.confirm(
-                      `Delete the section “${section.name}”? Its items stay in the list.`,
-                    )
-                  ) {
-                    deleteSection(currentList.id, section.id);
-                  }
-                }}
-              >
-                <Trash2 size={14} aria-hidden />
-              </SectionButton>
-            </GroupHeader>
-            {!section.collapsed && rows(group, false)}
+                <SectionButton
+                  label={`Move section ${section.name} up`}
+                  onClick={() => moveSection(currentList.id, section.id, -1)}
+                >
+                  <ArrowUp size={14} aria-hidden />
+                </SectionButton>
+                <SectionButton
+                  label={`Move section ${section.name} down`}
+                  onClick={() => moveSection(currentList.id, section.id, 1)}
+                >
+                  <ArrowDown size={14} aria-hidden />
+                </SectionButton>
+                <SectionButton
+                  label={`Rename section ${section.name}`}
+                  onClick={() => {
+                    const name = window.prompt("Rename section", section.name);
+                    if (name) renameSection(currentList.id, section.id, name);
+                  }}
+                >
+                  <Pencil size={14} aria-hidden />
+                </SectionButton>
+                <SectionButton
+                  label={`Delete section ${section.name}`}
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        `Delete the section “${section.name}”? Its items stay in the list.`,
+                      )
+                    ) {
+                      deleteSection(currentList.id, section.id);
+                    }
+                  }}
+                >
+                  <Trash2 size={14} aria-hidden />
+                </SectionButton>
+              </GroupHeader>
+            </div>
+            {!section.collapsed && rows(group, false, `section:${section.id}`)}
+          </section>
+        ) : group.length > 0 ? (
+          <section key="none" aria-label="No section" className="pt-2">
+            {rows(group, false, "section:")}
           </section>
         ) : (
-          group.length > 0 && (
-            <section key="none" aria-label="No section" className="pt-2">
-              {rows(group, false)}
+          reorder.dragging && (
+            <section
+              key="none"
+              aria-label="No section"
+              {...reorder.zoneProps("section:", 0)}
+              className={clsx(
+                "mt-2 rounded-lg border border-dashed px-3 py-2 text-xs",
+                reorder.isTarget("section:", 0)
+                  ? "border-accent-500 text-accent-700 dark:text-accent-300"
+                  : "border-stone-300 text-stone-500 dark:border-stone-700 dark:text-stone-400",
+              )}
+            >
+              No section
             </section>
           )
         ),
@@ -500,7 +587,7 @@ export function ItemList() {
         </section>
       ));
     }
-    return <div className="pt-2">{rows(main, !isContainer)}</div>;
+    return <div className="pt-2">{rows(main, !isContainer, "all")}</div>;
   };
 
   return (
@@ -750,6 +837,9 @@ export function ItemList() {
       )}
 
       <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-6 pt-1 sm:px-4">
+        <p role="status" aria-live="polite" className="sr-only">
+          {reorder.announcement}
+        </p>
         {renderGroups()}
         {main.length === 0 && finished.length === 0 && (
           <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">

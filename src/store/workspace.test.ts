@@ -551,3 +551,53 @@ describe("start date", () => {
     });
   });
 });
+
+describe("manual order", () => {
+  it("writes item positions, bumps updatedAt and skips unchanged items", async () => {
+    const a = state().addItem({ kind: "task", title: "A" });
+    const b = state().addItem({ kind: "task", title: "B" });
+    const before = state().items.find((i) => i.id === b)!.updatedAt;
+    await new Promise((r) => setTimeout(r, 2));
+    state().reorderItems({ [a]: 2048 });
+    const moved = state().items.find((i) => i.id === a)!;
+    expect(moved.order).toBe(2048);
+    expect(moved.updatedAt).toBeGreaterThan(before);
+    expect(state().items.find((i) => i.id === b)!.updatedAt).toBe(before);
+    const stamp = moved.updatedAt;
+    await new Promise((r) => setTimeout(r, 2));
+    state().reorderItems({ [a]: 2048 });
+    expect(state().items.find((i) => i.id === a)!.updatedAt).toBe(stamp);
+  });
+
+  it("moves an item into another section of its list, ignoring unknown sections", () => {
+    const listId = state().addList("Work")!;
+    const sectionId = state().addSection(listId, "Doing")!;
+    const id = state().addItem({ kind: "task", title: "T", listId });
+    state().reorderItems({ [id]: 1 }, { id, sectionId });
+    expect(state().items[0]).toMatchObject({ order: 1, sectionId });
+    state().reorderItems({}, { id, sectionId: "missing" });
+    expect(state().items[0]).toMatchObject({ order: 1, sectionId: null });
+  });
+
+  it("drops a cleared position instead of storing null", () => {
+    const id = state().addItem({ kind: "task", title: "T" });
+    state().reorderItems({ [id]: 5 });
+    state().updateItem(id, { title: "U" });
+    expect(state().items[0].order).toBe(5);
+    useWorkspace.setState({ items: [{ ...state().items[0], order: null }] });
+    state().updateItem(id, { title: "V" });
+    expect(state().items[0]).not.toHaveProperty("order");
+  });
+
+  it("writes list positions and bumps updatedAt", async () => {
+    const a = state().addList("A")!;
+    const b = state().addList("B")!;
+    const before = state().lists.find((l) => l.id === b)!.updatedAt;
+    await new Promise((r) => setTimeout(r, 2));
+    state().reorderLists({ [b]: -1024 });
+    const moved = state().lists.find((l) => l.id === b)!;
+    expect(moved.order).toBe(-1024);
+    expect(moved.updatedAt).toBeGreaterThan(before);
+    expect(state().lists.find((l) => l.id === a)).not.toHaveProperty("order");
+  });
+});

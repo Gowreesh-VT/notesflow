@@ -31,11 +31,13 @@ import clsx from "clsx";
 import { collectTags, countInView, sameView, SMART_VIEWS } from "@/lib/items-logic";
 import { exportBackup, importBackupFile, importMarkdownFiles } from "@/lib/data-actions";
 import { useToday } from "@/lib/hooks";
-import { INBOX_ID, type SmartViewId, type View } from "@/lib/types";
+import { planMove, planStep, sortByOrder } from "@/lib/ordering";
+import { INBOX_ID, type SmartViewId, type TaskList, type View } from "@/lib/types";
 import { useUi, type Theme } from "@/store/ui";
 import { AccountMenu } from "./AccountMenu";
 import { InstallButton } from "./InstallButton";
 import { LogoMark } from "./Logo";
+import { DragHandle, DropLine, useReorder } from "./Reorder";
 import { useWorkspace } from "@/store/workspace";
 
 const SMART_ICONS: Record<SmartViewId, React.ReactNode> = {
@@ -113,6 +115,7 @@ export function Sidebar() {
   const addFolder = useWorkspace((s) => s.addFolder);
   const renameFolder = useWorkspace((s) => s.renameFolder);
   const deleteFolder = useWorkspace((s) => s.deleteFolder);
+  const reorderLists = useWorkspace((s) => s.reorderLists);
   const { view, theme, sidebarOpen, sidebarCollapsed } = useUi();
   const setView = useUi((s) => s.setView);
   const setTheme = useUi((s) => s.setTheme);
@@ -137,9 +140,20 @@ export function Sidebar() {
   const tags = useMemo(() => collectTags(items), [items]);
 
   const listCount = (id: string) => countInView(items, { kind: "list", id }, today);
-  const topLevelLists = lists.filter(
+  const sortedLists = useMemo(() => sortByOrder(lists), [lists]);
+  const topLevelLists = sortedLists.filter(
     (l) => !l.folderId || !folders.some((f) => f.id === l.folderId),
   );
+  // Lists can be dragged (or moved with Alt+Arrow keys) within the top level or within their folder.
+  const listsIn = (group: string) =>
+    group === "top" ? topLevelLists : sortedLists.filter((l) => l.folderId === group);
+  const reorder = useReorder({
+    canDrop: (from, to) => from === to,
+    onDrop: (id, _from, target) => {
+      const moved = lists.find((l) => l.id === id);
+      if (moved) reorderLists(planMove(listsIn(target.group), moved, target.index));
+    },
+  });
 
   const run = async (action: () => Promise<string> | string) => {
     try {
@@ -163,16 +177,31 @@ export function Sidebar() {
     setAddDraft("");
   };
 
-  const listItem = (id: string, name: string, indent = false) => (
-    <NavItem
-      key={id}
-      icon={<ListTodo size={16} />}
-      label={name}
-      count={listCount(id)}
-      active={sameView(view, { kind: "list", id })}
-      onClick={() => goTo({ kind: "list", id })}
-      indent={indent}
-    />
+  const listItem = (list: TaskList, group: string, index: number, siblings: TaskList[]) => (
+    <div
+      key={list.id}
+      {...reorder.rowProps(group, index, (delta) => {
+        const changes = planStep(siblings, list.id, delta);
+        if (Object.keys(changes).length === 0) return null;
+        reorderLists(changes);
+        return `Moved list “${list.name}” to position ${index + delta + 1} of ${siblings.length}.`;
+      })}
+      className={clsx("group relative", reorder.dragging === list.id && "opacity-50")}
+    >
+      <DragHandle label="Drag to reorder" {...reorder.handleProps(list.id, group)} />
+      {reorder.isTarget(group, index) && <DropLine at="top" />}
+      {index === siblings.length - 1 && reorder.isTarget(group, siblings.length) && (
+        <DropLine at="bottom" />
+      )}
+      <NavItem
+        icon={<ListTodo size={16} />}
+        label={list.name}
+        count={listCount(list.id)}
+        active={sameView(view, { kind: "list", id: list.id })}
+        onClick={() => goTo({ kind: "list", id: list.id })}
+        indent={group !== "top"}
+      />
+    </div>
   );
 
   return (
@@ -289,10 +318,10 @@ export function Sidebar() {
             </form>
           )}
 
-          {topLevelLists.map((l) => listItem(l.id, l.name))}
+          {topLevelLists.map((l, i) => listItem(l, "top", i, topLevelLists))}
 
           {folders.map((folder) => {
-            const inFolder = lists.filter((l) => l.folderId === folder.id);
+            const inFolder = listsIn(folder.id);
             const open = !collapsed.has(folder.id);
             return (
               <div key={folder.id}>
@@ -344,10 +373,14 @@ export function Sidebar() {
                     <X size={13} />
                   </button>
                 </div>
-                {open && inFolder.map((l) => listItem(l.id, l.name, true))}
+                {open && inFolder.map((l, i) => listItem(l, folder.id, i, inFolder))}
               </div>
             );
           })}
+
+          <p role="status" aria-live="polite" className="sr-only">
+            {reorder.announcement}
+          </p>
 
           {lists.length === 0 && folders.length === 0 && !adding && (
             <p className="px-2.5 py-1 text-xs text-stone-500 dark:text-stone-400">

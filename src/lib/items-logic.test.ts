@@ -336,3 +336,32 @@ describe("multi-day tasks", () => {
     ]);
   });
 });
+
+describe("manual order", () => {
+  it("sorts open tasks and notes together by position, unpositioned items first and newest first", () => {
+    const items = [
+      make("b", { order: 2 }),
+      make("note", { kind: "note", order: 1.5, pinned: true }),
+      make("a", { order: 1 }),
+      make("old", { createdAt: 1 }),
+      make("new", { createdAt: 5 }),
+      make("done", { status: "done", completedAt: 9, order: 0 }),
+    ];
+    expect(filterItems(items, smart("inbox"), "", today, "manual").map((i) => i.id)).toEqual([
+      "new",
+      "old",
+      "a",
+      "note",
+      "b",
+      "done",
+    ]);
+  });
+
+  it("leaves other sorts unchanged by positions", () => {
+    const items = [make("b", { order: 1, priority: "high" }), make("a", { order: 2 })];
+    expect(filterItems(items, smart("inbox"), "", today, "title").map((i) => i.id)).toEqual([
+      "a",
+      "b",
+    ]);
+  });
+});

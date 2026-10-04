@@ -8,6 +8,7 @@ const SHORTCUTS: { keys: string; label: string }[] = [
   { keys: "Alt + N", label: "New note" },
   { keys: "Alt + T", label: "New task" },
   { keys: "/", label: "Search the current list" },
+  { keys: "Alt + ↑ / ↓", label: "Move a list, or a task in manual order" },
   { keys: "?", label: "Show this help" },
   { keys: "Esc", label: "Close dialogs" },
 ];

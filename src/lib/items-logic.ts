@@ -10,6 +10,7 @@ import {
   type View,
 } from "./types";
 import { parseDuration } from "./duration";
+import { compareOrder } from "./ordering";
 import { countSubtasks, flattenSubtasks } from "./subtasks";
 import { addDays, displayTitle, extractTags } from "./utils";
 
@@ -94,8 +95,12 @@ function matchesView(item: Item, view: View, today: string): boolean {
   }
 }
 
-/** Item groups, in display order: open tasks, notes, finished tasks. */
-const group = (item: Item): number => (item.kind === "note" ? 1 : item.status === "open" ? 0 : 2);
+/**
+ * Item groups, in display order: open tasks, notes, finished tasks. In manual order, open tasks and notes share
+ * one group so they can be arranged freely.
+ */
+const group = (item: Item, sort: ItemSort): number =>
+  item.kind === "note" ? (sort === "manual" ? 0 : 1) : item.status === "open" ? 0 : 2;
 
 function compareDue(a: Item, b: Item): number {
   if (a.due !== b.due) {
@@ -110,6 +115,7 @@ function compareDue(a: Item, b: Item): number {
 }
 
 function compareWithin(a: Item, b: Item, sort: ItemSort): number {
+  if (sort === "manual") return compareOrder(a, b, "first") || a.createdAt - b.createdAt;
   if (sort === "title") return displayTitle(a).localeCompare(displayTitle(b));
   if (sort === "updated") return b.updatedAt - a.updatedAt;
   if (a.kind === "note") return b.updatedAt - a.updatedAt;
@@ -128,10 +134,10 @@ function compareWithin(a: Item, b: Item, sort: ItemSort): number {
 }
 
 export function compareItems(a: Item, b: Item, sort: ItemSort): number {
-  const byGroup = group(a) - group(b);
+  const byGroup = group(a, sort) - group(b, sort);
   if (byGroup !== 0) return byGroup;
-  if (group(a) === 1 && a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-  if (group(a) === 2) {
+  if (group(a, sort) === 1 && a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+  if (group(a, sort) === 2) {
     return (b.completedAt ?? b.updatedAt) - (a.completedAt ?? a.updatedAt);
   }
   return compareWithin(a, b, sort);

@@ -257,3 +257,30 @@ describe("reminder and repeat fields in backups", () => {
     }
   });
 });
+
+describe("manual order in backups", () => {
+  const parse = (itemFields: object, listFields: object) =>
+    parseBackup(
+      JSON.stringify({
+        app: "notesflow",
+        version: 2,
+        items: [{ ...item, ...itemFields }],
+        lists: [{ id: "work", name: "Work", createdAt: 1, updatedAt: 1, ...listFields }],
+        folders: [],
+      }),
+    );
+
+  it("keeps finite positions on items and lists", () => {
+    const parsed = parse({ order: 1.5 }, { order: -2048 });
+    expect(parsed.items[0].order).toBe(1.5);
+    expect(parsed.lists[0].order).toBe(-2048);
+  });
+
+  it("drops missing or invalid positions", () => {
+    for (const order of [undefined, null, "3", Number.NaN]) {
+      const parsed = parse({ order }, { order });
+      expect(parsed.items[0]).not.toHaveProperty("order");
+      expect(parsed.lists[0]).not.toHaveProperty("order");
+    }
+  });
+});

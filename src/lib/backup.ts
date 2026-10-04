@@ -12,6 +12,7 @@ import {
 } from "./types";
 import { asMinutes } from "./duration";
 import { isEnergy } from "./items-logic";
+import { asOrder } from "./ordering";
 import { parseOutcome } from "./outcomes";
 import { parseRepeat } from "./recurrence";
 import { parseReminders } from "./reminders";
@@ -117,6 +118,8 @@ function optionalItemFields(r: Record<string, unknown>): Partial<Item> {
   if (r.constantReminder === true) fields.constantReminder = true;
   const repeat = r.kind === "task" ? parseRepeat(r.repeat) : null;
   if (repeat) fields.repeat = repeat;
+  const order = asOrder(r.order);
+  if (order !== null) fields.order = order;
   if (typeof r.snoozedUntil === "number" && Number.isFinite(r.snoozedUntil) && r.snoozedUntil > 0) {
     fields.snoozedUntil = r.snoozedUntil;
   }
@@ -128,11 +131,13 @@ export function parseList(raw: unknown, now: number): TaskList | null {
   const r = raw as Record<string, unknown>;
   const name = asString(r.name).trim();
   if (!name || !asString(r.id)) return null;
+  const order = asOrder(r.order);
   return {
     id: asString(r.id),
     name,
     sections: parseSections(r.sections),
     folderId: asString(r.folderId) || null,
+    ...(order !== null ? { order } : {}),
     createdAt: asTime(r.createdAt, now),
     updatedAt: asTime(r.updatedAt, asTime(r.createdAt, now)),
   };
