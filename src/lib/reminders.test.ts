@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { atLocal, dueMoment, parseReminders, reminderLabel, reminderTimes } from "./reminders";
+import {
+  atLocal,
+  dueMoment,
+  isClock,
+  isQuietTime,
+  parseReminders,
+  reminderLabel,
+  reminderTimes,
+} from "./reminders";
 
 describe("reminders", () => {
   it("labels lead times", () => {
@@ -41,5 +49,27 @@ describe("reminders", () => {
       { id: "a", before: 15 },
       { id: "f", before: 0 },
     ]);
+  });
+});
+
+describe("quiet hours", () => {
+  const at = (h: number, m = 0) => new Date(2026, 4, 10, h, m).getTime();
+  it("handles daytime and overnight windows", () => {
+    const overnight = { start: "22:00", end: "07:00" };
+    expect(isQuietTime(at(23), overnight)).toBe(true);
+    expect(isQuietTime(at(6, 59), overnight)).toBe(true);
+    expect(isQuietTime(at(7), overnight)).toBe(false);
+    expect(isQuietTime(at(12), overnight)).toBe(false);
+    const lunch = { start: "12:00", end: "13:00" };
+    expect(isQuietTime(at(12, 30), lunch)).toBe(true);
+    expect(isQuietTime(at(13), lunch)).toBe(false);
+    expect(isQuietTime(at(12), null)).toBe(false);
+    expect(isQuietTime(at(12), { start: "09:00", end: "09:00" })).toBe(false);
+  });
+
+  it("validates clock strings and uses the default time for all-day reminders", () => {
+    expect(isClock("07:30")).toBe(true);
+    expect(isClock("7:30")).toBe(false);
+    expect(dueMoment({ due: "2026-05-10" }, "07:30")).toBe(atLocal("2026-05-10", "07:30"));
   });
 });

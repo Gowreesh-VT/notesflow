@@ -11,6 +11,8 @@ import {
   reminderTimes,
 } from "@/lib/reminders";
 import type { Item } from "@/lib/types";
+import { formatClock } from "@/lib/utils";
+import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
 import { NotificationPermission } from "./NotificationPermission";
 
@@ -30,7 +32,8 @@ export function RemindersField({ item, readOnly }: { item: Item; readOnly: boole
   const updateItem = useWorkspace((s) => s.updateItem);
   const snooze = useWorkspace((s) => s.snooze);
   const now = useNow(Boolean(item.snoozedUntil), 30_000);
-  const times = reminderTimes(item);
+  const defaultTime = useUi((s) => s.defaultReminderTime);
+  const times = reminderTimes(item, defaultTime);
   const used = new Set((item.reminders ?? []).map((r) => r.before));
   const full = used.size >= MAX_REMINDERS;
 
@@ -122,7 +125,8 @@ export function RemindersField({ item, readOnly }: { item: Item; readOnly: boole
       {times.length > 0 && !readOnly && <NotificationPermission />}
       {!item.dueTime && times.length > 0 && (
         <p className="text-xs text-stone-500 dark:text-stone-400">
-          All-day task: reminders count back from 9:00 AM on the due date.
+          All-day task: reminders count back from {formatClock(defaultTime)} on the due date (change
+          this in reminder settings).
         </p>
       )}
     </div>

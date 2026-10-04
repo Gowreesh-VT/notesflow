@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { cleanOutcomeLabels, DEFAULT_OUTCOME_LABELS } from "@/lib/outcomes";
+import { DEFAULT_REMINDER_TIME, isClock, type QuietHours } from "@/lib/reminders";
 import type { Energy, ItemSort, View } from "@/lib/types";
 
 export type Theme = "system" | "light" | "dark";
@@ -24,6 +25,11 @@ type UiState = {
   outcomePromptId: string | null;
   /** Shows only tasks with this energy tag, in every view. */
   energyFilter: Energy | null;
+  /** All-day tasks are reminded relative to this time; also used for "tomorrow morning" snoozes. */
+  defaultReminderTime: string;
+  /** No reminders ring during these hours on this device; they ring when quiet hours end. */
+  quietHours: QuietHours | null;
+  settingsOpen: boolean;
   /** Editable outcome choices (kept on this device). */
   outcomeLabels: string[];
   setTheme: (theme: Theme) => void;
@@ -38,6 +44,9 @@ type UiState = {
   toggleSidebarCollapsed: () => void;
   promptOutcome: (id: string | null) => void;
   setEnergyFilter: (energy: Energy | null) => void;
+  setDefaultReminderTime: (time: string) => void;
+  setQuietHours: (quiet: QuietHours | null) => void;
+  setSettingsOpen: (open: boolean) => void;
   setOutcomeLabels: (labels: string[]) => void;
 };
 
@@ -56,6 +65,9 @@ export const useUi = create<UiState>()(
       sidebarCollapsed: false,
       outcomePromptId: null,
       energyFilter: null,
+      defaultReminderTime: DEFAULT_REMINDER_TIME,
+      quietHours: null,
+      settingsOpen: false,
       outcomeLabels: DEFAULT_OUTCOME_LABELS,
       setTheme: (theme) => set({ theme }),
       setEditorMode: (editorMode) => set({ editorMode }),
@@ -69,6 +81,13 @@ export const useUi = create<UiState>()(
       toggleSidebarCollapsed: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
       promptOutcome: (outcomePromptId) => set({ outcomePromptId }),
       setEnergyFilter: (energyFilter) => set({ energyFilter }),
+      setDefaultReminderTime: (time) => {
+        if (isClock(time)) set({ defaultReminderTime: time });
+      },
+      setQuietHours: (quiet) => {
+        if (!quiet || (isClock(quiet.start) && isClock(quiet.end))) set({ quietHours: quiet });
+      },
+      setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
       setOutcomeLabels: (labels) => set({ outcomeLabels: cleanOutcomeLabels(labels) }),
     }),
     {
@@ -81,6 +100,8 @@ export const useUi = create<UiState>()(
         sort: s.sort,
         sidebarCollapsed: s.sidebarCollapsed,
         outcomeLabels: s.outcomeLabels,
+        defaultReminderTime: s.defaultReminderTime,
+        quietHours: s.quietHours,
       }),
       // v1 stored a different sort field; only theme and editor mode carry over.
       migrate: (persisted) => {

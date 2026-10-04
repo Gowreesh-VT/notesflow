@@ -78,3 +78,22 @@ export const SNOOZE_OPTIONS: SnoozeOption[] = [
     },
   },
 ];
+
+export type QuietHours = { start: string; end: string };
+
+/** Whether `now` falls inside quiet hours; windows may cross midnight (22:00–07:00). */
+export function isQuietTime(now: number, quiet: QuietHours | null): boolean {
+  if (!quiet || quiet.start === quiet.end) return false;
+  const d = new Date(now);
+  const minutes = d.getHours() * 60 + d.getMinutes();
+  const toMinutes = (t: string) => {
+    const [h, m] = t.split(":").map(Number);
+    return h * 60 + m;
+  };
+  const start = toMinutes(quiet.start);
+  const end = toMinutes(quiet.end);
+  return start < end ? minutes >= start && minutes < end : minutes >= start || minutes < end;
+}
+
+export const isClock = (value: unknown): value is string =>
+  typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);

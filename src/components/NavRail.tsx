@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import {
+  BellRing,
   CalendarDays,
   CircleHelp,
   Inbox,
@@ -59,8 +60,14 @@ export function NavRail() {
   const view = useUi((s) => s.view);
   const theme = useUi((s) => s.theme);
   const collapsed = useUi((s) => s.sidebarCollapsed);
-  const { setView, setTheme, setPaletteOpen, setHelpOpen, toggleSidebarCollapsed } =
-    useUi.getState();
+  const {
+    setView,
+    setTheme,
+    setPaletteOpen,
+    setHelpOpen,
+    setSettingsOpen,
+    toggleSidebarCollapsed,
+  } = useUi.getState();
   const themeInfo = NEXT_THEME[theme];
 
   return (
@@ -95,6 +102,9 @@ export function NavRail() {
           onClick={toggleSidebarCollapsed}
         >
           {collapsed ? <PanelLeftOpen size={19} /> : <PanelLeftClose size={19} />}
+        </RailButton>
+        <RailButton label="Reminder settings" onClick={() => setSettingsOpen(true)}>
+          <BellRing size={19} />
         </RailButton>
         <RailButton label="Keyboard shortcuts (?)" onClick={() => setHelpOpen(true)}>
           <CircleHelp size={19} />

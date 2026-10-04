@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import {
   Ban,
+  BellRing,
   CalendarClock,
   CalendarDays,
   CalendarRange,
@@ -437,6 +438,13 @@ export function Sidebar() {
               </button>
             </div>
           </details>
+          <button
+            type="button"
+            className="btn btn-ghost w-full justify-start text-xs md:hidden"
+            onClick={() => useUi.getState().setSettingsOpen(true)}
+          >
+            <BellRing size={14} aria-hidden /> Reminder settings
+          </button>
           <AccountMenu />
           <InstallButton />
           <input

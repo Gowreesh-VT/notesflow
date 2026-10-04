@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { Bell, Check, ExternalLink, X } from "lucide-react";
 import { dueAlarms, pruneFired, repeatAlarms } from "@/lib/alarms";
 import { showNotification } from "@/lib/notifications";
-import { SNOOZE_OPTIONS } from "@/lib/reminders";
+import { isQuietTime, SNOOZE_OPTIONS } from "@/lib/reminders";
 import { useAlarms } from "@/store/alarms";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
@@ -35,8 +35,14 @@ export function ReminderRunner() {
       const alarms = useAlarms.getState();
       const fired = pruneFired(alarms.fired, now);
       if (fired !== alarms.fired) alarms.setFired(fired);
+      const { defaultReminderTime, quietHours } = useUi.getState();
+      // During quiet hours nothing rings; held reminders ring once quiet hours end.
+      if (isQuietTime(now, quietHours)) return;
       const items = useWorkspace.getState().items;
-      const due = [...dueAlarms(items, now, fired), ...repeatAlarms(items, now, alarms.lastShown)];
+      const due = [
+        ...dueAlarms(items, now, fired, defaultReminderTime),
+        ...repeatAlarms(items, now, alarms.lastShown, defaultReminderTime),
+      ];
       if (!due.length) return;
       alarms.markFired(due, now);
       for (const alarm of due) {
@@ -144,7 +150,10 @@ function ReminderCards() {
               onChange={(e) => {
                 const option = SNOOZE_OPTIONS[Number(e.target.value)];
                 if (!option) return;
-                snooze(alarm.itemId, option.until(Date.now()));
+                snooze(
+                  alarm.itemId,
+                  option.until(Date.now(), useUi.getState().defaultReminderTime),
+                );
                 dismissItem(alarm.itemId);
               }}
               className="mr-auto cursor-pointer rounded-lg bg-stone-100 px-2 py-1 text-xs font-medium text-stone-700 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700"

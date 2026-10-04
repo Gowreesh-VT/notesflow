@@ -9,6 +9,7 @@ import { upgradeLegacyStorage, useWorkspace } from "@/store/workspace";
 import { NavRail } from "./NavRail";
 import { OutcomePrompt } from "./Outcome";
 import { ReminderRunner } from "./ReminderRunner";
+import { ReminderSettings } from "./ReminderSettings";
 import { SyncBanner } from "./SyncBanner";
 import { CommandPalette } from "./CommandPalette";
 import { ShortcutHelp } from "./ShortcutHelp";
@@ -104,6 +105,7 @@ export function AppShell() {
       {ready && <ShortcutHelp />}
       {ready && <OutcomePrompt />}
       {ready && <ReminderRunner />}
+      {ready && <ReminderSettings />}
     </div>
   );
 }
