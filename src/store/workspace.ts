@@ -46,6 +46,7 @@ type NewItem = {
   priority?: Priority;
   due?: string | null;
   dueTime?: string | null;
+  estimate?: number | null;
 };
 
 type ItemPatch = Partial<
@@ -220,6 +221,7 @@ export const useWorkspace = create<WorkspaceState>()(
         priority = "none",
         due = null,
         dueTime = null,
+        estimate = null,
       }) => {
         const now = Date.now();
         const exists = listId === INBOX_ID || get().lists.some((l) => l.id === listId);
@@ -238,6 +240,7 @@ export const useWorkspace = create<WorkspaceState>()(
           priority: kind === "task" ? priority : "none",
           due: kind === "task" ? due : null,
           ...(kind === "task" && due && dueTime ? { dueTime } : {}),
+          ...(kind === "task" && estimate ? { estimate } : {}),
           subtasks: [],
           sectionId: null,
         };

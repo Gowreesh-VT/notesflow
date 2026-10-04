@@ -9,6 +9,7 @@ import {
   type TaskList,
   type View,
 } from "./types";
+import { parseDuration } from "./duration";
 import { countSubtasks, flattenSubtasks } from "./subtasks";
 import { addDays, displayTitle, extractTags } from "./utils";
 
@@ -185,25 +186,122 @@ const PRIORITY_WORDS: Record<string, Priority> = {
   "!l": "low",
 };
 
-/** Understands quick-add input such as "Buy milk tomorrow !high". */
+const WEEKDAYS: Record<string, number> = {
+  sunday: 0,
+  sun: 0,
+  monday: 1,
+  mon: 1,
+  tuesday: 2,
+  tue: 2,
+  tues: 2,
+  wednesday: 3,
+  wed: 3,
+  thursday: 4,
+  thu: 4,
+  thur: 4,
+  thurs: 4,
+  friday: 5,
+  fri: 5,
+  saturday: 6,
+  sat: 6,
+};
+/** Only full weekday names are recognised on their own; short forms need "next" ("next fri"). */
+const FULL_WEEKDAYS = new Set([
+  "sunday",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+]);
+
+const weekdayOf = (key: string) => {
+  const [y, m, d] = key.split("-").map(Number);
+  return new Date(y, m - 1, d).getDay();
+};
+
+/** The next `day` after today (a week ahead if today is that day). */
+function upcomingWeekday(today: string, day: number): string {
+  const diff = (day - weekdayOf(today) + 7) % 7 || 7;
+  return addDays(today, diff);
+}
+
+/** `day` in next week (weeks start on Monday). */
+function weekdayNextWeek(today: string, day: number): string {
+  const nextMonday = addDays(today, 7 - ((weekdayOf(today) + 6) % 7));
+  return addDays(nextMonday, (day + 6) % 7);
+}
+
+/** "5pm", "5:30pm", "17:00", "9am" → "HH:MM", or null. */
+export function parseClock(word: string): string | null {
+  const ampm = /^(\d{1,2})(?::([0-5]\d))?(am|pm)$/.exec(word);
+  if (ampm) {
+    const hour = Number(ampm[1]);
+    if (hour < 1 || hour > 12) return null;
+    const h = (hour % 12) + (ampm[3] === "pm" ? 12 : 0);
+    return `${String(h).padStart(2, "0")}:${ampm[2] ?? "00"}`;
+  }
+  const h24 = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec(word);
+  return h24 ? `${h24[1].padStart(2, "0")}:${h24[2]}` : null;
+}
+
+const listKey = (name: string) => name.toLowerCase().replace(/[\s_-]+/g, "");
+
+export type QuickAdd = {
+  title: string;
+  priority: Priority;
+  due: string | null;
+  dueTime?: string;
+  listId?: string;
+  estimate?: number;
+};
+
+/**
+ * Understands quick-add input such as "Call Sam next fri 5pm @work !high ~30m #clients":
+ * dates (today, tomorrow, weekdays, "next <day>", YYYY-MM-DD), times ("5pm", "17:00", "at 9am"), `@list`,
+ * `!priority` and `~estimate`. `#tags` stay in the title. Unrecognised words are kept as the title.
+ */
 export function parseQuickAdd(
   input: string,
   today: string,
-): { title: string; priority: Priority; due: string | null } {
-  let priority: Priority = "none";
-  let due: string | null = null;
+  lists: Pick<TaskList, "id" | "name">[] = [],
+): QuickAdd {
+  const result: QuickAdd = { title: "", priority: "none", due: null };
+  const words = input.trim().split(/\s+/);
   const kept: string[] = [];
 
-  for (const word of input.trim().split(/\s+/)) {
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
     const lower = word.toLowerCase();
-    if (lower in PRIORITY_WORDS) priority = PRIORITY_WORDS[lower];
-    else if (lower === "today") due = today;
-    else if (lower === "tomorrow") due = addDays(today, 1);
-    else if (/^\d{4}-\d{2}-\d{2}$/.test(lower)) due = lower;
-    else kept.push(word);
+    const next = words[i + 1]?.toLowerCase();
+
+    if (lower in PRIORITY_WORDS) result.priority = PRIORITY_WORDS[lower];
+    else if (lower === "today") result.due = today;
+    else if (lower === "tomorrow" || lower === "tmrw") result.due = addDays(today, 1);
+    else if (/^\d{4}-\d{2}-\d{2}$/.test(lower)) result.due = lower;
+    else if (lower === "next" && next !== undefined && next in WEEKDAYS) {
+      result.due = weekdayNextWeek(today, WEEKDAYS[next]);
+      i++;
+    } else if (FULL_WEEKDAYS.has(lower)) result.due = upcomingWeekday(today, WEEKDAYS[lower]);
+    else if (lower === "at" && next !== undefined && parseClock(next)) {
+      result.dueTime = parseClock(next)!;
+      i++;
+    } else if (parseClock(lower)) result.dueTime = parseClock(lower)!;
+    else if (lower.startsWith("~") && parseDuration(lower.slice(1))) {
+      result.estimate = parseDuration(lower.slice(1))!;
+    } else if (lower.startsWith("@") && lower.length > 1) {
+      const list = lists.find((l) => listKey(l.name) === listKey(lower.slice(1)));
+      if (list) result.listId = list.id;
+      else if (lower === "@inbox") result.listId = INBOX_ID;
+      else kept.push(word);
+    } else kept.push(word);
   }
 
-  return { title: kept.join(" ").trim() || input.trim(), priority, due };
+  // A time without a date means today.
+  if (result.dueTime && !result.due) result.due = today;
+  result.title = kept.join(" ").trim() || input.trim();
+  return result;
 }
 
 export type SectionGroup = { section: ListSection | null; items: Item[] };

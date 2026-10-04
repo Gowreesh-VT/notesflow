@@ -372,17 +372,32 @@ export function ItemList() {
     if (kind === "note") {
       selectItem(addItem({ kind, title: `${draft.trim()}${tagSuffix}`, listId }));
     } else {
-      const parsed = parseQuickAdd(draft, today);
+      const parsed = parseQuickAdd(draft, today, lists);
       addItem({
         kind,
         title: `${parsed.title}${tagSuffix}`,
         priority: parsed.priority,
         due: parsed.due ?? defaultDue,
-        listId,
+        dueTime: parsed.dueTime ?? null,
+        estimate: parsed.estimate ?? null,
+        listId: parsed.listId ?? listId,
       });
     }
     setDraft("");
   };
+
+  const preview = kind === "task" && draft.trim() ? parseQuickAdd(draft, today, lists) : null;
+  const previewParts = preview
+    ? [
+        preview.due ? formatDueWithTime(preview.due, preview.dueTime, today) : "",
+        preview.listId ? viewTitle({ kind: "list", id: preview.listId }, lists) : "",
+        preview.listId === INBOX_ID ? "Inbox" : "",
+        preview.priority !== "none"
+          ? `${preview.priority[0].toUpperCase()}${preview.priority.slice(1)} priority`
+          : "",
+        preview.estimate ? formatDuration(preview.estimate) : "",
+      ].filter(Boolean)
+    : [];
 
   const energyLabel = ENERGY_OPTIONS.find((o) => o.value === energyFilter)?.label;
   const emptyMessage = energyLabel
@@ -685,7 +700,7 @@ export function ItemList() {
               onChange={(e) => setDraft(e.target.value)}
               placeholder={
                 kind === "task"
-                  ? "Add a task, e.g. “Pay rent tomorrow !high”"
+                  ? "Add a task, e.g. “Call Sam friday 5pm @work !high ~30m”"
                   : "Add a note title, then press Enter"
               }
               aria-label={kind === "task" ? "New task" : "New note"}
@@ -719,6 +734,18 @@ export function ItemList() {
               Add
             </button>
           </div>
+          {previewParts.length > 0 && (
+            <p className="mt-1.5 flex flex-wrap gap-1.5 px-1 text-xs" aria-live="polite">
+              {previewParts.map((part) => (
+                <span
+                  key={part}
+                  className="rounded-md bg-accent-50 px-1.5 py-0.5 font-medium text-accent-800 dark:bg-accent-950 dark:text-accent-200"
+                >
+                  {part}
+                </span>
+              ))}
+            </p>
+          )}
         </form>
       )}
 

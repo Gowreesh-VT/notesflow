@@ -41,7 +41,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 - [x] Constant reminder: a persistent notification that repeats until the task is completed or snoozed
 - [x] Snooze for reminders (10 minutes, 1 hour, tomorrow morning)
 - [x] [BIG] Recurring tasks: daily, weekly, monthly, yearly, custom intervals, and "repeat after completion"
-- [ ] Smarter quick add: times ("5pm"), weekdays ("mon", "next friday"), `@list`, `#tag`, `!priority` and `~estimate`
+- [x] Smarter quick add: times ("5pm"), weekdays ("mon", "next friday"), `@list`, `#tag`, `!priority` and `~estimate`
 - [ ] Start date on tasks, so a task can span a date range
 - [ ] Offline and sync status banner: clear states for offline, syncing, failed, and conflicts resolved
 - [ ] Notification and reminder settings (quiet hours, default reminder time)

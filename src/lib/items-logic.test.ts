@@ -10,6 +10,7 @@ import {
   isEnergy,
   listTemplates,
   moveSectionBy,
+  parseClock,
   parseQuickAdd,
   subtaskProgress,
 } from "./items-logic";
@@ -275,5 +276,48 @@ describe("templates are hidden from views", () => {
     expect(countInView(list, smart("inbox"), today)).toBe(1);
     expect(collectTags(list)).toEqual([{ tag: "work", count: 1 }]);
     expect(listTemplates(list).map((i) => i.id)).toEqual(["t"]);
+  });
+});
+
+describe("smarter quick add", () => {
+  // 2026-05-10 is a Sunday.
+  const lists = [
+    { id: "w", name: "Work" },
+    { id: "h", name: "Home Projects" },
+  ];
+
+  it("understands times, weekdays, lists, priority and estimates", () => {
+    expect(parseQuickAdd("Call Sam friday 5pm @work !high ~30m #clients", today, lists)).toEqual({
+      title: "Call Sam #clients",
+      priority: "high",
+      due: "2026-05-15",
+      dueTime: "17:00",
+      listId: "w",
+      estimate: 30,
+    });
+    expect(
+      parseQuickAdd("Paint fence next sat at 9:30am @home-projects", today, lists),
+    ).toMatchObject({
+      title: "Paint fence",
+      due: "2026-05-16",
+      dueTime: "09:30",
+      listId: "h",
+    });
+  });
+
+  it("puts a lone time on today and keeps unknown lists and short weekday words in the title", () => {
+    expect(parseQuickAdd("Standup 17:45", today)).toMatchObject({ due: today, dueTime: "17:45" });
+    expect(parseQuickAdd("Email @nobody", today, lists)).toMatchObject({ title: "Email @nobody" });
+    expect(parseQuickAdd("Sun cream", today).title).toBe("Sun cream");
+    expect(parseQuickAdd("sunday", today).due).toBe("2026-05-17");
+    expect(parseQuickAdd("Move to @inbox", today, lists).listId).toBe(INBOX_ID);
+  });
+
+  it("parses clock words", () => {
+    expect(parseClock("12am")).toBe("00:00");
+    expect(parseClock("12pm")).toBe("12:00");
+    expect(parseClock("7:05pm")).toBe("19:05");
+    expect(parseClock("13pm")).toBeNull();
+    expect(parseClock("24:00")).toBeNull();
   });
 });
