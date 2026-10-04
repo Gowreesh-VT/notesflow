@@ -42,6 +42,7 @@ import { formatDuration } from "@/lib/duration";
 import { useToday } from "@/lib/hooks";
 import { describeRepeat } from "@/lib/recurrence";
 import { CopyToListForm } from "./CopyToList";
+import { BatchToolbar, SelectCheckbox, SelectToggle, useRowSelection } from "./BatchSelect";
 import { EnergyIcon } from "./EnergyField";
 import { ListSelect } from "./ListSelect";
 import { TemplatesMenu } from "./TemplatesMenu";
@@ -75,6 +76,7 @@ function ItemRow({
   const selectItem = useUi((s) => s.selectItem);
   const promptOutcome = useUi((s) => s.promptOutcome);
   const [menuOpen, setMenuOpen] = useState(false);
+  const { selecting, checked, handleClick } = useRowSelection(item.id);
 
   const isTask = item.kind === "task";
   const closed = isTask && item.status !== "open";
@@ -87,6 +89,7 @@ function ItemRow({
 
   return (
     <li
+      data-item-id={item.id}
       onContextMenu={(e) => {
         if (trashed) return;
         e.preventDefault();
@@ -94,11 +97,12 @@ function ItemRow({
       }}
       className={clsx(
         "group relative flex min-h-11 items-center gap-3 rounded-lg px-3 py-1.5 transition-colors",
-        selected
+        selected || checked
           ? "bg-accent-50 dark:bg-accent-950/50"
           : "hover:bg-stone-100 dark:hover:bg-stone-800/60",
       )}
     >
+      {selecting && <SelectCheckbox item={item} checked={checked} onClick={handleClick} />}
       {isTask ? (
         <button
           type="button"
@@ -129,7 +133,9 @@ function ItemRow({
 
       <button
         type="button"
-        onClick={() => selectItem(item.id)}
+        onClick={(e) => {
+          if (!handleClick(e)) selectItem(item.id);
+        }}
         aria-current={selected ? "true" : undefined}
         className="flex min-w-0 flex-1 items-center gap-3 self-stretch text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
       >
@@ -592,6 +598,7 @@ export function ItemList() {
           </span>
         )}
         <div className="ml-auto flex flex-wrap items-center justify-end gap-1">
+          <SelectToggle />
           <div className="relative hidden @xl:block">
             <Search
               size={15}
@@ -818,7 +825,7 @@ export function ItemList() {
         </form>
       )}
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-6 pt-1 sm:px-4">
+      <div data-item-list className="min-h-0 flex-1 overflow-y-auto px-2 pb-6 pt-1 sm:px-4">
         {renderGroups()}
         {main.length === 0 && finished.length === 0 && (
           <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
@@ -848,6 +855,7 @@ export function ItemList() {
           </section>
         )}
       </div>
+      <BatchToolbar items={visible} />
     </div>
   );
 }

@@ -706,3 +706,126 @@ describe("start date", () => {
     });
   });
 });
+
+describe("batch edits", () => {
+  const item = (id: string) => state().items.find((i) => i.id === id)!;
+
+  it("sets date, priority and energy on many tasks in one update, leaving notes alone", () => {
+    const a = state().addItem({ kind: "task", title: "A", due: "2026-01-01", dueTime: "09:00" });
+    const b = state().addItem({ kind: "task", title: "B" });
+    const n = state().addItem({ kind: "note", title: "N" });
+    const before = item(n);
+    let updates = 0;
+    const unsubscribe = useWorkspace.subscribe(() => updates++);
+    state().updateItems([a, b, n], { due: "2026-02-01", priority: "high", energy: "deep" });
+    unsubscribe();
+    expect(updates).toBe(1);
+    expect(item(a)).toMatchObject({ due: "2026-02-01", dueTime: "09:00", priority: "high" });
+    expect(item(b)).toMatchObject({ due: "2026-02-01", priority: "high", energy: "deep" });
+    expect(item(n)).toBe(before);
+
+    state().updateItems([a, b], { due: null, energy: null });
+    expect(item(a).due).toBeNull();
+    expect(item(a)).not.toHaveProperty("dueTime");
+    expect(item(b)).not.toHaveProperty("energy");
+  });
+
+  it("only bumps updatedAt on items that change", () => {
+    const a = state().addItem({ kind: "task", title: "A", priority: "high" });
+    const b = state().addItem({ kind: "task", title: "B" });
+    const before = item(a);
+    state().updateItems([a, b], { priority: "high" });
+    expect(item(a)).toBe(before);
+    expect(item(b).priority).toBe("high");
+  });
+
+  it("keeps start dates valid when moving due dates", () => {
+    const a = state().addItem({ kind: "task", title: "A", due: "2026-03-10" });
+    state().updateItem(a, { startDate: "2026-03-05" });
+    state().updateItems([a], { due: "2026-03-01" });
+    expect(item(a).due).toBe("2026-03-01");
+    expect(item(a)).not.toHaveProperty("startDate");
+  });
+
+  it("moves tasks and notes to another list, out of their section, ignoring unknown lists", () => {
+    const work = state().addList("Work")!;
+    const home = state().addList("Home")!;
+    const section = state().addSection(work, "Later")!;
+    const a = state().addItem({ kind: "task", title: "A", listId: work });
+    state().updateItem(a, { sectionId: section });
+    const n = state().addItem({ kind: "note", title: "N" });
+    state().updateItems([a, n], { listId: home });
+    expect(item(a)).toMatchObject({ listId: home, sectionId: null });
+    expect(item(n).listId).toBe(home);
+    state().updateItems([a], { listId: "missing" });
+    expect(item(a).listId).toBe(home);
+  });
+
+  it("skips trashed items and templates", () => {
+    const a = state().addItem({ kind: "task", title: "A" });
+    state().trashItem(a);
+    const template = state().saveAsTemplate(state().addItem({ kind: "task", title: "T" }))!;
+    state().updateItems([a, template], { priority: "high" });
+    state().addTagToItems([a, template], "x");
+    expect(item(a).priority).toBe("none");
+    expect(item(template)).toMatchObject({ priority: "none", title: "T" });
+  });
+
+  it("adds and removes tags", () => {
+    const a = state().addItem({ kind: "task", title: "Call Sam" });
+    const b = state().addItem({ kind: "task", title: "Plan #work" });
+    const c = state().addItem({ kind: "note", title: "N", body: "Uses #Work already" });
+    const d = state().addItem({ kind: "note", title: "", body: "First line" });
+    const before = { b: item(b), c: item(c) };
+    state().addTagToItems([a, b, c, d], "#Work");
+    expect(item(a).title).toBe("Call Sam #work");
+    expect(item(b)).toBe(before.b);
+    expect(item(c)).toBe(before.c);
+    expect(item(d)).toMatchObject({ title: "", body: "First line #work" });
+
+    state().addTagToItems([a], "not a tag");
+    expect(item(a).title).toBe("Call Sam #work");
+
+    state().removeTagFromItems([a, b, c, d], "work");
+    expect(item(a).title).toBe("Call Sam");
+    expect(item(b).title).toBe("Plan");
+    expect(item(c).body).toBe("Uses already");
+    expect(item(d).body).toBe("First line ");
+  });
+
+  it("completes many tasks, advancing repeating ones and stopping timers", () => {
+    const today = toDateKey(new Date());
+    const a = state().addItem({ kind: "task", title: "A" });
+    const r = state().addItem({ kind: "task", title: "R", due: today });
+    state().updateItem(r, { repeat: { unit: "day", every: 1 } });
+    const n = state().addItem({ kind: "note", title: "N" });
+    state().startTimer(a);
+    const finished = state().setStatusMany([a, r, n], "done");
+    expect(finished).toHaveLength(2);
+    expect(finished).toContain(a);
+    expect(item(a)).toMatchObject({ status: "done" });
+    expect(item(a).timeEntries?.[0].end).not.toBeNull();
+    expect(item(r)).toMatchObject({ status: "open", due: addDays(today, 1) });
+    expect(item(finished.find((id) => id !== a)!)).toMatchObject({ status: "done", title: "R" });
+    expect(item(n).status).toBe("open");
+
+    expect(state().setStatusMany([a], "open")).toEqual([]);
+    expect(item(a)).toMatchObject({ status: "open", completedAt: null });
+    expect(state().setStatusMany([a], "wontdo")).toEqual([a]);
+    expect(item(a).status).toBe("wontdo");
+  });
+
+  it("moves many items to the trash and stops their timers", () => {
+    const a = state().addItem({ kind: "task", title: "A" });
+    const n = state().addItem({ kind: "note", title: "N" });
+    const keep = state().addItem({ kind: "task", title: "K" });
+    state().togglePin(n);
+    state().startTimer(a);
+    state().trashItems([a, n]);
+    expect(item(a).deletedAt).not.toBeNull();
+    expect(item(a).timeEntries?.[0].end).not.toBeNull();
+    expect(item(n)).toMatchObject({ pinned: false });
+    expect(item(n).deletedAt).not.toBeNull();
+    expect(item(keep).deletedAt).toBeNull();
+  });
+});
