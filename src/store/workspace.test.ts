@@ -165,6 +165,16 @@ describe("sections", () => {
     expect(list(listId).sections.map((s) => s.id)).toEqual([b, a]);
   });
 
+  it("collapses and expands a section, bumping the list's updatedAt", () => {
+    const { listId, a } = setup();
+    useWorkspace.setState({ lists: [{ ...list(listId), updatedAt: 0 }] });
+    state().toggleSectionCollapsed(listId, a);
+    expect(list(listId).sections[0]).toEqual({ id: a, name: "Doing", collapsed: true });
+    expect(list(listId).updatedAt).toBeGreaterThan(0);
+    state().toggleSectionCollapsed(listId, a);
+    expect(list(listId).sections[0]).toEqual({ id: a, name: "Doing" });
+  });
+
   it("moves an item between sections and clears the section when the list changes", () => {
     const { listId, a, item } = setup();
     state().updateItem(item, { sectionId: a });

@@ -63,6 +63,7 @@ type WorkspaceState = WorkspaceData & {
   /** Items in a deleted section stay in the list, unsectioned. */
   deleteSection: (listId: string, sectionId: string) => void;
   moveSection: (listId: string, sectionId: string, delta: -1 | 1) => void;
+  toggleSectionCollapsed: (listId: string, sectionId: string) => void;
   addFolder: (name: string) => string | null;
   renameFolder: (id: string, name: string) => void;
   deleteFolder: (id: string) => void;
@@ -333,6 +334,23 @@ export const useWorkspace = create<WorkspaceState>()(
             ),
           };
         }),
+
+      toggleSectionCollapsed: (listId, sectionId) =>
+        set((s) => ({
+          lists: s.lists.map((l) =>
+            l.id === listId
+              ? {
+                  ...l,
+                  sections: l.sections.map((x) => {
+                    if (x.id !== sectionId) return x;
+                    const { collapsed, ...rest } = x;
+                    return collapsed ? rest : { ...rest, collapsed: true };
+                  }),
+                  updatedAt: Date.now(),
+                }
+              : l,
+          ),
+        })),
 
       moveSection: (listId, sectionId, delta) =>
         set((s) => ({
