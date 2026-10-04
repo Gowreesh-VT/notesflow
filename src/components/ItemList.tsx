@@ -32,7 +32,7 @@ import {
 } from "@/lib/items-logic";
 import { useToday } from "@/lib/hooks";
 import { INBOX_ID, type Item, type ItemKind, type ItemSort, type Priority } from "@/lib/types";
-import { addDays, displayTitle, formatDueLabel, getSnippet } from "@/lib/utils";
+import { addDays, displayTitle, formatDueWithTime, getSnippet } from "@/lib/utils";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
 
@@ -152,7 +152,7 @@ function ItemRow({
                     : "",
               )}
             >
-              {formatDueLabel(item.due, today)}
+              {formatDueWithTime(item.due, item.dueTime, today)}
             </span>
           )}
         </span>

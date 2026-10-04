@@ -160,3 +160,21 @@ describe("nested subtasks in backups", () => {
     expect(parsed.subtasks[0].done).toBe(false);
   });
 });
+
+describe("due time in backups", () => {
+  it("keeps a valid time with a date and drops invalid or dateless ones", () => {
+    const raw = (fields: object) =>
+      JSON.stringify({
+        app: "notesflow",
+        version: 2,
+        items: [{ ...item, ...fields }],
+        lists: [],
+        folders: [],
+      });
+    expect(parseBackup(raw({ dueTime: "07:45" })).items[0].dueTime).toBe("07:45");
+    expect(parseBackup(raw({ dueTime: "25:00" })).items[0]).not.toHaveProperty("dueTime");
+    expect(parseBackup(raw({ due: null, dueTime: "07:45" })).items[0]).not.toHaveProperty(
+      "dueTime",
+    );
+  });
+});

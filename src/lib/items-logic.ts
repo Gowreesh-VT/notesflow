@@ -94,7 +94,10 @@ function compareDue(a: Item, b: Item): number {
     if (!b.due) return -1;
     return a.due.localeCompare(b.due);
   }
-  return 0;
+  // On the same day, all-day tasks come first, then timed tasks by time.
+  const ta = a.dueTime ?? "";
+  const tb = b.dueTime ?? "";
+  return ta.localeCompare(tb);
 }
 
 function compareWithin(a: Item, b: Item, sort: ItemSort): number {

@@ -340,3 +340,23 @@ describe("converting between tasks and subtasks", () => {
     expect(state().taskToSubtask(deep, deep)).toBe(false);
   });
 });
+
+describe("due time", () => {
+  it("keeps a time only while there is a due date", () => {
+    const id = state().addItem({
+      kind: "task",
+      title: "Call",
+      due: "2026-05-10",
+      dueTime: "09:30",
+    });
+    expect(state().items[0].dueTime).toBe("09:30");
+    state().updateItem(id, { dueTime: "14:00" });
+    expect(state().items[0].dueTime).toBe("14:00");
+    state().updateItem(id, { due: "2026-05-11" });
+    expect(state().items[0].dueTime).toBe("14:00");
+    state().updateItem(id, { due: null });
+    expect(state().items[0]).not.toHaveProperty("dueTime");
+    state().updateItem(id, { dueTime: "10:00" });
+    expect(state().items[0]).not.toHaveProperty("dueTime");
+  });
+});

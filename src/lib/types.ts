@@ -31,6 +31,8 @@ export type Item = {
   priority: Priority;
   /** Local calendar date as YYYY-MM-DD, or null when there is no due date. */
   due: string | null;
+  /** Local time as HH:MM on the due date; absent or null means all-day. */
+  dueTime?: string | null;
   subtasks: Subtask[];
   /** Section of the item's list it belongs to, or null for the unsectioned top of the list. */
   sectionId: string | null;

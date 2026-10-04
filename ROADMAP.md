@@ -27,7 +27,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 - [x] Collapse and expand sections, remembered per list and synced
 - [x] [BIG] Nested subtasks: subtasks can have subtasks (up to 5 levels), with progress rolled up to the parent
 - [x] Convert a subtask into a task and a task into a subtask
-- [ ] Due time on tasks (date plus optional time, or all-day), shown in lists and used for sorting
+- [x] Due time on tasks (date plus optional time, or all-day), shown in lists and used for sorting
 - [ ] Estimated time per task (for example 25m or 1h30), shown in the list and the detail panel
 - [ ] [BIG] Time tracking per task: start and stop a timer, add manual entries, and see the total
 - [ ] [BIG] Outcomes: when completing a task, optionally tag how it went (Went well, Learned something, Needs follow-up, Didn't go as planned; editable) with a one-line note

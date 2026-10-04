@@ -166,6 +166,35 @@ export function TaskDetail({ item }: { item: Item }) {
           )}
         </dd>
 
+        {item.due && (
+          <>
+            <dt className="text-stone-500 dark:text-stone-400">Time</dt>
+            <dd className="flex flex-wrap items-center gap-1.5">
+              <input
+                type="time"
+                aria-label="Due time"
+                value={item.dueTime ?? ""}
+                disabled={trashed}
+                onChange={(e) => updateItem(item.id, { dueTime: e.target.value || null })}
+                className="field w-auto"
+              />
+              {item.dueTime ? (
+                !trashed && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost px-2 py-1 text-xs"
+                    onClick={() => updateItem(item.id, { dueTime: null })}
+                  >
+                    <X size={12} aria-hidden /> All day
+                  </button>
+                )
+              ) : (
+                <span className="text-xs text-stone-500 dark:text-stone-400">All day</span>
+              )}
+            </dd>
+          </>
+        )}
+
         <dt className="text-stone-500 dark:text-stone-400">Priority</dt>
         <dd>
           <div

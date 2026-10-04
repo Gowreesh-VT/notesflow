@@ -228,3 +228,20 @@ describe("groupByDue", () => {
     expect(groupByDue([], today)).toEqual([]);
   });
 });
+
+describe("due time ordering", () => {
+  it("puts all-day tasks first on a day, then timed tasks by time", () => {
+    const sorted = filterItems(
+      [
+        make("late", { due: today, dueTime: "18:00" }),
+        make("allday", { due: today }),
+        make("early", { due: today, dueTime: "08:15" }),
+        make("yesterday", { due: "2026-05-09", dueTime: "23:00" }),
+      ],
+      smart("today"),
+      "",
+      today,
+    );
+    expect(sorted.map((i) => i.id)).toEqual(["yesterday", "allday", "early", "late"]);
+  });
+});

@@ -28,6 +28,10 @@ function asDue(value: unknown): string | null {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
 }
 
+function asClock(value: unknown): string | null {
+  return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value) ? value : null;
+}
+
 function parseSubtasks(raw: unknown, levels = MAX_SUBTASK_DEPTH): Subtask[] {
   if (!Array.isArray(raw) || levels <= 0) return [];
   const subtasks = raw.flatMap((s: unknown): Subtask[] => {
@@ -82,7 +86,16 @@ export function parseItem(raw: unknown, now: number): Item | null {
     due: asDue(r.due),
     subtasks: parseSubtasks(r.subtasks),
     sectionId: asString(r.sectionId) || null,
+    ...optionalItemFields(r),
   };
+}
+
+/** Optional item fields are only written when set, so older records and backups stay unchanged. */
+function optionalItemFields(r: Record<string, unknown>): Partial<Item> {
+  const fields: Partial<Item> = {};
+  const dueTime = asDue(r.due) ? asClock(r.dueTime) : null;
+  if (dueTime) fields.dueTime = dueTime;
+  return fields;
 }
 
 export function parseList(raw: unknown, now: number): TaskList | null {

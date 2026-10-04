@@ -81,6 +81,21 @@ export function formatDueLabel(due: string, today: string): string {
   });
 }
 
+/** "14:30" as a short local time, such as "2:30 PM" or "14:30". */
+export function formatClock(time: string): string {
+  const [h, m] = time.split(":").map(Number);
+  return new Date(2000, 0, 1, h, m).toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+/** Due date label with the time when there is one, such as "Today, 2:30 PM". */
+export function formatDueWithTime(due: string, dueTime: string | null | undefined, today: string) {
+  const day = formatDueLabel(due, today);
+  return dueTime ? `${day}, ${formatClock(dueTime)}` : day;
+}
+
 export function formatRelativeTime(timestamp: number, now = Date.now()): string {
   const seconds = Math.round((now - timestamp) / 1000);
   if (seconds < 45) return "just now";

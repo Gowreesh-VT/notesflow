@@ -35,10 +35,11 @@ type NewItem = {
   listId?: string;
   priority?: Priority;
   due?: string | null;
+  dueTime?: string | null;
 };
 
 type ItemPatch = Partial<
-  Pick<Item, "title" | "body" | "listId" | "priority" | "due" | "sectionId">
+  Pick<Item, "title" | "body" | "listId" | "priority" | "due" | "dueTime" | "sectionId">
 >;
 
 export type WorkspaceData = {
@@ -122,6 +123,7 @@ export const useWorkspace = create<WorkspaceState>()(
         listId = INBOX_ID,
         priority = "none",
         due = null,
+        dueTime = null,
       }) => {
         const now = Date.now();
         const exists = listId === INBOX_ID || get().lists.some((l) => l.id === listId);
@@ -139,6 +141,7 @@ export const useWorkspace = create<WorkspaceState>()(
           completedAt: null,
           priority: kind === "task" ? priority : "none",
           due: kind === "task" ? due : null,
+          ...(kind === "task" && due && dueTime ? { dueTime } : {}),
           subtasks: [],
           sectionId: null,
         };
@@ -160,7 +163,17 @@ export const useWorkspace = create<WorkspaceState>()(
                 : moved
                   ? null
                   : item.sectionId;
-            return touch(item, { ...patch, sectionId });
+            // A time only makes sense with a date: clearing the date clears the time too.
+            const due = patch.due !== undefined ? patch.due : item.due;
+            const dueTime = due
+              ? patch.dueTime !== undefined
+                ? patch.dueTime
+                : item.dueTime
+              : null;
+            const next = touch(item, { ...patch, sectionId });
+            if (dueTime) return { ...next, dueTime };
+            delete next.dueTime;
+            return next;
           }),
         })),
 
@@ -220,6 +233,7 @@ export const useWorkspace = create<WorkspaceState>()(
           listId: source.listId,
           priority: source.priority,
           due: source.due,
+          dueTime: source.dueTime,
         });
         set((s) => ({
           items: mapItem(s.items, newId, (item) => ({
