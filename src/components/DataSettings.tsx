@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { CalendarDays, FileJson, FileSpreadsheet, FileText } from "lucide-react";
-import { exportAs, exportBackup } from "@/lib/data-actions";
+import { useRef, useState } from "react";
+import { CalendarDays, FileJson, FileSpreadsheet, FileText, Upload } from "lucide-react";
+import { exportAs, exportBackup, importTasksFile } from "@/lib/data-actions";
 import { SettingsSection } from "./SettingsView";
 
-/** Export (and later import) of the whole workspace. */
+/** Export of the whole workspace, and import from backups and other apps. */
 export function DataSettings() {
   const [status, setStatus] = useState("");
+  const [importStatus, setImportStatus] = useState("");
+  const fileInput = useRef<HTMLInputElement>(null);
   const run = (action: () => string) => {
     try {
       setStatus(action());
@@ -43,38 +45,79 @@ export function DataSettings() {
   ];
 
   return (
-    <SettingsSection
-      title="Export"
-      description="Download your tasks and notes. Trashed items and templates are left out."
-    >
-      <ul className="grid gap-2 sm:grid-cols-2">
-        {exports.map((e) => (
-          <li key={e.label}>
-            <button
-              type="button"
-              onClick={() => run(e.run)}
-              className="flex w-full items-start gap-3 rounded-xl border border-stone-200 px-3 py-2.5 text-left transition-colors hover:border-accent-300 hover:bg-accent-50/50 focus-visible:outline-2 focus-visible:outline-accent-500 dark:border-stone-700 dark:hover:border-accent-700 dark:hover:bg-accent-950/30"
-            >
-              <e.icon
-                size={18}
-                aria-hidden
-                className="mt-0.5 shrink-0 text-accent-600 dark:text-accent-400"
-              />
-              <span>
-                <span className="block text-sm font-medium">{e.label}</span>
-                <span className="block text-xs text-stone-500 dark:text-stone-400">{e.hint}</span>
-              </span>
-            </button>
-          </li>
-        ))}
-      </ul>
-      <p
-        role="status"
-        aria-live="polite"
-        className="min-h-4 text-xs text-stone-500 dark:text-stone-400"
+    <>
+      <SettingsSection
+        title="Export"
+        description="Download your tasks and notes. Trashed items and templates are left out."
       >
-        {status}
-      </p>
-    </SettingsSection>
+        <ul className="grid gap-2 sm:grid-cols-2">
+          {exports.map((e) => (
+            <li key={e.label}>
+              <button
+                type="button"
+                onClick={() => run(e.run)}
+                className="flex w-full items-start gap-3 rounded-xl border border-stone-200 px-3 py-2.5 text-left transition-colors hover:border-accent-300 hover:bg-accent-50/50 focus-visible:outline-2 focus-visible:outline-accent-500 dark:border-stone-700 dark:hover:border-accent-700 dark:hover:bg-accent-950/30"
+              >
+                <e.icon
+                  size={18}
+                  aria-hidden
+                  className="mt-0.5 shrink-0 text-accent-600 dark:text-accent-400"
+                />
+                <span>
+                  <span className="block text-sm font-medium">{e.label}</span>
+                  <span className="block text-xs text-stone-500 dark:text-stone-400">{e.hint}</span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        <p
+          role="status"
+          aria-live="polite"
+          className="min-h-4 text-xs text-stone-500 dark:text-stone-400"
+        >
+          {status}
+        </p>
+      </SettingsSection>
+      <SettingsSection
+        title="Import"
+        description="Bring in tasks from a TickTick backup (CSV), a Todoist project (CSV), a JSON task list, any CSV with a title column, or a Notesflow backup. Imported items are added; nothing is replaced."
+      >
+        <button
+          type="button"
+          className="btn btn-ghost border border-stone-200 dark:border-stone-700"
+          onClick={() => fileInput.current?.click()}
+        >
+          <Upload size={15} aria-hidden /> Choose a file to import
+        </button>
+        <input
+          ref={fileInput}
+          type="file"
+          accept=".csv,.json,text/csv,application/json"
+          className="hidden"
+          aria-label="File to import"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            e.target.value = "";
+            if (!file) return;
+            setImportStatus("Importing…");
+            try {
+              setImportStatus(await importTasksFile(file));
+            } catch (error) {
+              setImportStatus(
+                error instanceof Error ? error.message : "That file could not be imported.",
+              );
+            }
+          }}
+        />
+        <p
+          role="status"
+          aria-live="polite"
+          className="min-h-4 text-xs text-stone-500 dark:text-stone-400"
+        >
+          {importStatus}
+        </p>
+      </SettingsSection>
+    </>
   );
 }

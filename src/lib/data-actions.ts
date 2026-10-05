@@ -1,5 +1,6 @@
 import { createBackup, parseBackup } from "./backup";
 import { toCsv, toICalendar, toMarkdown } from "./export";
+import { importTasks } from "./import";
 import { downloadFile, slugify, toDateKey } from "./utils";
 import { INBOX_ID } from "./types";
 import { useWorkspace } from "@/store/workspace";
@@ -38,6 +39,24 @@ export function exportAs(format: "csv" | "markdown" | "ical"): string {
 export async function importBackupFile(file: File): Promise<string> {
   const added = useWorkspace.getState().mergeData(parseBackup(await file.text()));
   return `Imported ${added.items} new items and ${added.lists} new lists.`;
+}
+
+/**
+ * Imports another app's export (TickTick or Todoist CSV, JSON tasks, any CSV with a title column). A Notesflow
+ * JSON backup is restored as a backup instead.
+ */
+export async function importTasksFile(file: File): Promise<string> {
+  const text = await file.text();
+  if (/^\s*\{\s*"app"\s*:\s*"notesflow"/.test(text.replace(/^\uFEFF/, "")))
+    return importBackupFile(file);
+  const { lists, mergeData } = useWorkspace.getState();
+  const result = importTasks(file.name, text, lists, toDateKey(new Date()));
+  const added = mergeData({ items: result.items, lists: result.lists, folders: [] });
+  const what = `${added.items} ${added.items === 1 ? "item" : "items"}`;
+  const where = added.lists
+    ? ` and ${added.lists} new ${added.lists === 1 ? "list" : "lists"}`
+    : "";
+  return `Imported ${what}${where} from ${result.source}.`;
 }
 
 export async function importMarkdownFiles(files: File[], listId = INBOX_ID): Promise<string> {
