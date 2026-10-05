@@ -16,6 +16,7 @@ import { formatElapsed } from "@/lib/time-tracking";
 import { displayTitle } from "@/lib/utils";
 import { useFocus } from "@/store/focus";
 import { useWorkspace } from "@/store/workspace";
+import { FocusSounds } from "./FocusSounds";
 import { FocusStatsPanel } from "./FocusStatsPanel";
 import { ViewHeader } from "./ViewHeader";
 
@@ -182,6 +183,8 @@ export function FocusView() {
             Focused time is added to the task’s tracked time. Pick a task first to record it.
           </p>
         </section>
+
+        <FocusSounds />
 
         <FocusStatsPanel />
 

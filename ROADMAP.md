@@ -76,7 +76,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 
 - [x] [BIG] Pomodoro focus timer attached to a task, with configurable work and break lengths
 - [x] Focus statistics: focus time per day, week and list
-- [ ] Ambient focus sounds generated in the browser (white, pink and brown noise), with volume
+- [x] Ambient focus sounds generated in the browser (white, pink and brown noise), with volume
 - [ ] [BIG] Habit tracker: create habits and check them in each day
 - [ ] Habit goals (for example 3 times a week), streaks, and a monthly heat-map
 - [ ] Countdowns for important dates, shown in the sidebar
