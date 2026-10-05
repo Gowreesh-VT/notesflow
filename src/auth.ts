@@ -4,6 +4,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { z } from "zod";
+import { sessionStillValid } from "@/server/account";
 import { getDb, isGoogleConfigured } from "@/server/db";
 import { clientIp } from "@/server/http";
 import { verifyAgainstDummy, verifyPassword } from "@/server/password";
@@ -67,8 +68,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
       }),
     ],
     callbacks: {
-      jwt({ token, user }) {
-        if (user?.id) token.id = user.id;
+      async jwt({ token, user }) {
+        if (user?.id) {
+          token.id = user.id;
+          token.authAt = Date.now();
+          return token;
+        }
+        // A password change or a deleted account ends sessions that signed in earlier.
+        const id = typeof token.id === "string" ? token.id : token.sub;
+        const authAt = typeof token.authAt === "number" ? token.authAt : 0;
+        if (db && id && !(await sessionStillValid(db, id, authAt))) return null;
         return token;
       },
       session({ session, token }) {

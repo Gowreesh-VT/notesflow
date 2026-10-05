@@ -118,3 +118,15 @@ export const pushDeliveries = pgTable(
     index("push_delivery_sent_idx").on(table.sentAt),
   ],
 );
+
+/**
+ * Per-user security state, kept out of the "user" table (which the Auth.js adapter reads whole). Sessions are
+ * JWTs, so changing the password ends the other sessions by moving `sessionsValidAfter` forward: a session signed
+ * in before that moment is no longer accepted.
+ */
+export const userSecurity = pgTable("user_security", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  sessionsValidAfter: bigint("sessions_valid_after", { mode: "number" }).notNull(),
+});

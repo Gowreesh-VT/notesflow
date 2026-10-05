@@ -10,6 +10,7 @@ import { setPreferences, usePreferences } from "@/store/preferences";
 import { useSyncStore } from "@/store/sync";
 import { useUi } from "@/store/ui";
 import { AccentPicker } from "./AccentPicker";
+import { AccountSettings } from "./AccountSettings";
 import { DataSettings } from "./DataSettings";
 import { ViewHeader } from "./ViewHeader";
 
@@ -287,6 +288,8 @@ export function SettingsView() {
             <BellRing size={15} aria-hidden /> Reminder settings for this device
           </button>
         </SettingsSection>
+
+        <AccountSettings />
       </div>
     </div>
   );
