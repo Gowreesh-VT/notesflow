@@ -3,6 +3,7 @@ import {
   collectTags,
   countInView,
   dueBucket,
+  effectiveSort,
   filterByEnergy,
   filterItems,
   groupByDue,
@@ -419,5 +420,15 @@ describe("grouping", () => {
     expect(resolveGroupBy("priority", ctx)).toBe("priority");
     expect(resolveGroupBy("section", ctx)).toBe("due");
     expect(resolveGroupBy("bogus", ctx)).toBe("due");
+  });
+});
+
+describe("effectiveSort", () => {
+  it("only keeps manual order inside lists and the Inbox", () => {
+    expect(effectiveSort("manual", { kind: "list", id: "w" })).toBe("manual");
+    expect(effectiveSort("manual", smart("inbox"))).toBe("manual");
+    expect(effectiveSort("manual", smart("today"))).toBe("default");
+    expect(effectiveSort("manual", { kind: "tag", tag: "x" })).toBe("default");
+    expect(effectiveSort("priority", smart("today"))).toBe("priority");
   });
 });

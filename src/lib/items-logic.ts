@@ -504,6 +504,17 @@ export function viewKey(view: View): string {
  * smart order (except the finished and trash views), and no groups otherwise. "Section" only applies to lists with
  * sections.
  */
+/** Views that hold items directly (a list or the Inbox), where a manual order makes sense. */
+export const isContainerView = (view: View): boolean =>
+  view.kind === "list" || (view.kind === "smart" && view.id === "inbox");
+
+/**
+ * The sort that applies in a view. The sort choice is shared by all views, but manual order only exists inside a
+ * list or the Inbox, so elsewhere (Today, tags, filters…) it falls back to smart order.
+ */
+export const effectiveSort = (sort: ItemSort, view: View): ItemSort =>
+  sort === "manual" && !isContainerView(view) ? "default" : sort;
+
 export function resolveGroupBy(
   chosen: unknown,
   context: { hasSections: boolean; sort: ItemSort; readOnly: boolean },

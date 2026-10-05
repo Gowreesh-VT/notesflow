@@ -32,9 +32,11 @@ import {
   activeLists,
   archivedListIds,
   dueBucket,
+  effectiveSort,
   ENERGY_OPTIONS,
   filterByEnergy,
   filterItems,
+  isContainerView,
   isEnergy,
   GROUP_BY_OPTIONS,
   groupByDue,
@@ -420,7 +422,8 @@ export function ItemList() {
   const moveSection = useWorkspace((s) => s.moveSection);
   const toggleSectionCollapsed = useWorkspace((s) => s.toggleSectionCollapsed);
   const reorderItems = useWorkspace((s) => s.reorderItems);
-  const { view, query, sort, selectedItemId } = useUi();
+  const { view, query, sort: chosenSort, selectedItemId } = useUi();
+  const sort = effectiveSort(chosenSort, view);
   const setQuery = useUi((s) => s.setQuery);
   const setSort = useUi((s) => s.setSort);
   const groupChoices = useUi((s) => s.groupBy);
@@ -449,7 +452,7 @@ export function ItemList() {
     [items, view, query, today, sort, energyFilter, filters, lists],
   );
 
-  const isContainer = view.kind === "list" || (view.kind === "smart" && view.id === "inbox");
+  const isContainer = isContainerView(view);
   const isReadOnlyView =
     view.kind === "smart" &&
     (view.id === "trash" || view.id === "completed" || view.id === "wontdo");
@@ -808,7 +811,7 @@ export function ItemList() {
               onChange={(e) => setSort(e.target.value as ItemSort)}
               className="cursor-pointer appearance-none rounded-xl bg-transparent py-1.5 pl-8 pr-2 text-sm text-stone-600 hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-accent-500 dark:text-stone-300 dark:hover:bg-stone-800"
             >
-              {SORTS.map((s) => (
+              {SORTS.filter((s) => s.value !== "manual" || isContainer).map((s) => (
                 <option key={s.value} value={s.value}>
                   {s.label}
                 </option>
