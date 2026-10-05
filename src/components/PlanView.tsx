@@ -22,6 +22,7 @@ import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
 import { clockLabel, PlanGrid, type PlanDrag } from "./PlanGrid";
 import { DayPlanner } from "./DayPlanner";
+import { Suggestions } from "./Suggestions";
 import { PlanQueue } from "./PlanQueue";
 import { ViewHeader } from "./ViewHeader";
 
@@ -145,6 +146,7 @@ export function PlanView() {
           <ChevronRight size={18} aria-hidden />
         </button>
       </ViewHeader>
+      {day === today && <Suggestions />}
 
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-4 pb-3 sm:px-6">
         <p className="text-sm font-semibold text-stone-700 dark:text-stone-200">

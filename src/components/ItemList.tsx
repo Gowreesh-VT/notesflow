@@ -67,6 +67,7 @@ import { EnergyIcon } from "./EnergyField";
 import { ListSelect } from "./ListSelect";
 import { DragHandle, DropLine, useReorder } from "./Reorder";
 import { TaskCheckbox } from "./TaskCheckbox";
+import { Suggestions } from "./Suggestions";
 import { TemplatesMenu } from "./TemplatesMenu";
 import { runningEntry } from "@/lib/time-tracking";
 import { INBOX_ID, type Item, type ItemKind, type ItemSort } from "@/lib/types";
@@ -1019,6 +1020,8 @@ export function ItemList() {
           )}
         </div>
       </header>
+
+      {view.kind === "smart" && view.id === "today" && <Suggestions />}
 
       {!isReadOnlyView && (
         <form onSubmit={submit} className="px-4 sm:px-6">
