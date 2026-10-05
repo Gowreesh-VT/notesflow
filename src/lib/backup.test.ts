@@ -39,6 +39,7 @@ describe("backup", () => {
       filters: [],
       habits: [],
       countdowns: [],
+      settings: [],
     };
     expect(parseBackup(JSON.stringify(createBackup(data, 5)))).toEqual(data);
   });
@@ -335,6 +336,7 @@ describe("saved filters in backups", () => {
       filters: [filter],
       habits: [],
       countdowns: [],
+      settings: [],
     };
     expect(parseBackup(JSON.stringify(createBackup(data, 5))).filters).toEqual([filter]);
   });
@@ -370,6 +372,7 @@ describe("habits in backups", () => {
       filters: [],
       habits: [habit],
       countdowns: [],
+      settings: [],
     };
     expect(parseBackup(JSON.stringify(createBackup(data, 5))).habits).toEqual([habit]);
     const old = JSON.stringify({ app: "notesflow", version: 2, items: [], lists: [], folders: [] });

@@ -5,6 +5,7 @@ import {
   Clock3,
   Grid2x2,
   TrendingUp,
+  Settings,
   Zap,
   Repeat2,
   Timer,
@@ -21,4 +22,5 @@ export const PLANNER_ICONS: Record<PlannerViewKind, typeof CalendarFold> = {
   review: ClipboardCheck,
   progress: TrendingUp,
   quick: Zap,
+  settings: Settings,
 };

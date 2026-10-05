@@ -3,8 +3,10 @@
 import { useMemo, useState } from "react";
 import { Lightbulb, X } from "lucide-react";
 import { useNow, useToday } from "@/lib/hooks";
+import { clockMinutes } from "@/lib/preferences";
 import { scheduleSuggestions } from "@/lib/suggestions";
 import { addDays } from "@/lib/utils";
+import { usePreferences } from "@/store/preferences";
 import { useWorkspace } from "@/store/workspace";
 
 /** Gentle suggestions for today (overdue, overloaded, too long), each with a one-click fix. */
@@ -13,14 +15,15 @@ export function Suggestions() {
   const updateItems = useWorkspace((s) => s.updateItems);
   const today = useToday();
   const now = useNow(true, 60_000);
+  const dayEnd = clockMinutes(usePreferences().dayEnd);
   const [dismissed, setDismissed] = useState<string[]>([]);
   const minutes = new Date(now).getHours() * 60 + new Date(now).getMinutes();
   const suggestions = useMemo(
     () =>
-      scheduleSuggestions(items, today, minutes).filter(
+      scheduleSuggestions(items, today, minutes, dayEnd).filter(
         (s) => !dismissed.includes(`${today}:${s.id}`),
       ),
-    [items, today, minutes, dismissed],
+    [items, today, minutes, dayEnd, dismissed],
   );
   if (!suggestions.length) return null;
 

@@ -15,8 +15,9 @@ import {
 import clsx from "clsx";
 import { exportNoteMarkdown } from "@/lib/data-actions";
 import { viewTitle } from "@/lib/items-logic";
-import type { Item } from "@/lib/types";
+import type { EditorMode, Item } from "@/lib/types";
 import { displayTitle, readingMinutes, wordCount } from "@/lib/utils";
+import { setPreferences, usePreferences } from "@/store/preferences";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
 import { CopyToList } from "./CopyToList";
@@ -24,8 +25,8 @@ import { ListSelect } from "./ListSelect";
 import { MarkdownEditor, ModeSwitch } from "./MarkdownEditor";
 
 export function NoteDetail({ item }: { item: Item }) {
-  const editorMode = useUi((s) => s.editorMode);
-  const setEditorMode = useUi((s) => s.setEditorMode);
+  const { editorMode } = usePreferences();
+  const setEditorMode = (mode: EditorMode) => setPreferences({ editorMode: mode });
   const selectItem = useUi((s) => s.selectItem);
   const {
     updateItem,

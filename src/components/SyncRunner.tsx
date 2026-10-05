@@ -36,6 +36,7 @@ export function SyncRunner() {
         state.filters !== previous.filters ||
         state.habits !== previous.habits ||
         state.countdowns !== previous.countdowns ||
+        state.settings !== previous.settings ||
         state.tombstones !== previous.tombstones
       ) {
         requestSync();

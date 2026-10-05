@@ -7,7 +7,9 @@ import { activeLists, filterItems, SMART_VIEWS } from "@/lib/items-logic";
 import { useToday } from "@/lib/hooks";
 import { INBOX_ID, type Item } from "@/lib/types";
 import { displayTitle, toDateKey } from "@/lib/utils";
-import { useUi, type Theme } from "@/store/ui";
+import type { Theme } from "@/lib/types";
+import { getPreferences, setPreferences } from "@/store/preferences";
+import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
 
 type Command = { id: string; label: string; hint?: string; run: () => void };
@@ -83,10 +85,26 @@ function PaletteDialog({ onClose }: { onClose: () => void }) {
         label: `Open filter: ${f.name}`,
         run: () => ui.setView({ kind: "filter", id: f.id }),
       })),
-      { id: "theme", label: "Cycle theme", run: () => ui.setTheme(NEXT_THEME[ui.theme]) },
-      { id: "view-edit", label: "Editor: edit only", run: () => ui.setEditorMode("edit") },
-      { id: "view-split", label: "Editor: split view", run: () => ui.setEditorMode("split") },
-      { id: "view-preview", label: "Editor: preview only", run: () => ui.setEditorMode("preview") },
+      {
+        id: "theme",
+        label: "Cycle theme",
+        run: () => setPreferences({ theme: NEXT_THEME[getPreferences().theme] }),
+      },
+      {
+        id: "view-edit",
+        label: "Editor: edit only",
+        run: () => setPreferences({ editorMode: "edit" }),
+      },
+      {
+        id: "view-split",
+        label: "Editor: split view",
+        run: () => setPreferences({ editorMode: "split" }),
+      },
+      {
+        id: "view-preview",
+        label: "Editor: preview only",
+        run: () => setPreferences({ editorMode: "preview" }),
+      },
       { id: "backup", label: "Download backup", run: () => exportBackup() },
       { id: "shortcuts", label: "Keyboard shortcuts", hint: "?", run: () => ui.setHelpOpen(true) },
     ];

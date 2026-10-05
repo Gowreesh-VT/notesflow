@@ -25,6 +25,7 @@ import {
   stopEntries,
 } from "@/lib/time-tracking";
 import { parseCountdown } from "@/lib/backup";
+import { legacyPreferences, updatePreferences, type PreferenceValues } from "@/lib/preferences";
 import { cleanHabitName, DEFAULT_GOAL, parseGoal, toggleCheckin } from "@/lib/habits";
 import { makeOutcome } from "@/lib/outcomes";
 import { nextDueDate } from "@/lib/recurrence";
@@ -38,6 +39,7 @@ import {
   INBOX_ID,
   type FilterCriteria,
   type Countdown,
+  type Preferences,
   type Folder,
   type Habit,
   type HabitGoal,
@@ -95,6 +97,7 @@ export type WorkspaceData = {
   filters: SavedFilter[];
   habits: Habit[];
   countdowns: Countdown[];
+  settings: Preferences[];
   tombstones: Tombstone[];
 };
 
@@ -223,6 +226,9 @@ type WorkspaceState = WorkspaceData & {
   updateCountdown: (id: string, patch: { name?: string; date?: string }) => void;
   deleteCountdown: (id: string) => void;
 
+  /** Changes account preferences (synced to every device). */
+  setPreferences: (patch: Partial<PreferenceValues>) => void;
+
   mergeData: (incoming: {
     items: Item[];
     lists: TaskList[];
@@ -230,6 +236,7 @@ type WorkspaceState = WorkspaceData & {
     filters?: SavedFilter[];
     habits?: Habit[];
     countdowns?: Countdown[];
+    settings?: Preferences[];
   }) => {
     items: number;
     lists: number;
@@ -373,6 +380,7 @@ export const useWorkspace = create<WorkspaceState>()(
       filters: [],
       habits: [],
       countdowns: [],
+      settings: [],
       tombstones: [],
 
       addItem: ({
@@ -1283,8 +1291,11 @@ export const useWorkspace = create<WorkspaceState>()(
           };
         }),
 
+      setPreferences: (patch) =>
+        set((s) => ({ settings: updatePreferences(s.settings, patch, Date.now()) })),
+
       mergeData: (incoming) => {
-        const { items, lists, folders, filters, habits, countdowns } = get();
+        const { items, lists, folders, filters, habits, countdowns, settings } = get();
         const itemIds = new Set(items.map((i) => i.id));
         const listIds = new Set(lists.map((l) => l.id));
         const folderIds = new Set(folders.map((f) => f.id));
@@ -1307,6 +1318,8 @@ export const useWorkspace = create<WorkspaceState>()(
           filters: [...filters, ...newFilters],
           habits: [...habits, ...newHabits],
           countdowns: [...countdowns, ...newCountdowns],
+          // Preferences from a backup only apply when this workspace has none of its own yet.
+          settings: settings.length ? settings : (incoming.settings ?? []),
         });
         return { items: newItems.length, lists: newLists.length };
       },
@@ -1326,7 +1339,7 @@ export const useWorkspace = create<WorkspaceState>()(
     }),
     {
       name: WORKSPACE_KEY,
-      version: 6,
+      version: 7,
       skipHydration: true,
       partialize: (s) => ({
         items: s.items,
@@ -1335,10 +1348,12 @@ export const useWorkspace = create<WorkspaceState>()(
         filters: s.filters,
         habits: s.habits,
         countdowns: s.countdowns,
+        settings: s.settings,
         tombstones: s.tombstones,
       }),
       // v1 lists and folders had no updatedAt; v1 had no tombstones; before v3 there were no sections; before v4
-      // there were no saved filters; before v5 there were no habits; before v6 no countdowns.
+      // there were no saved filters; before v5 there were no habits; before v6 no countdowns; before v7 preferences lived
+      // only on the device, in the UI store.
       migrate: (persisted) => {
         const old = (persisted ?? {}) as Partial<WorkspaceData>;
         const stamp = <T extends { createdAt: number; updatedAt?: number }>(x: T) => ({
@@ -1352,12 +1367,23 @@ export const useWorkspace = create<WorkspaceState>()(
           filters: old.filters ?? [],
           habits: old.habits ?? [],
           countdowns: old.countdowns ?? [],
+          settings: old.settings ?? readLegacyPreferences(),
           tombstones: old.tombstones ?? [],
         };
       },
     },
   ),
 );
+
+/** Preferences an older version kept in the device's UI store, carried into the synced record. */
+function readLegacyPreferences(): Preferences[] {
+  try {
+    const legacy = legacyPreferences(window.localStorage.getItem("notesflow:ui"));
+    return legacy ? [legacy] : [];
+  } catch {
+    return [];
+  }
+}
 
 /**
  * One-time upgrade from the original separate notes/tasks stores. Writes the unified workspace to
@@ -1392,9 +1418,10 @@ export function upgradeLegacyStorage(storage: Pick<Storage, "getItem" | "setItem
         filters: [],
         habits: [],
         countdowns: [],
+        settings: readLegacyPreferences(),
         tombstones: [],
       },
-      version: 6,
+      version: 7,
     }),
   );
   return true;

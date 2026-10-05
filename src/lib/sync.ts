@@ -6,11 +6,13 @@ import {
   parseItem,
   parseList,
 } from "./backup";
+import { parsePreferences } from "./preferences";
 import type {
   Countdown,
   Folder,
   Habit,
   Item,
+  Preferences,
   SavedFilter,
   SyncCollection,
   TaskList,
@@ -33,6 +35,7 @@ export type SyncData = {
   filters: SavedFilter[];
   habits: Habit[];
   countdowns: Countdown[];
+  settings: Preferences[];
   tombstones: Tombstone[];
 };
 
@@ -45,6 +48,7 @@ export const COLLECTIONS: SyncCollection[] = [
   "filter",
   "habit",
   "countdown",
+  "setting",
 ];
 
 const PARSERS = {
@@ -54,6 +58,7 @@ const PARSERS = {
   filter: parseFilter,
   habit: parseHabit,
   countdown: parseCountdown,
+  setting: parsePreferences,
 } as const;
 
 /** The SyncData array that holds each collection. */
@@ -64,6 +69,7 @@ const FIELDS = {
   filter: "filters",
   habit: "habits",
   countdown: "countdowns",
+  setting: "settings",
 } as const satisfies Record<SyncCollection, keyof SyncData>;
 
 const isCollection = (value: unknown): value is SyncCollection =>
@@ -228,6 +234,7 @@ export async function syncOnce(
         filters: merged.data.filters,
         habits: merged.data.habits,
         countdowns: merged.data.countdowns,
+        settings: merged.data.settings,
       });
     }
     cursor = response.cursor;

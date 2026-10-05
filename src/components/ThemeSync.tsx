@@ -1,12 +1,20 @@
 "use client";
 
 import { useEffect } from "react";
-import { useUi } from "@/store/ui";
+import { usePreferences } from "@/store/preferences";
+
+/** Key read by the inline script in the root layout, so the saved look applies before first paint. */
+export const APPEARANCE_KEY = "notesflow:appearance";
 
 export function ThemeSync() {
-  const theme = useUi((s) => s.theme);
+  const { theme } = usePreferences();
 
   useEffect(() => {
+    try {
+      window.localStorage.setItem(APPEARANCE_KEY, JSON.stringify({ theme }));
+    } catch {
+      // Storage unavailable: the theme still applies while the app is open.
+    }
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const apply = () => {
       const dark = theme === "dark" || (theme === "system" && media.matches);

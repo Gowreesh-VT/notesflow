@@ -5,6 +5,7 @@ import { Settings2, X } from "lucide-react";
 import clsx from "clsx";
 import { MAX_OUTCOME_NOTE } from "@/lib/outcomes";
 import type { Item } from "@/lib/types";
+import { setPreferences, usePreferences } from "@/store/preferences";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
 
@@ -15,7 +16,7 @@ function OutcomeChoices({
   value: string | null;
   onPick: (label: string | null) => void;
 }) {
-  const labels = useUi((s) => s.outcomeLabels);
+  const labels = usePreferences().outcomeLabels;
   const choices = value && !labels.includes(value) ? [...labels, value] : labels;
   return (
     <div role="radiogroup" aria-label="Outcome" className="flex flex-wrap gap-1.5">
@@ -42,15 +43,14 @@ function OutcomeChoices({
 
 /** Lets the user rename, add or remove outcome choices (one per line). */
 function EditChoices({ onClose }: { onClose: () => void }) {
-  const labels = useUi((s) => s.outcomeLabels);
-  const setOutcomeLabels = useUi((s) => s.setOutcomeLabels);
+  const labels = usePreferences().outcomeLabels;
   const [draft, setDraft] = useState(labels.join("\n"));
   return (
     <form
       className="space-y-2"
       onSubmit={(e) => {
         e.preventDefault();
-        setOutcomeLabels(draft.split("\n"));
+        setPreferences({ outcomeLabels: draft.split("\n") });
         onClose();
       }}
     >

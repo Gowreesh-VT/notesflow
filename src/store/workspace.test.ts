@@ -1010,3 +1010,29 @@ describe("countdowns", () => {
     );
   });
 });
+
+describe("preferences", () => {
+  it("saves preference changes as one synced record", () => {
+    useWorkspace.setState({ settings: [] });
+    state().setPreferences({ theme: "dark" });
+    state().setPreferences({ hiddenViews: ["matrix"] });
+    expect(state().settings).toEqual([
+      expect.objectContaining({ id: "preferences", theme: "dark", hiddenViews: ["matrix"] }),
+    ]);
+  });
+
+  it("carries older device-only preferences into the synced record on upgrade", () => {
+    window.localStorage.setItem(
+      "notesflow:ui",
+      JSON.stringify({ state: { theme: "light", editorMode: "edit" }, version: 2 }),
+    );
+    const migrate = useWorkspace.persist.getOptions().migrate!;
+    const migrated = migrate({ items: [], lists: [], folders: [], tombstones: [] }, 6) as {
+      settings: unknown[];
+    };
+    expect(migrated.settings).toEqual([
+      expect.objectContaining({ theme: "light", editorMode: "edit", updatedAt: 1 }),
+    ]);
+    window.localStorage.removeItem("notesflow:ui");
+  });
+});

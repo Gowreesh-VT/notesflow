@@ -13,11 +13,14 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Search,
+  Settings,
   Sun,
 } from "lucide-react";
 import clsx from "clsx";
 import { sameView } from "@/lib/items-logic";
-import { useUi, type Theme } from "@/store/ui";
+import type { Theme } from "@/lib/types";
+import { setPreferences, usePreferences } from "@/store/preferences";
+import { useUi } from "@/store/ui";
 import { LogoMark } from "./Logo";
 
 const NEXT_THEME: Record<Theme, { next: Theme; icon: React.ReactNode; label: string }> = {
@@ -60,16 +63,10 @@ function RailButton({
 /** Slim desktop rail: brand, the two main views, search, sidebar toggle, help and theme. */
 export function NavRail() {
   const view = useUi((s) => s.view);
-  const theme = useUi((s) => s.theme);
+  const { theme } = usePreferences();
   const collapsed = useUi((s) => s.sidebarCollapsed);
-  const {
-    setView,
-    setTheme,
-    setPaletteOpen,
-    setHelpOpen,
-    setSettingsOpen,
-    toggleSidebarCollapsed,
-  } = useUi.getState();
+  const { setView, setPaletteOpen, setHelpOpen, setSettingsOpen, toggleSidebarCollapsed } =
+    useUi.getState();
   const themeInfo = NEXT_THEME[theme];
 
   return (
@@ -122,10 +119,20 @@ export function NavRail() {
         <RailButton label="Reminder settings" onClick={() => setSettingsOpen(true)}>
           <BellRing size={19} />
         </RailButton>
+        <RailButton
+          label="Settings"
+          active={view.kind === "settings"}
+          onClick={() => setView({ kind: "settings" })}
+        >
+          <Settings size={19} />
+        </RailButton>
         <RailButton label="Keyboard shortcuts (?)" onClick={() => setHelpOpen(true)}>
           <CircleHelp size={19} />
         </RailButton>
-        <RailButton label={themeInfo.label} onClick={() => setTheme(themeInfo.next)}>
+        <RailButton
+          label={themeInfo.label}
+          onClick={() => setPreferences({ theme: themeInfo.next })}
+        >
           {themeInfo.icon}
         </RailButton>
       </div>

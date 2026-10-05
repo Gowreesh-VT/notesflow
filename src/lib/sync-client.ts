@@ -10,6 +10,7 @@ const EMPTY = {
   filters: [],
   habits: [],
   countdowns: [],
+  settings: [],
   tombstones: [],
 };
 
@@ -86,9 +87,9 @@ async function syncRound(): Promise<void> {
     const workspace = useWorkspace;
     const result = await syncOnce({
       getData: () => {
-        const { items, lists, folders, filters, habits, countdowns, tombstones } =
+        const { items, lists, folders, filters, habits, countdowns, settings, tombstones } =
           workspace.getState();
-        return { items, lists, folders, filters, habits, countdowns, tombstones };
+        return { items, lists, folders, filters, habits, countdowns, settings, tombstones };
       },
       setData: (partial) => workspace.getState().setData(partial),
       dropTombstones: (t) => workspace.getState().dropTombstones(t),

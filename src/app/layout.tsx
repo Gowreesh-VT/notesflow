@@ -35,8 +35,8 @@ export const viewport: Viewport = {
   ],
 };
 
-// Applies the saved theme before first paint to avoid a light/dark flash.
-const themeScript = `(function(){try{var t=JSON.parse(localStorage.getItem("notesflow:ui")||"{}").state;var s=t&&t.theme||"system";var d=s==="dark"||(s==="system"&&matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.classList.toggle("dark",d)}catch(e){}})()`;
+// Applies the saved look (written by ThemeSync; older versions kept the theme in the UI store) before first paint to avoid a light/dark flash.
+const themeScript = `(function(){try{var a=JSON.parse(localStorage.getItem("notesflow:appearance")||"null");if(!a){var u=JSON.parse(localStorage.getItem("notesflow:ui")||"{}").state;a={theme:u&&u.theme}}var s=a.theme||"system";var d=s==="dark"||(s==="system"&&matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.classList.toggle("dark",d)}catch(e){}})()`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

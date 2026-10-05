@@ -8,6 +8,7 @@ import {
   type Subtask,
   type Priority,
   type Countdown,
+  type Preferences,
   type Habit,
   type SavedFilter,
   type TaskList,
@@ -18,6 +19,7 @@ import { cleanFilterName, parseFilterCriteria } from "./filters";
 import { cleanCheckins, cleanHabitName, parseGoal } from "./habits";
 import { isEnergy } from "./items-logic";
 import { asOrder } from "./ordering";
+import { parsePreferences } from "./preferences";
 import { parseOutcome } from "./outcomes";
 import { parseRepeat } from "./recurrence";
 import { parseReminders } from "./reminders";
@@ -225,6 +227,8 @@ export type BackupData = {
   filters: SavedFilter[];
   habits: Habit[];
   countdowns: Countdown[];
+  /** The synced preferences record (at most one). */
+  settings: Preferences[];
 };
 
 export function createBackup(data: BackupData, now = Date.now()): Backup {
@@ -256,6 +260,7 @@ export function parseBackup(text: string, now = Date.now()): BackupData {
       filters: parseArray(record.filters, (v) => parseFilter(v, now)),
       habits: parseArray(record.habits, (v) => parseHabit(v, now)),
       countdowns: parseArray(record.countdowns, (v) => parseCountdown(v, now)),
+      settings: parseArray(record.settings, (v) => parsePreferences(v, now)),
     };
   }
 
@@ -292,5 +297,5 @@ export function parseBackup(text: string, now = Date.now()): BackupData {
     } satisfies LegacyTask;
   });
   const { items, lists } = migrateLegacyData(legacyNotes, legacyTasks, now);
-  return { items, lists, folders: [], filters: [], habits: [], countdowns: [] };
+  return { items, lists, folders: [], filters: [], habits: [], countdowns: [], settings: [] };
 }

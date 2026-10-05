@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import {
   Ban,
-  BellRing,
+  Settings,
   CalendarClock,
   CalendarDays,
   CalendarRange,
@@ -42,7 +42,9 @@ import { useToday } from "@/lib/hooks";
 import { planMove, planStep, sortByOrder } from "@/lib/ordering";
 import { cleanTagName } from "@/lib/tags";
 import { INBOX_ID, type SmartViewId, type TaskList, type View } from "@/lib/types";
-import { useUi, type Theme } from "@/store/ui";
+import type { Theme } from "@/lib/types";
+import { setPreferences, usePreferences } from "@/store/preferences";
+import { useUi } from "@/store/ui";
 import { AccountMenu } from "./AccountMenu";
 import { InstallButton } from "./InstallButton";
 import { LogoMark } from "./Logo";
@@ -85,9 +87,9 @@ export function Sidebar() {
   const deleteFolder = useWorkspace((s) => s.deleteFolder);
   const renameTag = useWorkspace((s) => s.renameTag);
   const reorderLists = useWorkspace((s) => s.reorderLists);
-  const { view, theme, sidebarOpen, sidebarCollapsed } = useUi();
+  const { view, sidebarOpen, sidebarCollapsed } = useUi();
+  const { theme, hiddenViews } = usePreferences();
   const setView = useUi((s) => s.setView);
-  const setTheme = useUi((s) => s.setTheme);
   const setSidebarOpen = useUi((s) => s.setSidebarOpen);
   const setPaletteOpen = useUi((s) => s.setPaletteOpen);
   const today = useToday();
@@ -274,18 +276,20 @@ export function Sidebar() {
           <h2 className="px-2.5 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
             Views
           </h2>
-          {PLANNER_VIEWS.map((v) => {
-            const Icon = PLANNER_ICONS[v.kind];
-            return (
-              <NavItem
-                key={v.kind}
-                icon={<Icon size={16} />}
-                label={v.label}
-                active={view.kind === v.kind}
-                onClick={() => goTo({ kind: v.kind })}
-              />
-            );
-          })}
+          {PLANNER_VIEWS.filter((v) => v.kind !== "settings" && !hiddenViews.includes(v.kind)).map(
+            (v) => {
+              const Icon = PLANNER_ICONS[v.kind];
+              return (
+                <NavItem
+                  key={v.kind}
+                  icon={<Icon size={16} />}
+                  label={v.label}
+                  active={view.kind === v.kind}
+                  onClick={() => goTo({ kind: v.kind })}
+                />
+              );
+            },
+          )}
 
           <div className="flex items-center justify-between px-2.5 pb-1 pt-4">
             <h2 className="text-[11px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
@@ -474,7 +478,7 @@ export function Sidebar() {
                 aria-checked={theme === t.value}
                 aria-label={t.label}
                 title={t.label}
-                onClick={() => setTheme(t.value)}
+                onClick={() => setPreferences({ theme: t.value })}
                 className={clsx(
                   "btn justify-center",
                   theme === t.value ? "bg-white shadow-sm dark:bg-stone-800" : "btn-ghost",
@@ -520,9 +524,9 @@ export function Sidebar() {
           <button
             type="button"
             className="btn btn-ghost w-full justify-start text-xs md:hidden"
-            onClick={() => useUi.getState().setSettingsOpen(true)}
+            onClick={() => goTo({ kind: "settings" })}
           >
-            <BellRing size={14} aria-hidden /> Reminder settings
+            <Settings size={14} aria-hidden /> Settings
           </button>
           <AccountMenu />
           <InstallButton />

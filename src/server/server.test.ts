@@ -225,3 +225,18 @@ describe("habit sync", () => {
     });
   });
 });
+
+describe("preference sync", () => {
+  it("stores the account's preferences like any other record", async () => {
+    const prefs = { id: "preferences", theme: "dark", updatedAt: 60 };
+    const result = await syncForUser(db, "alice", {
+      cursor: 0,
+      changes: [
+        { collection: "setting", id: prefs.id, updatedAt: 60, deleted: false, data: prefs },
+      ],
+    });
+    expect(result.records.find((r) => r.collection === "setting")).toMatchObject({
+      data: { theme: "dark", editorMode: "split", dayEnd: "21:00" },
+    });
+  });
+});

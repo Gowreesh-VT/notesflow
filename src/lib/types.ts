@@ -182,7 +182,28 @@ export type Countdown = {
   updatedAt: number;
 };
 
-export type SyncCollection = "item" | "list" | "folder" | "filter" | "habit" | "countdown";
+export type Theme = "system" | "light" | "dark";
+export type EditorMode = "edit" | "split" | "preview";
+
+/**
+ * The account's preferences: one record with id "preferences", synced as the "setting" collection so every device
+ * looks and behaves the same. Reminder settings stay on each device.
+ */
+export type Preferences = {
+  id: string;
+  theme: Theme;
+  editorMode: EditorMode;
+  /** Outcome choices offered when a task is finished. */
+  outcomeLabels: string[];
+  /** When the working day ends (HH:MM); scheduling suggestions plan up to it. */
+  dayEnd: string;
+  /** Whole-workspace views hidden from the sidebar. */
+  hiddenViews: PlannerViewKind[];
+  updatedAt: number;
+};
+
+export type SyncCollection =
+  "item" | "list" | "folder" | "filter" | "habit" | "countdown" | "setting";
 
 /** Records that something was permanently deleted, so the deletion can reach other devices. */
 export type Tombstone = {
@@ -211,7 +232,8 @@ export type PlannerViewKind =
   | "habits"
   | "review"
   | "progress"
-  | "quick";
+  | "quick"
+  | "settings";
 
 export type ItemSort = "default" | "manual" | "due" | "priority" | "title" | "updated";
 
@@ -226,4 +248,5 @@ export type Backup = {
   filters?: SavedFilter[];
   habits?: Habit[];
   countdowns?: Countdown[];
+  settings?: Preferences[];
 };

@@ -2,18 +2,15 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { isCalendarLayout, isDateKey, type CalendarLayout } from "@/lib/calendar";
 import { isGroupBy, type GroupBy } from "@/lib/items-logic";
-import { cleanOutcomeLabels, DEFAULT_OUTCOME_LABELS } from "@/lib/outcomes";
 import { DEFAULT_REMINDER_TIME, isClock, type QuietHours } from "@/lib/reminders";
 import type { Energy, ItemSort, View } from "@/lib/types";
 
-export type Theme = "system" | "light" | "dark";
-export type EditorMode = "edit" | "split" | "preview";
+// Theme, editor mode and outcome choices are account preferences now (synced; see src/store/preferences.ts).
+export type { EditorMode, Theme } from "@/lib/types";
 
 const INBOX_VIEW: View = { kind: "smart", id: "inbox" };
 
 type UiState = {
-  theme: Theme;
-  editorMode: EditorMode;
   sort: ItemSort;
   /** Grouping chosen per view (keyed by `viewKey`); views without a choice use their default grouping. */
   groupBy: Record<string, GroupBy>;
@@ -38,15 +35,11 @@ type UiState = {
   /** No reminders ring during these hours on this device; they ring when quiet hours end. */
   quietHours: QuietHours | null;
   settingsOpen: boolean;
-  /** Editable outcome choices (kept on this device). */
-  outcomeLabels: string[];
   calendarLayout: CalendarLayout;
   /** Day the calendar is showing (null = today); not persisted, so the calendar opens on today. */
   calendarDate: string | null;
   /** Calendar also shows completed tasks. */
   calendarShowDone: boolean;
-  setTheme: (theme: Theme) => void;
-  setEditorMode: (mode: EditorMode) => void;
   setSort: (sort: ItemSort) => void;
   setGroupBy: (viewKey: string, groupBy: GroupBy) => void;
   setListLayout: (listId: string, layout: "list" | "board") => void;
@@ -63,7 +56,6 @@ type UiState = {
   setDefaultReminderTime: (time: string) => void;
   setQuietHours: (quiet: QuietHours | null) => void;
   setSettingsOpen: (open: boolean) => void;
-  setOutcomeLabels: (labels: string[]) => void;
   setCalendarLayout: (layout: CalendarLayout) => void;
   setCalendarDate: (date: string | null) => void;
   setCalendarShowDone: (show: boolean) => void;
@@ -72,8 +64,6 @@ type UiState = {
 export const useUi = create<UiState>()(
   persist(
     (set) => ({
-      theme: "system",
-      editorMode: "split",
       sort: "default",
       groupBy: {},
       listLayout: {},
@@ -90,12 +80,9 @@ export const useUi = create<UiState>()(
       defaultReminderTime: DEFAULT_REMINDER_TIME,
       quietHours: null,
       settingsOpen: false,
-      outcomeLabels: DEFAULT_OUTCOME_LABELS,
       calendarLayout: "month",
       calendarDate: null,
       calendarShowDone: false,
-      setTheme: (theme) => set({ theme }),
-      setEditorMode: (editorMode) => set({ editorMode }),
       setSort: (sort) => set({ sort }),
       setListLayout: (listId, layout) =>
         set((s) => ({ listLayout: { ...s.listLayout, [listId]: layout } })),
@@ -119,7 +106,6 @@ export const useUi = create<UiState>()(
         if (!quiet || (isClock(quiet.start) && isClock(quiet.end))) set({ quietHours: quiet });
       },
       setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
-      setOutcomeLabels: (labels) => set({ outcomeLabels: cleanOutcomeLabels(labels) }),
       setCalendarLayout: (layout) => {
         if (isCalendarLayout(layout)) set({ calendarLayout: layout });
       },
@@ -133,28 +119,18 @@ export const useUi = create<UiState>()(
       version: 2,
       skipHydration: true,
       partialize: (s) => ({
-        theme: s.theme,
-        editorMode: s.editorMode,
         sort: s.sort,
         groupBy: s.groupBy,
         listLayout: s.listLayout,
         splitListId: s.splitListId,
         sidebarCollapsed: s.sidebarCollapsed,
-        outcomeLabels: s.outcomeLabels,
         defaultReminderTime: s.defaultReminderTime,
         quietHours: s.quietHours,
         calendarLayout: s.calendarLayout,
         calendarShowDone: s.calendarShowDone,
       }),
-      // v1 stored a different sort field; only theme and editor mode carry over.
-      migrate: (persisted) => {
-        const old = (persisted ?? {}) as { theme?: Theme; editorMode?: EditorMode };
-        return {
-          theme: old.theme ?? "system",
-          editorMode: old.editorMode ?? "split",
-          sort: "default",
-        };
-      },
+      // v1 stored a different sort field; nothing else carries over.
+      migrate: () => ({ sort: "default" }),
     },
   ),
 );

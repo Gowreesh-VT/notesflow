@@ -4,10 +4,14 @@ import { INBOX_ID } from "./types";
 import { useWorkspace } from "@/store/workspace";
 
 export function exportBackup(): string {
-  const { items, lists, folders, filters, habits, countdowns } = useWorkspace.getState();
+  const { items, lists, folders, filters, habits, countdowns, settings } = useWorkspace.getState();
   downloadFile(
     `notesflow-backup-${toDateKey(new Date())}.json`,
-    JSON.stringify(createBackup({ items, lists, folders, filters, habits, countdowns }), null, 2),
+    JSON.stringify(
+      createBackup({ items, lists, folders, filters, habits, countdowns, settings }),
+      null,
+      2,
+    ),
     "application/json",
   );
   const tasks = items.filter((i) => i.kind === "task").length;
