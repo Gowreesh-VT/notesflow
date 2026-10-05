@@ -63,7 +63,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 
 - [x] [BIG] Calendar view, month layout, showing tasks on their due dates
 - [x] Calendar week layout with due times
-- [ ] Calendar day and agenda layouts
+- [x] Calendar day and agenda layouts
 - [ ] Drag a task to another day in the calendar to reschedule it
 - [ ] [BIG] Board (Kanban) view for a list, with sections as columns
 - [ ] Drag cards between board columns

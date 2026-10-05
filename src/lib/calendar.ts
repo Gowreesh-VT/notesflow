@@ -7,11 +7,13 @@ import { addDays } from "./utils";
  * helpers in `utils.ts`, so daylight-saving changes never shift a day. Weeks start on Monday.
  */
 
-export type CalendarLayout = "month" | "week";
+export type CalendarLayout = "month" | "week" | "day" | "agenda";
 
 export const CALENDAR_LAYOUTS: { value: CalendarLayout; label: string }[] = [
   { value: "month", label: "Month" },
   { value: "week", label: "Week" },
+  { value: "day", label: "Day" },
+  { value: "agenda", label: "Agenda" },
 ];
 
 export const isCalendarLayout = (value: unknown): value is CalendarLayout =>
@@ -188,4 +190,30 @@ export function layoutTimedTasks(tasks: Item[]): TimedBlock[] {
   }
   closeGroup();
   return blocks;
+}
+
+/** Number of days the agenda looks ahead, today included. */
+export const AGENDA_DAYS = 30;
+
+export type AgendaGroup = { day: string | "overdue"; items: Item[] };
+
+/**
+ * The agenda: open tasks that are overdue first, then one group per day from today for `length` days, each task
+ * listed once on its due date. Days without tasks are left out.
+ */
+export function agendaGroups(tasks: Item[], today: string, length = AGENDA_DAYS): AgendaGroup[] {
+  const last = addDays(today, length - 1);
+  const overdue = tasks
+    .filter((t) => t.status === "open" && t.due !== null && t.due < today)
+    .sort((a, b) => a.due!.localeCompare(b.due!) || compareDayEntries(a, b));
+  const byDay = new Map<string, Item[]>();
+  for (const task of tasks) {
+    if (!task.due || task.due < today || task.due > last) continue;
+    byDay.set(task.due, [...(byDay.get(task.due) ?? []), task]);
+  }
+  const days = [...byDay.keys()].sort().map((day) => ({
+    day,
+    items: byDay.get(day)!.sort(compareDayEntries),
+  }));
+  return overdue.length ? [{ day: "overdue", items: overdue }, ...days] : days;
 }

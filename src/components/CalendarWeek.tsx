@@ -27,10 +27,13 @@ export function CalendarWeek({
   days,
   today,
   tasks,
+  onOpenDay,
 }: {
   days: string[];
   today: string;
   tasks: Item[];
+  /** Shows a day on its own; absent when only one day is shown. */
+  onOpenDay?: (day: string) => void;
 }) {
   const byDay = useMemo(() => tasksByDay(tasks, days), [tasks, days]);
   const scroller = useRef<HTMLDivElement>(null);
@@ -62,26 +65,12 @@ export function CalendarWeek({
               key={day}
               className="group flex min-w-0 items-center justify-between gap-1 border-l border-stone-200 px-1.5 py-1.5 dark:border-stone-800"
             >
-              <span className="flex min-w-0 items-baseline gap-1">
-                <span className="truncate text-xs text-stone-500 dark:text-stone-400">
-                  {formatDay(day, { weekday: "short" })}
-                </span>
-                <span
-                  className={clsx(
-                    "flex size-6 shrink-0 items-center justify-center rounded-full text-sm tabular-nums",
-                    day === today
-                      ? "bg-accent-600 font-semibold text-white dark:bg-accent-500"
-                      : "text-stone-800 dark:text-stone-100",
-                  )}
-                >
-                  {Number(day.slice(8))}
-                </span>
-              </span>
+              <DayHeading day={day} isToday={day === today} onOpen={onOpenDay} />
               <button
                 type="button"
                 onClick={() => setAdding(day)}
                 aria-label={`Add a task on ${fullDate(day)}`}
-                className="rounded-md p-0.5 text-stone-500 opacity-0 hover:bg-stone-200 hover:text-stone-800 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-accent-500 group-hover:opacity-100 dark:text-stone-400 dark:hover:bg-stone-700 dark:hover:text-stone-100"
+                className="rounded-md p-0.5 text-stone-500 hover:bg-stone-200 hover:text-stone-800 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-accent-500 md:opacity-0 md:group-hover:opacity-100 dark:text-stone-400 dark:hover:bg-stone-700 dark:hover:text-stone-100"
               >
                 <Plus size={14} aria-hidden />
               </button>
@@ -140,6 +129,48 @@ export function CalendarWeek({
         </div>
       </div>
     </div>
+  );
+}
+
+function DayHeading({
+  day,
+  isToday,
+  onOpen,
+}: {
+  day: string;
+  isToday: boolean;
+  onOpen?: (day: string) => void;
+}) {
+  const content = (
+    <>
+      <span className="truncate text-xs text-stone-500 dark:text-stone-400">
+        {formatDay(day, { weekday: "short" })}
+      </span>
+      <span
+        className={clsx(
+          "flex size-6 shrink-0 items-center justify-center rounded-full text-sm tabular-nums",
+          isToday
+            ? "bg-accent-600 font-semibold text-white dark:bg-accent-500"
+            : "text-stone-800 dark:text-stone-100",
+        )}
+      >
+        {Number(day.slice(8))}
+      </span>
+    </>
+  );
+  return onOpen ? (
+    <button
+      type="button"
+      onClick={() => onOpen(day)}
+      aria-label={`Open ${fullDate(day)}`}
+      className="flex min-w-0 items-center gap-1 rounded-lg pl-1 hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-accent-500 dark:hover:bg-stone-800"
+    >
+      {content}
+    </button>
+  ) : (
+    <h3 aria-label={fullDate(day)} className="flex min-w-0 items-center gap-1">
+      {content}
+    </h3>
   );
 }
 

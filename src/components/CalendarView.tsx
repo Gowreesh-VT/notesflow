@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, CircleCheck } from "lucide-react";
 import { useMemo, useSyncExternalStore } from "react";
 import {
   addMonths,
+  AGENDA_DAYS,
   CALENDAR_LAYOUTS,
   calendarTasks,
   isCalendarLayout,
@@ -16,6 +17,7 @@ import { archivedListIds, filterByEnergy } from "@/lib/items-logic";
 import { addDays } from "@/lib/utils";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
+import { CalendarAgenda } from "./CalendarAgenda";
 import { CalendarMonth } from "./CalendarMonth";
 import { formatDay, fullDate } from "./CalendarParts";
 import { CalendarWeek } from "./CalendarWeek";
@@ -38,7 +40,7 @@ function useWideScreen(): boolean {
 
 /** What the arrows step by in each layout, and how the shown period is named. */
 const PERIOD: Record<
-  CalendarLayout | "day",
+  Exclude<CalendarLayout, "agenda">,
   { noun: string; step: (day: string, n: number) => string }
 > = {
   month: { noun: "month", step: addMonths },
@@ -46,7 +48,8 @@ const PERIOD: Record<
   day: { noun: "day", step: addDays },
 };
 
-function periodLabel(layout: CalendarLayout | "day", anchor: string, days: string[]): string {
+function periodLabel(layout: CalendarLayout, anchor: string, days: string[]): string {
+  if (layout === "agenda") return `Next ${AGENDA_DAYS} days`;
   if (layout === "month") return formatDay(anchor, { month: "long", year: "numeric" });
   if (layout === "day") return fullDate(anchor);
   const first = formatDay(days[0], { month: "short", day: "numeric" });
@@ -54,7 +57,7 @@ function periodLabel(layout: CalendarLayout | "day", anchor: string, days: strin
   return `${first} – ${last}`;
 }
 
-/** Tasks from every list on their due dates, by month or by week with times. */
+/** Tasks from every list on their due dates: by month, week or day, or as an agenda of the coming days. */
 export function CalendarView() {
   const items = useWorkspace((s) => s.items);
   const lists = useWorkspace((s) => s.lists);
@@ -85,7 +88,11 @@ export function CalendarView() {
     [shown, anchor],
   );
 
-  const period = PERIOD[shown];
+  const period = shown === "agenda" ? null : PERIOD[shown];
+  const openDay = (day: string) => {
+    setCalendarDate(day);
+    setLayout("day");
+  };
 
   return (
     <div className="flex h-full flex-col">
@@ -129,35 +136,46 @@ export function CalendarView() {
         </button>
       </ViewHeader>
 
-      <div className="flex items-center gap-1 px-4 pb-2 sm:px-6">
-        <button
-          type="button"
-          className="btn btn-ghost px-2"
-          aria-label={`Previous ${period.noun}`}
-          onClick={() => setCalendarDate(period.step(anchor, -1))}
-        >
-          <ChevronLeft size={18} aria-hidden />
-        </button>
-        <button type="button" className="btn btn-ghost" onClick={() => setCalendarDate(null)}>
-          Today
-        </button>
-        <button
-          type="button"
-          className="btn btn-ghost px-2"
-          aria-label={`Next ${period.noun}`}
-          onClick={() => setCalendarDate(period.step(anchor, 1))}
-        >
-          <ChevronRight size={18} aria-hidden />
-        </button>
+      <div className="flex min-h-9 items-center gap-1 px-4 pb-2 sm:px-6">
+        {period && (
+          <>
+            <button
+              type="button"
+              className="btn btn-ghost px-2"
+              aria-label={`Previous ${period.noun}`}
+              onClick={() => setCalendarDate(period.step(anchor, -1))}
+            >
+              <ChevronLeft size={18} aria-hidden />
+            </button>
+            <button type="button" className="btn btn-ghost" onClick={() => setCalendarDate(null)}>
+              Today
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost px-2"
+              aria-label={`Next ${period.noun}`}
+              onClick={() => setCalendarDate(period.step(anchor, 1))}
+            >
+              <ChevronRight size={18} aria-hidden />
+            </button>
+          </>
+        )}
         <h2 aria-live="polite" className="ml-1 truncate text-base font-semibold">
           {periodLabel(shown, anchor, days)}
         </h2>
       </div>
 
       {shown === "month" ? (
-        <CalendarMonth anchor={anchor} today={today} tasks={tasks} />
+        <CalendarMonth anchor={anchor} today={today} tasks={tasks} onOpenDay={openDay} />
+      ) : shown === "agenda" ? (
+        <CalendarAgenda today={today} tasks={tasks} />
       ) : (
-        <CalendarWeek days={days} today={today} tasks={tasks} />
+        <CalendarWeek
+          days={days}
+          today={today}
+          tasks={tasks}
+          onOpenDay={shown === "week" ? openDay : undefined}
+        />
       )}
     </div>
   );

@@ -19,12 +19,14 @@ function MonthCell({
   today,
   inMonth,
   selected,
+  onOpenDay,
 }: {
   day: string;
   entries: DayEntry[];
   today: string;
   inMonth: boolean;
   selected: boolean;
+  onOpenDay: (day: string) => void;
 }) {
   const setCalendarDate = useUi((s) => s.setCalendarDate);
   const [expanded, setExpanded] = useState(false);
@@ -65,7 +67,14 @@ function MonthCell({
 
       <div className="hidden min-h-0 flex-1 flex-col gap-0.5 p-1 md:flex">
         <div className="flex items-center justify-between">
-          <DayNumber n={dayNumber} isToday={isToday} inMonth={inMonth} />
+          <button
+            type="button"
+            onClick={() => onOpenDay(day)}
+            aria-label={`Open ${fullDate(day)}`}
+            className="rounded-full hover:bg-stone-200 focus-visible:outline-2 focus-visible:outline-accent-500 dark:hover:bg-stone-700"
+          >
+            <DayNumber n={dayNumber} isToday={isToday} inMonth={inMonth} />
+          </button>
           <button
             type="button"
             onClick={() => setAdding(true)}
@@ -124,10 +133,13 @@ export function CalendarMonth({
   anchor,
   today,
   tasks,
+  onOpenDay,
 }: {
   anchor: string;
   today: string;
   tasks: Item[];
+  /** Shows a day on its own (the day layout). */
+  onOpenDay: (day: string) => void;
 }) {
   const weeks = useMemo(() => monthMatrix(anchor), [anchor]);
   const byDay = useMemo(() => tasksByDay(tasks, weeks.flat()), [tasks, weeks]);
@@ -160,6 +172,7 @@ export function CalendarMonth({
             today={today}
             inMonth={monthOf(day) === month}
             selected={day === anchor}
+            onOpenDay={onOpenDay}
           />
         ))}
       </ol>

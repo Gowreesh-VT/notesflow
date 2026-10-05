@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   addMonths,
+  agendaGroups,
   calendarTasks,
   clockToMinutes,
   isCalendarLayout,
@@ -227,5 +228,37 @@ describe("time grid", () => {
     expect(byId.c).toMatchObject({ column: 1, columns: 2 });
     // a ends at 11:00: d starts a new group on its own.
     expect(byId.d).toMatchObject({ column: 0, columns: 1 });
+  });
+});
+
+describe("agenda", () => {
+  const today = "2026-10-05";
+
+  it("lists overdue tasks first, then each day with tasks, for 30 days", () => {
+    const tasks = [
+      make("old", { due: "2026-09-01" }),
+      make("older", { due: "2026-08-01" }),
+      make("doneOld", { due: "2026-09-01", status: "done" }),
+      make("today", { due: today, dueTime: "10:00" }),
+      make("todayAllDay", { due: today }),
+      make("next", { due: "2026-10-07" }),
+      make("last", { due: "2026-11-03" }),
+      make("tooFar", { due: "2026-11-04" }),
+    ];
+    const groups = agendaGroups(tasks, today);
+    expect(groups.map((g) => g.day)).toEqual(["overdue", today, "2026-10-07", "2026-11-03"]);
+    expect(ids(groups[0].items)).toEqual(["older", "old"]);
+    expect(ids(groups[1].items)).toEqual(["todayAllDay", "today"]);
+  });
+
+  it("lists a multi-day task once, on its due date", () => {
+    const groups = agendaGroups([make("trip", { startDate: today, due: "2026-10-08" })], today);
+    expect(groups).toEqual([
+      { day: "2026-10-08", items: [expect.objectContaining({ id: "trip" })] },
+    ]);
+  });
+
+  it("is empty without tasks", () => {
+    expect(agendaGroups([], today)).toEqual([]);
   });
 });
