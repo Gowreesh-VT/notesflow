@@ -243,3 +243,40 @@ export function nextFreeStart(
   }
   return null;
 }
+
+/** Default order for the guided planner: overdue first, then priority (high first), then shorter tasks. */
+export function plannerOrder(items: Item[], today: string): Item[] {
+  const rank = { high: 0, medium: 1, low: 2, none: 3 } as const;
+  return [...items].sort(
+    (a, b) =>
+      Number(Boolean(b.due && b.due < today)) - Number(Boolean(a.due && a.due < today)) ||
+      rank[a.priority] - rank[b.priority] ||
+      blockLength(a) - blockLength(b),
+  );
+}
+
+/**
+ * Lays tasks out one after another from `start` (minutes after midnight), with an optional break between them.
+ * Tasks that would end after `end` are returned as overflow instead.
+ */
+export function autoSchedule(
+  items: Pick<Item, "id" | "estimate">[],
+  start: number,
+  end: number,
+  breakMinutes = 0,
+): { blocks: { id: string; start: number; end: number }[]; overflow: string[] } {
+  const blocks: { id: string; start: number; end: number }[] = [];
+  const overflow: string[] = [];
+  // Round up, so planning "from now" never starts in the past.
+  let cursor = Math.ceil(start / SNAP_MINUTES) * SNAP_MINUTES;
+  for (const item of items) {
+    const length = blockLength(item);
+    if (cursor + length > end) {
+      overflow.push(item.id);
+      continue;
+    }
+    blocks.push({ id: item.id, start: cursor, end: cursor + length });
+    cursor = cursor + length + breakMinutes;
+  }
+  return { blocks, overflow };
+}

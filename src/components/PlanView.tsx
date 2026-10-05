@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Wand2 } from "lucide-react";
 import { formatDuration } from "@/lib/duration";
 import { useNow, useToday } from "@/lib/hooks";
 import { archivedListIds, filterByEnergy, viewTitle } from "@/lib/items-logic";
@@ -21,6 +21,7 @@ import { addDays, displayTitle, formatClock, formatDueLabel } from "@/lib/utils"
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
 import { clockLabel, PlanGrid, type PlanDrag } from "./PlanGrid";
+import { DayPlanner } from "./DayPlanner";
 import { PlanQueue } from "./PlanQueue";
 import { ViewHeader } from "./ViewHeader";
 
@@ -38,6 +39,7 @@ function longDate(day: string): string {
  * into slots (or given a time with the keyboard), moved, resized to set their estimate, and dragged back to unplan.
  */
 export function PlanView() {
+  const [planning, setPlanning] = useState(false);
   const items = useWorkspace((s) => s.items);
   const lists = useWorkspace((s) => s.lists);
   const updateItem = useWorkspace((s) => s.updateItem);
@@ -113,7 +115,11 @@ export function PlanView() {
 
   return (
     <div className="@container flex h-full flex-col">
+      {planning && <DayPlanner day={day} today={today} onClose={() => setPlanning(false)} />}
       <ViewHeader title={title}>
+        <button type="button" className="btn btn-primary mr-1" onClick={() => setPlanning(true)}>
+          <Wand2 size={15} aria-hidden /> Plan step by step
+        </button>
         <button
           type="button"
           className="btn btn-ghost px-2"

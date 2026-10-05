@@ -15,6 +15,8 @@ import {
   slotStarts,
   snapMinutes,
   toPlanOn,
+  autoSchedule,
+  plannerOrder,
 } from "./plan";
 import { INBOX_ID, type Item } from "./types";
 
@@ -229,5 +231,55 @@ describe("plan totals", () => {
     expect(nextFreeStart(blocks, 8 * 60 + 40, 30, window)).toBe(10 * 60 + 30);
     expect(nextFreeStart(blocks, 3 * 60, 30, window)).toBe(6 * 60);
     expect(nextFreeStart(blocks, 22 * 60 + 50, 30, window)).toBeNull();
+  });
+});
+
+describe("guided day planning", () => {
+  const t = (id: string, patch: Partial<Item> = {}) =>
+    ({
+      id,
+      kind: "task",
+      title: id,
+      body: "",
+      listId: "inbox",
+      createdAt: 1,
+      updatedAt: 1,
+      deletedAt: null,
+      pinned: false,
+      status: "open",
+      completedAt: null,
+      priority: "none",
+      due: null,
+      subtasks: [],
+      sectionId: null,
+      ...patch,
+    }) as Item;
+
+  it("orders overdue first, then by priority, then shorter tasks", () => {
+    const ordered = plannerOrder(
+      [
+        t("long-high", { priority: "high", estimate: 90 }),
+        t("short-high", { priority: "high", estimate: 15 }),
+        t("late", { due: "2026-10-01" }),
+        t("low", { priority: "low" }),
+      ],
+      "2026-10-05",
+    );
+    expect(ordered.map((i) => i.id)).toEqual(["late", "short-high", "long-high", "low"]);
+  });
+
+  it("schedules tasks back to back from a rounded-up start, with breaks, and reports overflow", () => {
+    const { blocks, overflow } = autoSchedule(
+      [t("a", { estimate: 60 }), t("b"), t("c", { estimate: 120 }), t("d", { estimate: 15 })],
+      9 * 60 + 7,
+      12 * 60,
+      5,
+    );
+    expect(blocks).toEqual([
+      { id: "a", start: 555, end: 615 },
+      { id: "b", start: 620, end: 650 },
+      { id: "d", start: 655, end: 670 },
+    ]);
+    expect(overflow).toEqual(["c"]);
   });
 });
