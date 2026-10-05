@@ -3,16 +3,37 @@
 import clsx from "clsx";
 import { Plus } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { isTimedOn, layoutTimedTasks, MINUTES_PER_DAY, tasksByDay } from "@/lib/calendar";
+import {
+  clockToMinutes,
+  isTimedOn,
+  layoutTimedTasks,
+  MINUTES_PER_DAY,
+  tasksByDay,
+  timeAtOffset,
+  type DayEntry,
+} from "@/lib/calendar";
+import { isItemDrag } from "@/lib/dnd";
 import { useNow } from "@/lib/hooks";
 import type { Item } from "@/lib/types";
-import { DayQuickAdd, formatDay, formatHour, fullDate, TaskChip } from "./CalendarParts";
+import { formatClock } from "@/lib/utils";
+import {
+  DayQuickAdd,
+  DROP_HIGHLIGHT,
+  dropTaskOn,
+  formatDay,
+  formatHour,
+  fullDate,
+  TaskChip,
+  useTaskDropTarget,
+} from "./CalendarParts";
 
 /** Height of one hour in the time grid, in pixels. */
 export const HOUR_HEIGHT = 48;
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
 /** Blocks at least this long show the time above the title. */
 const TALL_BLOCK_MINUTES = 45;
+/** Dropping a task in the time grid snaps its time to this many minutes. */
+const SNAP_MINUTES = 15;
 
 const minutesNow = (now: number) => {
   const date = new Date(now);
@@ -80,27 +101,16 @@ export function CalendarWeek({
           <div className="px-1 py-1 text-right text-[11px] leading-5 text-stone-500 dark:text-stone-400">
             All day
           </div>
-          {days.map((day) => {
-            const allDay = (byDay.get(day) ?? []).filter((e) => !isTimedOn(e.item, day));
-            return (
-              <div
-                key={day}
-                className="max-h-28 min-w-0 overflow-y-auto border-l border-stone-200 p-0.5 dark:border-stone-800"
-              >
-                <ul
-                  aria-label={`All-day tasks, ${fullDate(day)}`}
-                  className="flex flex-col gap-0.5"
-                >
-                  {allDay.map(({ item, first, last }) => (
-                    <li key={item.id}>
-                      <TaskChip item={item} day={day} today={today} first={first} last={last} />
-                    </li>
-                  ))}
-                </ul>
-                {adding === day && <DayQuickAdd day={day} onClose={() => setAdding(null)} />}
-              </div>
-            );
-          })}
+          {days.map((day) => (
+            <AllDayCell
+              key={day}
+              day={day}
+              today={today}
+              entries={(byDay.get(day) ?? []).filter((e) => !isTimedOn(e.item, day))}
+              adding={adding === day}
+              onCloseAdd={() => setAdding(null)}
+            />
+          ))}
         </div>
 
         <div className="relative grid" style={{ ...columns, height: 24 * HOUR_HEIGHT }}>
@@ -174,6 +184,41 @@ function DayHeading({
   );
 }
 
+/** Tasks without a time on one day; dropping a task here keeps its time, unless it came from a time grid. */
+function AllDayCell({
+  day,
+  today,
+  entries,
+  adding,
+  onCloseAdd,
+}: {
+  day: string;
+  today: string;
+  entries: DayEntry[];
+  adding: boolean;
+  onCloseAdd: () => void;
+}) {
+  const drop = useTaskDropTarget((event) => dropTaskOn(event, day, { allDay: true }));
+  return (
+    <div
+      {...drop.props}
+      className={clsx(
+        "max-h-28 min-h-8 min-w-0 overflow-y-auto border-l border-stone-200 p-0.5 dark:border-stone-800",
+        drop.over && DROP_HIGHLIGHT,
+      )}
+    >
+      <ul aria-label={`All-day tasks, ${fullDate(day)}`} className="flex flex-col gap-0.5">
+        {entries.map(({ item, first, last }) => (
+          <li key={item.id}>
+            <TaskChip item={item} day={day} today={today} first={first} last={last} />
+          </li>
+        ))}
+      </ul>
+      {adding && <DayQuickAdd day={day} onClose={onCloseAdd} />}
+    </div>
+  );
+}
+
 function DayColumn({
   day,
   today,
@@ -186,8 +231,34 @@ function DayColumn({
   nowMinutes: number | null;
 }) {
   const blocks = useMemo(() => layoutTimedTasks(tasks), [tasks]);
+  // The slot a task is being dragged over, shown as a preview of where it will land.
+  const [slot, setSlot] = useState<string | null>(null);
+  const slotAt = (event: React.DragEvent) =>
+    timeAtOffset(
+      event.clientY - event.currentTarget.getBoundingClientRect().top,
+      HOUR_HEIGHT,
+      SNAP_MINUTES,
+    );
+
   return (
-    <div className="relative min-w-0 border-l border-stone-200 dark:border-stone-800">
+    <div
+      className="relative min-w-0 border-l border-stone-200 dark:border-stone-800"
+      onDragOver={(event) => {
+        if (!isItemDrag(event)) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+        setSlot(slotAt(event));
+      }}
+      onDragLeave={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setSlot(null);
+      }}
+      onDrop={(event) => {
+        if (!isItemDrag(event)) return;
+        event.preventDefault();
+        setSlot(null);
+        dropTaskOn(event, day, { time: slotAt(event) });
+      }}
+    >
       {HOURS.slice(1).map((hour) => (
         <div
           key={hour}
@@ -213,11 +284,21 @@ function DayColumn({
               day={day}
               today={today}
               block={end - start >= TALL_BLOCK_MINUTES}
+              timed
               className="h-full shadow-soft"
             />
           </li>
         ))}
       </ol>
+      {slot && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0.5 z-[12] rounded-md border-2 border-dashed border-accent-500 bg-accent-50/90 px-1 text-[11px] font-medium text-accent-800 dark:bg-accent-950/90 dark:text-accent-200"
+          style={{ top: (clockToMinutes(slot) / 60) * HOUR_HEIGHT, height: HOUR_HEIGHT / 2 }}
+        >
+          {formatClock(slot)}
+        </div>
+      )}
       {nowMinutes !== null && nowMinutes < MINUTES_PER_DAY && (
         <div
           aria-hidden

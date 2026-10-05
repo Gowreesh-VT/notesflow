@@ -6,7 +6,16 @@ import { useMemo, useState } from "react";
 import { monthMatrix, monthOf, tasksByDay, type DayEntry } from "@/lib/calendar";
 import type { Item } from "@/lib/types";
 import { useUi } from "@/store/ui";
-import { DayQuickAdd, formatDay, fullDate, PRIORITY_DOT, TaskChip } from "./CalendarParts";
+import {
+  DayQuickAdd,
+  DROP_HIGHLIGHT,
+  dropTaskOn,
+  formatDay,
+  fullDate,
+  PRIORITY_DOT,
+  TaskChip,
+  useTaskDropTarget,
+} from "./CalendarParts";
 
 /** Tasks shown in a month cell before "+N more". */
 const CELL_LIMIT = 3;
@@ -31,6 +40,7 @@ function MonthCell({
   const setCalendarDate = useUi((s) => s.setCalendarDate);
   const [expanded, setExpanded] = useState(false);
   const [adding, setAdding] = useState(false);
+  const drop = useTaskDropTarget((event) => dropTaskOn(event, day));
   const isToday = day === today;
   const shown = expanded ? entries : entries.slice(0, CELL_LIMIT);
   const hidden = entries.length - shown.length;
@@ -38,9 +48,10 @@ function MonthCell({
 
   return (
     <li
+      {...drop.props}
       className={clsx(
         "group flex min-h-0 min-w-0 flex-col border-b border-r border-stone-200 dark:border-stone-800",
-        !inMonth && "bg-stone-100/60 dark:bg-stone-900/60",
+        drop.over ? DROP_HIGHLIGHT : !inMonth && "bg-stone-100/60 dark:bg-stone-900/60",
       )}
     >
       {/* Phones: the cell is one button showing dots; the chosen day's tasks are listed below the grid. */}
@@ -202,7 +213,7 @@ export function CalendarMonth({
           <ul className="flex flex-col gap-1">
             {chosen.map(({ item }) => (
               <li key={item.id}>
-                <TaskChip item={item} day={anchor} today={today} className="py-1.5 text-sm" />
+                <TaskChip item={item} day={anchor} today={today} large />
               </li>
             ))}
           </ul>

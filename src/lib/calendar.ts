@@ -1,6 +1,6 @@
 import { compareItems } from "./items-logic";
 import type { Item } from "./types";
-import { addDays } from "./utils";
+import { addDays, daysBetween } from "./utils";
 
 /**
  * Date maths for the calendar view. Everything works on local date keys (YYYY-MM-DD) and "HH:MM" clocks through the
@@ -147,6 +147,16 @@ export function minutesToClock(minutes: number): string {
   return `${String(Math.floor(clamped / 60)).padStart(2, "0")}:${String(clamped % 60).padStart(2, "0")}`;
 }
 
+/**
+ * The time at a vertical offset in a day's time grid, rounded down to `step` minutes and kept inside the day
+ * (the last slot starts at 24:00 minus one step).
+ */
+export function timeAtOffset(offset: number, hourHeight: number, step = 15): string {
+  const minutes = (offset / hourHeight) * 60;
+  const snapped = Math.floor(minutes / step) * step;
+  return minutesToClock(Math.min(Math.max(snapped, 0), MINUTES_PER_DAY - step));
+}
+
 /** A timed task placed in a day column: minutes from midnight, and its column among overlapping tasks. */
 export type TimedBlock = {
   item: Item;
@@ -190,6 +200,29 @@ export function layoutTimedTasks(tasks: Item[]): TimedBlock[] {
   }
   closeGroup();
   return blocks;
+}
+
+export type ReschedulePatch = { due: string; startDate?: string | null; dueTime?: string | null };
+
+/**
+ * Moving a task that was shown on `fromDay` to `toDay`: the due date (and a multi-day task's start date) move by the
+ * same number of days, keeping the time. With `time`, the task also gets that due time (null makes it all-day). A task
+ * without a date simply becomes due on `toDay`.
+ */
+export function reschedulePatch(
+  item: Pick<Item, "due" | "startDate">,
+  fromDay: string | null,
+  toDay: string,
+  time?: string | null,
+): ReschedulePatch {
+  const withTime = time !== undefined ? { dueTime: time } : {};
+  if (!item.due) return { due: toDay, ...withTime };
+  const delta = daysBetween(fromDay ?? item.due, toDay);
+  return {
+    due: addDays(item.due, delta),
+    ...(item.startDate ? { startDate: addDays(item.startDate, delta) } : {}),
+    ...withTime,
+  };
 }
 
 /** Number of days the agenda looks ahead, today included. */

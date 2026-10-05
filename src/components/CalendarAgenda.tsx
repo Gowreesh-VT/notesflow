@@ -8,7 +8,7 @@ import { INBOX_ID, type Item, type Priority } from "@/lib/types";
 import { addDays, displayTitle, formatClock, formatDueRange } from "@/lib/utils";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
-import { formatDay, fullDate, taskLabel } from "./CalendarParts";
+import { formatDay, fullDate, handleMoveKey, taskLabel } from "./CalendarParts";
 
 const PRIORITY_BOX: Record<Priority, string> = {
   none: "border-stone-300 dark:border-stone-600",
@@ -74,7 +74,11 @@ function AgendaRow({ item, today, overdue }: { item: Item; today: string; overdu
         data-calendar-item={item.id}
         data-day={item.due}
         onClick={() => selectItem(item.id)}
+        onKeyDown={(e) => {
+          if (item.due) handleMoveKey(e, item, item.due);
+        }}
         aria-label={taskLabel(item, today)}
+        aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight"
         aria-current={selected ? "true" : undefined}
         className="flex min-w-0 flex-1 items-center gap-3 self-stretch text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
       >

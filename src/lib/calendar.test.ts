@@ -10,9 +10,11 @@ import {
   layoutTimedTasks,
   minutesToClock,
   monthMatrix,
+  reschedulePatch,
   startOfWeek,
   taskSpan,
   tasksByDay,
+  timeAtOffset,
   weekDays,
   weekdayIndex,
 } from "./calendar";
@@ -191,6 +193,15 @@ describe("time grid", () => {
     expect(minutesToClock(2000)).toBe("23:59");
   });
 
+  it("snaps an offset in the grid to a slot", () => {
+    expect(timeAtOffset(0, 48)).toBe("00:00");
+    expect(timeAtOffset(48 * 9 + 47, 48)).toBe("09:45");
+    expect(timeAtOffset(48 * 9 + 20, 48, 30)).toBe("09:00");
+    expect(timeAtOffset(48 * 9 + 24, 48, 30)).toBe("09:30");
+    expect(timeAtOffset(-5, 48)).toBe("00:00");
+    expect(timeAtOffset(48 * 30, 48)).toBe("23:45");
+  });
+
   it("is timed only on its due day", () => {
     const task = make("t", { startDate: "2026-10-04", due: "2026-10-05", dueTime: "09:00" });
     expect(isTimedOn(task, "2026-10-05")).toBe(true);
@@ -260,5 +271,55 @@ describe("agenda", () => {
 
   it("is empty without tasks", () => {
     expect(agendaGroups([], today)).toEqual([]);
+  });
+});
+
+describe("rescheduling", () => {
+  it("moves the due date and keeps the time", () => {
+    expect(reschedulePatch({ due: "2026-10-05" }, "2026-10-05", "2026-10-09")).toEqual({
+      due: "2026-10-09",
+    });
+  });
+
+  it("sets a time when dropped on a slot", () => {
+    expect(reschedulePatch({ due: "2026-10-05" }, null, "2026-10-06", "14:30")).toEqual({
+      due: "2026-10-06",
+      dueTime: "14:30",
+    });
+  });
+
+  it("makes a task all-day when dropped in the all-day row", () => {
+    expect(reschedulePatch({ due: "2026-10-05" }, "2026-10-05", "2026-10-05", null)).toEqual({
+      due: "2026-10-05",
+      dueTime: null,
+    });
+  });
+
+  it("shifts a multi-day task by the days it was dragged, from whichever day it was picked up", () => {
+    const trip = { startDate: "2026-10-05", due: "2026-10-08" };
+    expect(reschedulePatch(trip, "2026-10-06", "2026-10-08")).toEqual({
+      startDate: "2026-10-07",
+      due: "2026-10-10",
+    });
+    expect(reschedulePatch(trip, null, "2026-10-01")).toEqual({
+      startDate: "2026-09-28",
+      due: "2026-10-01",
+    });
+  });
+
+  it("crosses month, year and leap-day boundaries", () => {
+    expect(reschedulePatch({ due: "2028-02-28" }, null, "2028-02-29").due).toBe("2028-02-29");
+    expect(
+      reschedulePatch({ due: "2026-12-31", startDate: "2026-12-30" }, null, "2027-01-02"),
+    ).toEqual({
+      due: "2027-01-02",
+      startDate: "2027-01-01",
+    });
+  });
+
+  it("gives an undated task the drop day", () => {
+    expect(reschedulePatch({ due: null }, "2026-10-01", "2026-10-03")).toEqual({
+      due: "2026-10-03",
+    });
   });
 });
