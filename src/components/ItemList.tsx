@@ -7,16 +7,17 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
-  Ban,
   Bell,
-  Check,
   ChevronRight,
+  Columns2,
+  Columns3,
   CopyPlus,
   FileText,
   FolderInput,
   Group as GroupIcon,
   Hourglass,
   ListChecks,
+  List as ListIcon,
   Menu,
   MoreHorizontal,
   Pencil,
@@ -52,28 +53,25 @@ import {
   viewTitle,
   type GroupBy,
 } from "@/lib/items-logic";
+import { getDragItem, isItemDrag, setDragItem } from "@/lib/dnd";
 import { formatDuration } from "@/lib/duration";
 import { planMove, planStep } from "@/lib/ordering";
 import { useToday } from "@/lib/hooks";
 import { describeRepeat } from "@/lib/recurrence";
+import { dropOnListPatch, pinnedList, SPLIT_DRAG_TYPE, viewListId } from "@/lib/split";
+import { BoardView } from "./BoardView";
 import { CopyToListForm } from "./CopyToList";
 import { BatchToolbar, SelectCheckbox, SelectToggle, useRowSelection } from "./BatchSelect";
 import { EnergyIcon } from "./EnergyField";
 import { ListSelect } from "./ListSelect";
 import { DragHandle, DropLine, useReorder } from "./Reorder";
+import { TaskCheckbox } from "./TaskCheckbox";
 import { TemplatesMenu } from "./TemplatesMenu";
 import { runningEntry } from "@/lib/time-tracking";
-import { INBOX_ID, type Item, type ItemKind, type ItemSort, type Priority } from "@/lib/types";
+import { INBOX_ID, type Item, type ItemKind, type ItemSort } from "@/lib/types";
 import { displayTitle, formatDueRange, formatDueWithTime, getSnippet } from "@/lib/utils";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
-
-const PRIORITY_BOX: Record<Priority, string> = {
-  none: "border-stone-300 dark:border-stone-600",
-  low: "border-sky-500 bg-sky-500/10",
-  medium: "border-amber-500 bg-amber-500/10",
-  high: "border-red-500 bg-red-500/10",
-};
 
 /** Drag-and-drop wiring for a row in manual order. */
 type RowReorder = {
@@ -97,10 +95,8 @@ function ItemRow({
   reorder?: RowReorder;
 }) {
   const lists = useWorkspace((s) => s.lists);
-  const toggleDone = useWorkspace((s) => s.toggleDone);
   const updateItem = useWorkspace((s) => s.updateItem);
   const selectItem = useUi((s) => s.selectItem);
-  const promptOutcome = useUi((s) => s.promptOutcome);
   const [menuOpen, setMenuOpen] = useState(false);
   const { selecting, checked, handleClick } = useRowSelection(item.id);
 
@@ -112,6 +108,8 @@ function ItemRow({
   const listName =
     showList && item.listId !== INBOX_ID ? lists.find((l) => l.id === item.listId)?.name : null;
   const trashed = item.deletedAt !== null;
+  // With a list pinned beside the view, rows can be dragged onto it to move them there.
+  const splitOpen = useUi((s) => pinnedList(lists, s.splitListId, s.view) !== null) && !trashed;
 
   return (
     <li
@@ -121,6 +119,8 @@ function ItemRow({
         e.preventDefault();
         setMenuOpen(true);
       }}
+      draggable={splitOpen || undefined}
+      onDragStart={splitOpen ? (e) => setDragItem(e, item.id) : undefined}
       {...reorder?.row}
       className={clsx(
         "group relative flex min-h-11 items-center gap-3 rounded-lg px-3 py-1.5 transition-colors",
@@ -134,29 +134,7 @@ function ItemRow({
       {reorder && <DragHandle label="Drag to reorder" {...reorder.handle} />}
       {reorder?.line && <DropLine at={reorder.line} />}
       {isTask ? (
-        <button
-          type="button"
-          role="checkbox"
-          aria-checked={item.status === "done"}
-          aria-label={`Mark “${item.title}” as ${item.status === "open" ? "done" : "not done"}`}
-          disabled={trashed}
-          onClick={() => {
-            const finishedId = toggleDone(item.id);
-            if (finishedId) promptOutcome(finishedId);
-          }}
-          className={clsx(
-            "flex size-[18px] shrink-0 items-center justify-center rounded-[5px] border-2 transition-colors",
-            "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500",
-            item.status === "done"
-              ? "border-stone-400 bg-stone-400 text-white dark:border-stone-600 dark:bg-stone-600"
-              : item.status === "wontdo"
-                ? "border-stone-300 bg-stone-300 text-white dark:border-stone-700 dark:bg-stone-700"
-                : clsx(PRIORITY_BOX[item.priority], "hover:border-accent-500"),
-          )}
-        >
-          {item.status === "done" && <Check size={12} strokeWidth={3.5} aria-hidden />}
-          {item.status === "wontdo" && <Ban size={11} strokeWidth={3} aria-hidden />}
-        </button>
+        <TaskCheckbox item={item} disabled={trashed} />
       ) : (
         <FileText size={18} aria-hidden className="shrink-0 text-stone-400" />
       )}
@@ -431,12 +409,18 @@ export function ItemList() {
   const selectItem = useUi((s) => s.selectItem);
   const setView = useUi((s) => s.setView);
   const setSidebarOpen = useUi((s) => s.setSidebarOpen);
+  const listLayout = useUi((s) => s.listLayout);
+  const setListLayout = useUi((s) => s.setListLayout);
   const today = useToday();
 
   const [draft, setDraft] = useState("");
   const [kind, setKind] = useState<ItemKind>("task");
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set(["finished"]));
   const [menuOpen, setMenuOpen] = useState(false);
+  const splitListId = useUi((s) => s.splitListId);
+  const setSplitListId = useUi((s) => s.setSplitListId);
+  const updateItem = useWorkspace((s) => s.updateItem);
+  const [splitDropOver, setSplitDropOver] = useState(false);
 
   const energyFilter = useUi((s) => s.energyFilter);
   const setEnergyFilter = useUi((s) => s.setEnergyFilter);
@@ -467,6 +451,39 @@ export function ItemList() {
   const currentList = view.kind === "list" ? lists.find((l) => l.id === view.id) : undefined;
   const title = viewTitle(view, lists, filters);
   const hasSections = Boolean(currentList && currentList.sections.length > 0);
+  const board = currentList && listLayout?.[currentList.id] === "board" ? currentList : null;
+
+  // While a list is pinned beside this one, tasks dragged over from it move into the list shown here.
+  const paneListId = pinnedList(lists, splitListId, view) ? viewListId(view) : null;
+  const fromSplit = (e: React.DragEvent) =>
+    isItemDrag(e) && e.dataTransfer.types.includes(SPLIT_DRAG_TYPE);
+  const paneDrop = paneListId
+    ? {
+        onDragOver: (e: React.DragEvent<HTMLElement>) => {
+          if (!fromSplit(e)) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+          if (!splitDropOver) setSplitDropOver(true);
+        },
+        onDragLeave: (e: React.DragEvent<HTMLElement>) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setSplitDropOver(false);
+        },
+        // Board columns handle (and stop) their own drops, so the highlight is cleared on the way down.
+        onDropCapture: () => setSplitDropOver(false),
+        onDrop: (e: React.DragEvent<HTMLElement>) => {
+          if (!fromSplit(e)) return;
+          e.preventDefault();
+          const id = getDragItem(e);
+          const patch = dropOnListPatch(
+            items.find((i) => i.id === id),
+            paneListId,
+          );
+          if (id && patch) updateItem(id, patch);
+        },
+      }
+    : {};
+  const splitDropClass =
+    splitDropOver && paneListId && "rounded-2xl bg-accent-50/60 dark:bg-accent-950/30";
   const groupBy = resolveGroupBy(groupChoices?.[viewKey(view)], {
     hasSections,
     sort,
@@ -732,6 +749,41 @@ export function ItemList() {
           </span>
         )}
         <div className="ml-auto flex flex-wrap items-center justify-end gap-1">
+          {currentList && (
+            <div
+              role="radiogroup"
+              aria-label="Layout"
+              className="flex shrink-0 rounded-xl bg-stone-100 p-0.5 dark:bg-stone-800"
+            >
+              {(
+                [
+                  { value: "list", label: "List", Icon: ListIcon },
+                  { value: "board", label: "Board", Icon: Columns3 },
+                ] as const
+              ).map(({ value, label, Icon }) => {
+                const active = (board ? "board" : "list") === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    aria-label={`${label} layout`}
+                    title={`${label} layout`}
+                    onClick={() => setListLayout(currentList.id, value)}
+                    className={clsx(
+                      "rounded-lg px-2 py-1 focus-visible:outline-2 focus-visible:outline-accent-500",
+                      active
+                        ? "bg-white text-stone-900 shadow-sm dark:bg-stone-900 dark:text-stone-100"
+                        : "text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200",
+                    )}
+                  >
+                    <Icon size={15} aria-hidden />
+                  </button>
+                );
+              })}
+            </div>
+          )}
           <SelectToggle />
           <div className="relative hidden @xl:block">
             <Search
@@ -778,7 +830,7 @@ export function ItemList() {
               ))}
             </select>
           </label>
-          <label className="relative">
+          <label className={clsx("relative", board && "hidden")}>
             <span className="sr-only">Group by</span>
             <GroupIcon
               size={15}
@@ -798,7 +850,7 @@ export function ItemList() {
               ))}
             </select>
           </label>
-          <label className="relative">
+          <label className={clsx("relative", board && "hidden")}>
             <span className="sr-only">Sort by</span>
             <ArrowUpDown
               size={15}
@@ -893,6 +945,29 @@ export function ItemList() {
                             {f.name}
                           </option>
                         ))}
+                      </select>
+                    </label>
+                    {/* Split view only fits on large screens, so it is only offered there. */}
+                    <label className="hidden items-center gap-2 px-2.5 py-1.5 text-sm text-stone-700 lg:flex dark:text-stone-200">
+                      <Columns2 size={15} aria-hidden /> Beside
+                      <select
+                        aria-label="Open a list beside this one"
+                        value={pinnedList(lists, splitListId, view)?.id ?? ""}
+                        onChange={(e) => {
+                          setSplitListId(e.target.value || null);
+                          setMenuOpen(false);
+                        }}
+                        className="field ml-auto w-28 py-1 text-xs"
+                      >
+                        <option value="">None</option>
+                        <option value={INBOX_ID}>Inbox</option>
+                        {activeLists(lists)
+                          .filter((l) => l.id !== currentList.id)
+                          .map((l) => (
+                            <option key={l.id} value={l.id}>
+                              {l.name}
+                            </option>
+                          ))}
                       </select>
                     </label>
                     <MenuItem
@@ -997,39 +1072,49 @@ export function ItemList() {
         </form>
       )}
 
-      <div data-item-list className="min-h-0 flex-1 overflow-y-auto px-2 pb-6 pt-1 sm:px-4">
-        <p role="status" aria-live="polite" className="sr-only">
-          {reorder.announcement}
-        </p>
-        {renderGroups()}
-        {main.length === 0 && finished.length === 0 && (
-          <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
-            <svg width="72" height="72" viewBox="0 0 64 64" fill="none" aria-hidden>
-              <circle cx="32" cy="32" r="30" className="fill-stone-100 dark:fill-stone-800" />
-              <circle cx="32" cy="32" r="14" className="stroke-accent-400" strokeWidth="2.5" />
-              <path
-                d="M25.5 32.5l4.5 4.5 9-10"
-                className="stroke-accent-600 dark:stroke-accent-400"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+      {board ? (
+        <div data-item-list {...paneDrop} className={clsx("min-h-0 flex-1 pt-1", splitDropClass)}>
+          <BoardView list={board} items={visible} today={today} selectedItemId={selectedItemId} />
+        </div>
+      ) : (
+        <div
+          data-item-list
+          {...paneDrop}
+          className={clsx("min-h-0 flex-1 overflow-y-auto px-2 pb-6 pt-1 sm:px-4", splitDropClass)}
+        >
+          <p role="status" aria-live="polite" className="sr-only">
+            {reorder.announcement}
+          </p>
+          {renderGroups()}
+          {main.length === 0 && finished.length === 0 && (
+            <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
+              <svg width="72" height="72" viewBox="0 0 64 64" fill="none" aria-hidden>
+                <circle cx="32" cy="32" r="30" className="fill-stone-100 dark:fill-stone-800" />
+                <circle cx="32" cy="32" r="14" className="stroke-accent-400" strokeWidth="2.5" />
+                <path
+                  d="M25.5 32.5l4.5 4.5 9-10"
+                  className="stroke-accent-600 dark:stroke-accent-400"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <p className="text-sm text-stone-500 dark:text-stone-400">{emptyMessage}</p>
+            </div>
+          )}
+          {finished.length > 0 && (
+            <section aria-label="Finished tasks">
+              <GroupHeader
+                label="Completed"
+                count={finished.length}
+                open={!collapsed.has("finished")}
+                onToggle={() => toggleGroup("finished")}
               />
-            </svg>
-            <p className="text-sm text-stone-500 dark:text-stone-400">{emptyMessage}</p>
-          </div>
-        )}
-        {finished.length > 0 && (
-          <section aria-label="Finished tasks">
-            <GroupHeader
-              label="Completed"
-              count={finished.length}
-              open={!collapsed.has("finished")}
-              onToggle={() => toggleGroup("finished")}
-            />
-            {!collapsed.has("finished") && rows(finished, false)}
-          </section>
-        )}
-      </div>
+              {!collapsed.has("finished") && rows(finished, false)}
+            </section>
+          )}
+        </div>
+      )}
       <BatchToolbar items={visible} />
     </div>
   );

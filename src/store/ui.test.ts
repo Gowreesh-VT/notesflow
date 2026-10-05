@@ -14,6 +14,17 @@ describe("group by", () => {
     expect(useUi.getState().groupBy).toEqual({ "list:a": "priority", "smart:today": "tag" });
   });
 
+  it("remembers board layouts and the pinned list on this device", () => {
+    useUi.getState().setListLayout("a", "board");
+    useUi.getState().setListLayout("b", "list");
+    useUi.getState().setSplitListId("b");
+    const stored = JSON.parse(window.localStorage.getItem("notesflow:ui") ?? "{}");
+    expect(stored.state.listLayout).toEqual({ a: "board", b: "list" });
+    expect(stored.state.splitListId).toBe("b");
+    useUi.getState().setSplitListId(null);
+    expect(useUi.getState().splitListId).toBeNull();
+  });
+
   it("is persisted on this device", () => {
     useUi.getState().setGroupBy("list:a", "none");
     const stored = JSON.parse(window.localStorage.getItem("notesflow:ui") ?? "{}");

@@ -307,6 +307,21 @@ describe("sections", () => {
     expect(list(listId).sections.map((s) => s.id)).toEqual([b, a]);
   });
 
+  it("moves a section to a dropped position, bumping the list's updatedAt", () => {
+    const { listId, a, b } = setup();
+    const c = state().addSection(listId, "Later")!;
+    useWorkspace.setState({ lists: [{ ...list(listId), updatedAt: 0 }] });
+    state().moveSectionTo(listId, a, 3);
+    expect(list(listId).sections.map((s) => s.id)).toEqual([b, c, a]);
+    expect(list(listId).updatedAt).toBeGreaterThan(0);
+
+    useWorkspace.setState({ lists: [{ ...list(listId), updatedAt: 0 }] });
+    state().moveSectionTo(listId, b, 0);
+    state().moveSectionTo(listId, "missing", 0);
+    expect(list(listId).sections.map((s) => s.id)).toEqual([b, c, a]);
+    expect(list(listId).updatedAt).toBe(0);
+  });
+
   it("collapses and expands a section, bumping the list's updatedAt", () => {
     const { listId, a } = setup();
     useWorkspace.setState({ lists: [{ ...list(listId), updatedAt: 0 }] });

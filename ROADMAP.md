@@ -65,12 +65,12 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 - [ ] Calendar week layout with due times
 - [ ] Calendar day and agenda layouts
 - [ ] Drag a task to another day in the calendar to reschedule it
-- [ ] [BIG] Board (Kanban) view for a list, with sections as columns
-- [ ] Drag cards between board columns
+- [x] [BIG] Board (Kanban) view for a list, with sections as columns
+- [x] Drag cards between board columns
 - [x] Eisenhower matrix view: tasks placed by priority and due date
 - [x] [BIG] Timeline view of tasks with a start and due date
 - [x] [BIG] Plan view: a day timeline where tasks can be dragged into time slots
-- [ ] Split view: pin one list beside another and drag tasks between them
+- [x] Split view: pin one list beside another and drag tasks between them
 
 ### Phase 5 — Focus, habits and planning (days 41–52)
 
