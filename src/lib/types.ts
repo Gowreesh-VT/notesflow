@@ -192,6 +192,8 @@ export type EditorMode = "edit" | "split" | "preview";
 export type Preferences = {
   id: string;
   theme: Theme;
+  /** An accent preset id ("blue", "teal", …) or a custom "#rrggbb" colour. */
+  accent: string;
   editorMode: EditorMode;
   /** Outcome choices offered when a task is finished. */
   outcomeLabels: string[];

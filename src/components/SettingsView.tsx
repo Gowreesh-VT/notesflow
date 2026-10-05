@@ -9,6 +9,7 @@ import { MAX_OUTCOME_CHOICES } from "@/lib/outcomes";
 import { setPreferences, usePreferences } from "@/store/preferences";
 import { useSyncStore } from "@/store/sync";
 import { useUi } from "@/store/ui";
+import { AccentPicker } from "./AccentPicker";
 import { ViewHeader } from "./ViewHeader";
 
 export function SettingsSection({
@@ -146,6 +147,7 @@ export function SettingsView() {
             ]}
             onChange={(theme) => set({ theme })}
           />
+          <AccentPicker value={prefs.accent} onChange={(accent) => set({ accent })} />
         </SettingsSection>
 
         <SettingsSection title="Notes">

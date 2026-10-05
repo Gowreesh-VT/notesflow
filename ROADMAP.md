@@ -90,7 +90,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 ### Phase 6 — Personalise, import and polish (days 53–60)
 
 - [x] [BIG] Settings page for all preferences, synced to the account
-- [ ] Themes: accent colour presets and a custom accent colour
+- [x] Themes: accent colour presets and a custom accent colour
 - [ ] Density (compact or comfortable) and font choices
 - [ ] Week start day, date format and time format settings
 - [ ] Export to CSV, Markdown and iCal

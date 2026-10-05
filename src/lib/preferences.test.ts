@@ -32,6 +32,7 @@ describe("preferences", () => {
     expect(parsed).toEqual({
       id: PREFERENCES_ID,
       theme: "dark",
+      accent: "blue",
       editorMode: "split",
       outcomeLabels: ["Nailed it"],
       dayEnd: "21:00",

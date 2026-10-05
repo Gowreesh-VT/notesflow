@@ -1,3 +1,4 @@
+import { DEFAULT_ACCENT, isAccent } from "./accent";
 import { cleanOutcomeLabels, DEFAULT_OUTCOME_LABELS } from "./outcomes";
 import { isClock } from "./reminders";
 import type { EditorMode, PlannerViewKind, Preferences, Theme } from "./types";
@@ -25,6 +26,7 @@ export type PreferenceValues = Omit<Preferences, "id" | "updatedAt">;
 
 export const DEFAULT_PREFERENCES: PreferenceValues = {
   theme: "system",
+  accent: DEFAULT_ACCENT,
   editorMode: "split",
   outcomeLabels: DEFAULT_OUTCOME_LABELS,
   dayEnd: "21:00",
@@ -39,6 +41,7 @@ export function cleanPreferenceValues(raw: Record<string, unknown>): PreferenceV
   const d = DEFAULT_PREFERENCES;
   return {
     theme: pick(raw.theme, THEMES, d.theme),
+    accent: isAccent(raw.accent) ? raw.accent.toLowerCase() : d.accent,
     editorMode: pick(raw.editorMode, EDITOR_MODES, d.editorMode),
     outcomeLabels: Array.isArray(raw.outcomeLabels)
       ? cleanOutcomeLabels(raw.outcomeLabels.filter((l): l is string => typeof l === "string"))
