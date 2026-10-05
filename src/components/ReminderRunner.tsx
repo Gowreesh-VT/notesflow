@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { Bell, Check, ExternalLink, X } from "lucide-react";
 import { dueAlarms, pruneFired, repeatAlarms } from "@/lib/alarms";
 import { showNotification } from "@/lib/notifications";
+import { updatePushSettings } from "@/lib/push-client";
 import { isQuietTime, SNOOZE_OPTIONS } from "@/lib/reminders";
 import { useAlarms } from "@/store/alarms";
 import { useUi } from "@/store/ui";
@@ -60,6 +61,43 @@ export function ReminderRunner() {
       }
     };
 
+    // Opened from a push notification while Notesflow was closed: /app?item=…&action=done|snooze
+    const params = new URLSearchParams(window.location.search);
+    const linkedItem = params.get("item");
+    if (linkedItem) {
+      const action = params.get("action");
+      if (action === "done") {
+        if (item(linkedItem)?.status === "open") {
+          const finishedId = useWorkspace.getState().toggleDone(linkedItem);
+          if (finishedId) useUi.getState().promptOutcome(finishedId);
+        }
+      } else if (action === "snooze") {
+        useWorkspace.getState().snooze(linkedItem, SNOOZE_OPTIONS[0].until(Date.now()));
+      } else {
+        openItem(linkedItem);
+      }
+      params.delete("item");
+      params.delete("action");
+      const rest = params.toString();
+      window.history.replaceState(null, "", window.location.pathname + (rest ? `?${rest}` : ""));
+    }
+
+    // Keep this device's reminder settings on the server in step, if it receives push reminders.
+    let settingsTimer: number | undefined;
+    const unsubscribeSettings = useUi.subscribe((state, previous) => {
+      if (
+        state.defaultReminderTime === previous.defaultReminderTime &&
+        state.quietHours === previous.quietHours
+      ) {
+        return;
+      }
+      window.clearTimeout(settingsTimer);
+      settingsTimer = window.setTimeout(() => {
+        const { defaultReminderTime, quietHours } = useUi.getState();
+        void updatePushSettings({ defaultReminderTime, quietHours }).catch(() => {});
+      }, 1000);
+    });
+
     check();
     const interval = window.setInterval(check, CHECK_MS);
     const onVisible = () => document.visibilityState === "visible" && check();
@@ -94,6 +132,8 @@ export function ReminderRunner() {
       document.removeEventListener("visibilitychange", onVisible);
       navigator.serviceWorker?.removeEventListener("message", onMessage);
       unsubscribe();
+      unsubscribeSettings();
+      window.clearTimeout(settingsTimer);
     };
   }, []);
 

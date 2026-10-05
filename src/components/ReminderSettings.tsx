@@ -5,6 +5,7 @@ import { BellRing, X } from "lucide-react";
 import { notificationPermission, showNotification } from "@/lib/notifications";
 import { useUi } from "@/store/ui";
 import { NotificationPermission } from "./NotificationPermission";
+import { PushSettings } from "./PushSettings";
 
 function SettingsDialog({ onClose }: { onClose: () => void }) {
   const dialog = useRef<HTMLDivElement>(null);
@@ -80,9 +81,12 @@ function SettingsDialog({ onClose }: { onClose: () => void }) {
             </span>
           </div>
           <p className="text-xs text-stone-500 dark:text-stone-400">
-            Reminders ring while Notesflow is open in a tab or as an installed app.
+            While Notesflow is open (in a tab or as an installed app), reminders ring from the app
+            itself.
           </p>
         </section>
+
+        <PushSettings />
 
         <section className="space-y-2">
           <label htmlFor="default-reminder-time" className="block text-sm font-semibold">

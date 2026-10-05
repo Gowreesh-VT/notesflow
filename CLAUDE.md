@@ -64,7 +64,9 @@ out of smart views, counts, tags and list pickers (use `activeLists`/`isArchived
 `filterItems`/`countInView` take an optional context with the saved filters and archived list ids; pass it.
 Completing a repeating task goes through `setStatus`, which returns the id of the finished copy; use that id for
 anything that follows completion (such as the outcome prompt). Reminder firing state (`src/store/alarms.ts`) and
-reminder settings live on the device only and are never synced.
+reminder settings live on the device only and are never synced, except that a device with push reminders sends
+its time zone, default reminder time and quiet hours to the server (`src/server/push.ts`, `/api/push/subscribe`,
+`/api/cron/reminders`). Server reminder maths must reuse `dueAlarms`/`repeatAlarms` with `atZone(timeZone)`.
 Keep logic in `src/lib` as pure functions with tests; keep components thin.
 
 The Next.js version in this repo has breaking changes. Before using a Next.js API you are unsure about,

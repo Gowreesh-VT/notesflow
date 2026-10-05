@@ -45,6 +45,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 - [x] Start date on tasks, so a task can span a date range
 - [x] Offline and sync status banner: clear states for offline, syncing, failed, and conflicts resolved
 - [x] Notification and reminder settings (quiet hours, default reminder time)
+- [x] Push reminders when the app is closed (Web Push with an external scheduler)
 
 ### Phase 3 — Organise (days 20–28)
 
@@ -102,7 +103,6 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 
 ## Ideas (not started — move up to "Next up" to approve)
 
-- Push reminders when the app is closed (needs a scheduler; Vercel Hobby cron runs only daily)
 - Email verification for new accounts
 - Collaboration: shared lists, assigning tasks, comments, activity log (needs accounts model changes)
 - Calendar subscriptions and Google Calendar sync

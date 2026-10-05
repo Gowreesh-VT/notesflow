@@ -1,4 +1,5 @@
 import type { Item, Reminder } from "./types";
+import { zonedParts } from "./timezone";
 import { createId } from "./utils";
 
 /** All-day tasks are reminded relative to this time on their due date (configurable later in settings). */
@@ -25,19 +26,24 @@ export function atLocal(dateKey: string, time: string): number {
 }
 
 /** When the task is due: its time on the due date, or the default reminder time for all-day tasks. */
+/** Turns a date key and HH:MM into a timestamp; the device's local time by default. */
+export type ToTime = (dateKey: string, time: string) => number;
+
 export function dueMoment(
   item: Pick<Item, "due" | "dueTime">,
   defaultTime = DEFAULT_REMINDER_TIME,
+  toTime: ToTime = atLocal,
 ): number | null {
-  return item.due ? atLocal(item.due, item.dueTime ?? defaultTime) : null;
+  return item.due ? toTime(item.due, item.dueTime ?? defaultTime) : null;
 }
 
 /** Each reminder's firing time, earliest first. Empty when the task has no due date. */
 export function reminderTimes(
   item: Pick<Item, "due" | "dueTime" | "reminders">,
   defaultTime = DEFAULT_REMINDER_TIME,
+  toTime: ToTime = atLocal,
 ): { reminder: Reminder; at: number }[] {
-  const due = dueMoment(item, defaultTime);
+  const due = dueMoment(item, defaultTime, toTime);
   if (due === null) return [];
   return (item.reminders ?? [])
     .map((reminder) => ({ reminder, at: due - reminder.before * 60_000 }))
@@ -82,10 +88,11 @@ export const SNOOZE_OPTIONS: SnoozeOption[] = [
 export type QuietHours = { start: string; end: string };
 
 /** Whether `now` falls inside quiet hours; windows may cross midnight (22:00–07:00). */
-export function isQuietTime(now: number, quiet: QuietHours | null): boolean {
+export function isQuietTime(now: number, quiet: QuietHours | null, timeZone?: string): boolean {
   if (!quiet || quiet.start === quiet.end) return false;
+  const local = timeZone ? zonedParts(now, timeZone) : null;
   const d = new Date(now);
-  const minutes = d.getHours() * 60 + d.getMinutes();
+  const minutes = local ? local.hour * 60 + local.minute : d.getHours() * 60 + d.getMinutes();
   const toMinutes = (t: string) => {
     const [h, m] = t.split(":").map(Number);
     return h * 60 + m;

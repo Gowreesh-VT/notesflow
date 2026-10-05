@@ -47,9 +47,11 @@ try {
   await pool.query("select 1");
   await migrate(drizzle(pool), { migrationsFolder: "./drizzle" });
   const { rows } = await pool.query(
-    `select to_regclass('public."user"') is not null as ok_user, to_regclass('public.sync_record') is not null as ok_sync`,
+    `select to_regclass('public."user"') is not null as ok_user,
+            to_regclass('public.sync_record') is not null as ok_sync,
+            to_regclass('public.push_subscription') is not null as ok_push`,
   );
-  if (!rows[0].ok_user || !rows[0].ok_sync)
+  if (!rows[0].ok_user || !rows[0].ok_sync || !rows[0].ok_push)
     throw new Error("tables are still missing after migrating");
   console.log("Migrations applied. The database is ready.");
 } catch (error) {

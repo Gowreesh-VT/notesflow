@@ -1,3 +1,4 @@
+import { disablePush } from "./push-client";
 import { syncOnce, type SyncResponse } from "./sync";
 import { useSyncStore } from "@/store/sync";
 import { useWorkspace } from "@/store/workspace";
@@ -33,7 +34,11 @@ async function post(body: unknown): Promise<SyncResponse> {
 export function adoptUser(userId: string): void {
   const sync = useSyncStore.getState();
   if (sync.userId === userId) return;
-  if (sync.userId !== null) useWorkspace.getState().setData(EMPTY);
+  if (sync.userId !== null) {
+    useWorkspace.getState().setData(EMPTY);
+    // Stop push reminders for the previous account on this device.
+    void disablePush();
+  }
   useSyncStore.setState({ userId, cursor: 0, lastPushAt: 0, status: "idle", error: null });
 }
 

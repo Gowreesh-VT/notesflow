@@ -1,4 +1,10 @@
-import { reminderLabel, reminderTimes, DEFAULT_REMINDER_TIME } from "./reminders";
+import {
+  atLocal,
+  DEFAULT_REMINDER_TIME,
+  reminderLabel,
+  reminderTimes,
+  type ToTime,
+} from "./reminders";
 import type { Item } from "./types";
 
 /** Reminders older than this when the app opens are skipped instead of firing late. */
@@ -30,6 +36,7 @@ export function dueAlarms(
   now: number,
   fired: Record<string, number>,
   defaultTime = DEFAULT_REMINDER_TIME,
+  toTime: ToTime = atLocal,
 ): Alarm[] {
   const alarms: Alarm[] = [];
   for (const item of items) {
@@ -48,7 +55,7 @@ export function dueAlarms(
         });
       }
     }
-    for (const { reminder, at } of reminderTimes(item, defaultTime)) {
+    for (const { reminder, at } of reminderTimes(item, defaultTime, toTime)) {
       if (item.snoozedUntil && at <= item.snoozedUntil) continue;
       const key = `${item.id}:${reminder.id}:${at}`;
       if (at > now || now - at > STALE_AFTER_MS || fired[key]) continue;
@@ -79,6 +86,7 @@ export function repeatAlarms(
   now: number,
   lastShown: Record<string, number>,
   defaultTime = DEFAULT_REMINDER_TIME,
+  toTime: ToTime = atLocal,
 ): Alarm[] {
   const alarms: Alarm[] = [];
   for (const item of items) {
@@ -87,7 +95,7 @@ export function repeatAlarms(
     const last = lastShown[item.id];
     if (last === undefined || now - last < REPEAT_EVERY_MS) continue;
     const rings = [
-      ...reminderTimes(item, defaultTime).map((r) => r.at),
+      ...reminderTimes(item, defaultTime, toTime).map((r) => r.at),
       ...(item.snoozedUntil ? [item.snoozedUntil] : []),
     ];
     const rang = rings.filter((at) => at <= now && now - at < REPEAT_FOR_MS);

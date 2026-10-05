@@ -5,6 +5,7 @@ import { SessionProvider, signOut, useSession } from "next-auth/react";
 import { Cloud, CloudOff, LogIn, LogOut, RefreshCw } from "lucide-react";
 import { runSync, wipeLocalAccountData } from "@/lib/sync-client";
 import { formatRelativeTime } from "@/lib/utils";
+import { disablePush } from "@/lib/push-client";
 import { useSyncStore } from "@/store/sync";
 import { AuthDialog, authErrorMessage } from "./AuthDialog";
 import { SyncRunner } from "./SyncRunner";
@@ -114,6 +115,8 @@ function AccountPanel({ google }: { google: boolean }) {
               )
                 return;
             }
+            // This device must stop receiving this account's reminders.
+            await disablePush();
             await signOut({ redirect: false });
             wipeLocalAccountData();
           }}

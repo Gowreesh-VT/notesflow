@@ -67,6 +67,22 @@ npm run dev                          # terminal 2
    any change that adds a file under `drizzle/`.
 5. Deploy. Open the site on your phone and use "Install app" / "Add to Home Screen".
 
+### Push reminders when the app is closed (optional)
+
+While Notesflow is open, reminders ring from the app itself. To also ring when it is closed, the server sends Web
+Push notifications (VAPID) to devices that turned them on in **Reminder settings → When Notesflow is closed**
+(signed-in users only; on iPhone and iPad the app must be added to the Home Screen first).
+
+1. Run `npm run push:keys` and add the four printed values to the Vercel environment variables:
+   `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (a `mailto:` address) and `CRON_SECRET`. Redeploy.
+2. Run `npm run db:migrate` (adds the `push_subscription` and `push_delivery` tables).
+3. Create a free job on a scheduler such as [cron-job.org](https://cron-job.org) that calls
+   `https://<your-domain>/api/cron/reminders` every minute with the request header
+   `Authorization: Bearer <CRON_SECRET>`. (Vercel's free cron only runs once a day, which is too slow.)
+
+Each reminder reaches each device once, in that device's time zone and respecting its quiet hours. Devices that
+unsubscribe or sign out are removed automatically.
+
 ## Autonomous daily improvements
 
 `.github/workflows/daily-improvement.yml` runs every day at 09:00 Asia/Kolkata (and on demand from the Actions tab).

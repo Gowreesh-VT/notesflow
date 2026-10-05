@@ -78,3 +78,43 @@ export const authAttempts = pgTable("auth_attempt", {
   count: integer("count").notNull(),
   windowStart: bigint("window_start", { mode: "number" }).notNull(),
 });
+
+/**
+ * One row per browser that turned on push reminders. The endpoint is the push service URL and identifies the
+ * device; the reminder settings are copied from that device so the server rings at the same times it would.
+ */
+export const pushSubscriptions = pgTable(
+  "push_subscription",
+  {
+    endpoint: text("endpoint").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    timeZone: text("time_zone").notNull(),
+    defaultReminderTime: text("default_reminder_time").notNull(),
+    quietStart: text("quiet_start"),
+    quietEnd: text("quiet_end"),
+    createdAt: bigint("created_at", { mode: "number" }).notNull(),
+    updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+  },
+  (table) => [index("push_subscription_user_idx").on(table.userId)],
+);
+
+/** Reminders already pushed to a device, so each one rings once (and constant reminders know when they last rang). */
+export const pushDeliveries = pgTable(
+  "push_delivery",
+  {
+    endpoint: text("endpoint")
+      .notNull()
+      .references(() => pushSubscriptions.endpoint, { onDelete: "cascade" }),
+    key: text("key").notNull(),
+    itemId: text("item_id").notNull(),
+    sentAt: bigint("sent_at", { mode: "number" }).notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.endpoint, table.key] }),
+    index("push_delivery_sent_idx").on(table.sentAt),
+  ],
+);
