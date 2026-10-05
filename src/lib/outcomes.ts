@@ -38,3 +38,32 @@ export function cleanOutcomeLabels(labels: string[]): string[] {
     .slice(0, MAX_OUTCOME_CHOICES);
   return clean.length ? clean : DEFAULT_OUTCOME_LABELS;
 }
+
+/** The pseudo-label used for finished tasks without an outcome. */
+export const NO_OUTCOME = "";
+
+/** How finished tasks went: a count per outcome label (most common first), then those without one. */
+export function outcomeBreakdown(
+  items: { outcome?: { label: string } | null }[],
+): { label: string; count: number }[] {
+  const counts = new Map<string, number>();
+  let none = 0;
+  for (const item of items) {
+    if (item.outcome?.label)
+      counts.set(item.outcome.label, (counts.get(item.outcome.label) ?? 0) + 1);
+    else none++;
+  }
+  const rows = [...counts.entries()]
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+  return none ? [...rows, { label: NO_OUTCOME, count: none }] : rows;
+}
+
+/** Keeps items whose outcome is `label` (NO_OUTCOME = none); null keeps everything. */
+export function filterByOutcome<T extends { outcome?: { label: string } | null }>(
+  items: T[],
+  label: string | null,
+): T[] {
+  if (label === null) return items;
+  return items.filter((i) => (i.outcome?.label ?? NO_OUTCOME) === label);
+}

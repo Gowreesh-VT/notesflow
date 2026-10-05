@@ -84,7 +84,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 - [x] [BIG] Weekly review: a guided page showing what you finished, what slipped, outcomes, and one-click rescheduling of leftovers
 - [x] Progress view: completion trends, streaks and a calm "done for today" state
 - [x] Smart scheduling suggestions based on local rules, for example an overloaded day, a task longer than the time left, or overdue tasks to move
-- [ ] Outcomes insights: filter by outcome and see how outcomes break down in the weekly review
+- [x] Outcomes insights: filter by outcome and see how outcomes break down in the weekly review
 - [ ] "What can I do in 15 minutes?" view using estimates and energy tags
 
 ### Phase 6 — Personalise, import and polish (days 53–60)

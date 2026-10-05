@@ -1,10 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CalendarArrowUp, Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarArrowUp, Check, ChevronLeft, ChevronRight, X } from "lucide-react";
+import clsx from "clsx";
 import { formatDuration } from "@/lib/duration";
 import { focusStats } from "@/lib/focus-stats";
 import { useToday } from "@/lib/hooks";
+import { filterByOutcome, outcomeBreakdown } from "@/lib/outcomes";
 import { nextMonday, reviewRange, weeklyReview } from "@/lib/review";
 import { INBOX_ID, type Item } from "@/lib/types";
 import { addDays, daysBetween, displayTitle, formatDueLabel } from "@/lib/utils";
@@ -34,6 +36,7 @@ export function ReviewView() {
   const selectItem = useUi((s) => s.selectItem);
   const today = useToday();
   const [weeksBack, setWeeksBack] = useState(0);
+  const [outcome, setOutcome] = useState<string | null>(null);
   const range = useMemo(() => reviewRange(today, weeksBack), [today, weeksBack]);
   const review = useMemo(() => weeklyReview(items, today, range), [items, today, range]);
   // Focus time over the same 7 days as the rest of the review.
@@ -44,6 +47,7 @@ export function ReviewView() {
   const checkins = habits
     .filter((h) => !h.archivedAt)
     .reduce((sum, h) => sum + h.checkins.filter((d) => d >= range.from && d <= range.to).length, 0);
+  const breakdown = useMemo(() => outcomeBreakdown(review.finished), [review.finished]);
   const listName = (id: string) =>
     id === INBOX_ID ? "Inbox" : (lists.find((l) => l.id === id)?.name ?? "List");
   const peak = Math.max(1, ...review.perDay.map((d) => d.count));
@@ -192,15 +196,76 @@ export function ReviewView() {
           )}
         </section>
 
+        {breakdown.length > 0 && (
+          <section aria-label="How it went" className="space-y-2">
+            <h2 className="text-sm font-semibold">How it went</h2>
+            <ul className="space-y-1.5">
+              {breakdown.map((row) => {
+                const active = outcome === row.label;
+                return (
+                  <li key={row.label || "none"}>
+                    <button
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() => setOutcome(active ? null : row.label)}
+                      className={clsx(
+                        "flex w-full items-center gap-3 rounded-lg px-2 py-1 text-left text-sm transition-colors",
+                        active
+                          ? "bg-accent-50 dark:bg-accent-950/50"
+                          : "hover:bg-stone-100 dark:hover:bg-stone-800/60",
+                      )}
+                    >
+                      <span
+                        className={clsx(
+                          "w-40 truncate",
+                          !row.label && "italic text-stone-500 dark:text-stone-400",
+                        )}
+                      >
+                        {row.label || "No outcome"}
+                      </span>
+                      <span className="h-2 flex-1 overflow-hidden rounded-full bg-stone-100 dark:bg-stone-800">
+                        <span
+                          className={clsx(
+                            "block h-full rounded-full",
+                            row.label ? "bg-accent-500" : "bg-stone-300 dark:bg-stone-600",
+                          )}
+                          style={{ width: `${(row.count / review.finished.length) * 100}%` }}
+                        />
+                      </span>
+                      <span className="w-14 text-right text-xs tabular-nums text-stone-500 dark:text-stone-400">
+                        {row.count} · {Math.round((row.count / review.finished.length) * 100)}%
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="text-xs text-stone-500 dark:text-stone-400">
+              Click an outcome to see only those tasks below.
+            </p>
+          </section>
+        )}
+
         <section aria-label="Finished tasks" className="space-y-2">
-          <h2 className="text-sm font-semibold">What you finished</h2>
+          <h2 className="flex items-center gap-2 text-sm font-semibold">
+            What you finished
+            {outcome !== null && (
+              <button
+                type="button"
+                className="btn btn-ghost px-1.5 py-0.5 text-xs font-normal"
+                onClick={() => setOutcome(null)}
+              >
+                {outcome || "No outcome"} <X size={12} aria-hidden />
+              </button>
+            )}
+          </h2>
           {review.finished.length === 0 ? (
             <p className="text-sm text-stone-500 dark:text-stone-400">
               Nothing finished in this week yet.
             </p>
           ) : (
             <ul className="space-y-1">
-              {review.finished.map((item) => (
+              {filterByOutcome(review.finished, outcome).map((item) => (
                 <li
                   key={item.id}
                   className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-stone-100 dark:hover:bg-stone-800/60"

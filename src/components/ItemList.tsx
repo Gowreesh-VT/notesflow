@@ -57,6 +57,7 @@ import { getDragItem, isItemDrag, setDragItem } from "@/lib/dnd";
 import { formatDuration } from "@/lib/duration";
 import { planMove, planStep } from "@/lib/ordering";
 import { useToday } from "@/lib/hooks";
+import { filterByOutcome, outcomeBreakdown } from "@/lib/outcomes";
 import { todayTally } from "@/lib/progress";
 import { describeRepeat } from "@/lib/recurrence";
 import { dropOnListPatch, pinnedList, SPLIT_DRAG_TYPE, viewListId } from "@/lib/split";
@@ -426,16 +427,30 @@ export function ItemList() {
 
   const energyFilter = useUi((s) => s.energyFilter);
   const setEnergyFilter = useUi((s) => s.setEnergyFilter);
+  const [outcomeFilter, setOutcomeFilter] = useState<string | null>(null);
+  const isCompletedView = view.kind === "smart" && view.id === "completed";
   const visible = useMemo(
     () =>
-      filterByEnergy(
-        filterItems(items, view, query, today, sort, {
-          filters,
-          archived: archivedListIds(lists),
-        }),
-        energyFilter,
+      filterByOutcome(
+        filterByEnergy(
+          filterItems(items, view, query, today, sort, {
+            filters,
+            archived: archivedListIds(lists),
+          }),
+          energyFilter,
+        ),
+        isCompletedView ? outcomeFilter : null,
       ),
-    [items, view, query, today, sort, energyFilter, filters, lists],
+    [items, view, query, today, sort, energyFilter, filters, lists, isCompletedView, outcomeFilter],
+  );
+  const completedOutcomes = useMemo(
+    () =>
+      isCompletedView
+        ? outcomeBreakdown(
+            filterItems(items, view, "", today, "default", { archived: archivedListIds(lists) }),
+          )
+        : [],
+    [isCompletedView, items, view, today, lists],
   );
 
   const isContainer = isContainerView(view);
@@ -809,6 +824,26 @@ export function ItemList() {
               className="field w-40 border-transparent bg-stone-100 pl-8 transition-[width] focus:w-56 dark:border-transparent dark:bg-stone-800"
             />
           </div>
+          {isCompletedView && completedOutcomes.length > 0 && (
+            <select
+              aria-label="Outcome filter"
+              value={outcomeFilter ?? "__all"}
+              onChange={(e) => setOutcomeFilter(e.target.value === "__all" ? null : e.target.value)}
+              className={clsx(
+                "cursor-pointer rounded-xl py-1.5 pl-2 pr-1 text-sm focus-visible:outline-2 focus-visible:outline-accent-500",
+                outcomeFilter !== null
+                  ? "bg-accent-50 font-medium text-accent-800 dark:bg-accent-950 dark:text-accent-200"
+                  : "bg-transparent text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800",
+              )}
+            >
+              <option value="__all">Any outcome</option>
+              {completedOutcomes.map((o) => (
+                <option key={o.label || "none"} value={o.label}>
+                  {o.label || "No outcome"} ({o.count})
+                </option>
+              ))}
+            </select>
+          )}
           <label className="relative">
             <span className="sr-only">Energy filter</span>
             <Zap
