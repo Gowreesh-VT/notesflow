@@ -172,7 +172,17 @@ export type Habit = {
   updatedAt: number;
 };
 
-export type SyncCollection = "item" | "list" | "folder" | "filter" | "habit";
+/** A date to count down to, shown in the sidebar. Synced as the "countdown" collection. */
+export type Countdown = {
+  id: string;
+  name: string;
+  /** YYYY-MM-DD */
+  date: string;
+  createdAt: number;
+  updatedAt: number;
+};
+
+export type SyncCollection = "item" | "list" | "folder" | "filter" | "habit" | "countdown";
 
 /** Records that something was permanently deleted, so the deletion can reach other devices. */
 export type Tombstone = {
@@ -206,4 +216,5 @@ export type Backup = {
   /** Saved filters; absent in backups made before filters existed. */
   filters?: SavedFilter[];
   habits?: Habit[];
+  countdowns?: Countdown[];
 };

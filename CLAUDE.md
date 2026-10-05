@@ -58,7 +58,7 @@ Prefer **optional** item fields (`dueTime`, `startDate`, `estimate`, `timeEntrie
 in `optionalItemFields` in `backup.ts` only when set, and list them in `OPTIONAL_FIELDS` in `src/store/workspace.ts`
 so a null or empty value is deleted instead of stored. Then no store migration or fixture changes are needed.
 Templates are items with `template: true`; every view, count and tag list must keep excluding them.
-Saved filters (`"filter"`) and habits (`"habit"`) are synced collections too: a new collection must be added
+Saved filters (`"filter"`), habits (`"habit"`) and countdowns (`"countdown"`) are synced collections too: a new collection must be added
 everywhere `COLLECTIONS` is used (sync, backup, store, SyncRunner). Archived lists (`archivedAt`) and their items stay
 out of smart views, counts, tags and list pickers (use `activeLists`/`isArchived` from `items-logic.ts`).
 `filterItems`/`countInView` take an optional context with the saved filters and archived list ids; pass it.

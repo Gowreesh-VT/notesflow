@@ -1,5 +1,13 @@
-import { parseFilter, parseFolder, parseHabit, parseItem, parseList } from "./backup";
+import {
+  parseCountdown,
+  parseFilter,
+  parseFolder,
+  parseHabit,
+  parseItem,
+  parseList,
+} from "./backup";
 import type {
+  Countdown,
   Folder,
   Habit,
   Item,
@@ -24,12 +32,20 @@ export type SyncData = {
   folders: Folder[];
   filters: SavedFilter[];
   habits: Habit[];
+  countdowns: Countdown[];
   tombstones: Tombstone[];
 };
 
 export type SyncState = { cursor: number; lastPushAt: number };
 
-export const COLLECTIONS: SyncCollection[] = ["item", "list", "folder", "filter", "habit"];
+export const COLLECTIONS: SyncCollection[] = [
+  "item",
+  "list",
+  "folder",
+  "filter",
+  "habit",
+  "countdown",
+];
 
 const PARSERS = {
   item: parseItem,
@@ -37,6 +53,7 @@ const PARSERS = {
   folder: parseFolder,
   filter: parseFilter,
   habit: parseHabit,
+  countdown: parseCountdown,
 } as const;
 
 /** The SyncData array that holds each collection. */
@@ -46,6 +63,7 @@ const FIELDS = {
   folder: "folders",
   filter: "filters",
   habit: "habits",
+  countdown: "countdowns",
 } as const satisfies Record<SyncCollection, keyof SyncData>;
 
 const isCollection = (value: unknown): value is SyncCollection =>
@@ -209,6 +227,7 @@ export async function syncOnce(
         folders: merged.data.folders,
         filters: merged.data.filters,
         habits: merged.data.habits,
+        countdowns: merged.data.countdowns,
       });
     }
     cursor = response.cursor;

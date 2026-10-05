@@ -50,6 +50,7 @@ import { NavItem } from "./NavItem";
 import { PLANNER_ICONS } from "./viewIcons";
 import { DragHandle, DropLine, useReorder } from "./Reorder";
 import { SidebarArchivedLists } from "./SidebarArchivedLists";
+import { SidebarCountdowns } from "./SidebarCountdowns";
 import { SidebarFilters } from "./SidebarFilters";
 import { useWorkspace } from "@/store/workspace";
 
@@ -408,6 +409,8 @@ export function Sidebar() {
           )}
 
           <SidebarFilters />
+
+          <SidebarCountdowns />
 
           {tags.length > 0 && (
             <>

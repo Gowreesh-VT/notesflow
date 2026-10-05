@@ -7,6 +7,7 @@ import {
   type ListSection,
   type Subtask,
   type Priority,
+  type Countdown,
   type Habit,
   type SavedFilter,
   type TaskList,
@@ -198,6 +199,21 @@ export function parseHabit(raw: unknown, now: number): Habit | null {
   return habit;
 }
 
+export function parseCountdown(raw: unknown, now: number): Countdown | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const name = asString(r.name).trim().replace(/\s+/g, " ").slice(0, 80);
+  const date = asDue(r.date);
+  if (!name || !date || !asString(r.id)) return null;
+  return {
+    id: asString(r.id),
+    name,
+    date,
+    createdAt: asTime(r.createdAt, now),
+    updatedAt: asTime(r.updatedAt, asTime(r.createdAt, now)),
+  };
+}
+
 function parseArray<T>(raw: unknown, parse: (value: unknown) => T | null): T[] {
   return Array.isArray(raw) ? raw.flatMap((value) => parse(value) ?? []) : [];
 }
@@ -208,6 +224,7 @@ export type BackupData = {
   folders: Folder[];
   filters: SavedFilter[];
   habits: Habit[];
+  countdowns: Countdown[];
 };
 
 export function createBackup(data: BackupData, now = Date.now()): Backup {
@@ -238,6 +255,7 @@ export function parseBackup(text: string, now = Date.now()): BackupData {
       // Backups made before saved filters existed have none.
       filters: parseArray(record.filters, (v) => parseFilter(v, now)),
       habits: parseArray(record.habits, (v) => parseHabit(v, now)),
+      countdowns: parseArray(record.countdowns, (v) => parseCountdown(v, now)),
     };
   }
 
@@ -274,5 +292,5 @@ export function parseBackup(text: string, now = Date.now()): BackupData {
     } satisfies LegacyTask;
   });
   const { items, lists } = migrateLegacyData(legacyNotes, legacyTasks, now);
-  return { items, lists, folders: [], filters: [], habits: [] };
+  return { items, lists, folders: [], filters: [], habits: [], countdowns: [] };
 }

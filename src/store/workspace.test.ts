@@ -992,3 +992,21 @@ describe("habits", () => {
     expect(state().tombstones).toContainEqual(expect.objectContaining({ collection: "habit", id }));
   });
 });
+
+describe("countdowns", () => {
+  it("adds valid countdowns, renames, moves and deletes them with a tombstone", () => {
+    expect(state().addCountdown("  ", "2026-12-25")).toBeNull();
+    expect(state().addCountdown("Trip", "someday")).toBeNull();
+    const id = state().addCountdown(" Goa trip ", "2026-12-20")!;
+    expect(state().countdowns[0]).toMatchObject({ name: "Goa trip", date: "2026-12-20" });
+    state().updateCountdown(id, { date: "2026-12-22", name: "Goa!" });
+    expect(state().countdowns[0]).toMatchObject({ name: "Goa!", date: "2026-12-22" });
+    state().updateCountdown(id, { date: "bad" });
+    expect(state().countdowns[0].date).toBe("2026-12-22");
+    state().deleteCountdown(id);
+    expect(state().countdowns).toEqual([]);
+    expect(state().tombstones).toContainEqual(
+      expect.objectContaining({ collection: "countdown", id }),
+    );
+  });
+});

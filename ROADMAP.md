@@ -79,7 +79,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 - [x] Ambient focus sounds generated in the browser (white, pink and brown noise), with volume
 - [x] [BIG] Habit tracker: create habits and check them in each day
 - [x] Habit goals (for example 3 times a week), streaks, and a monthly heat-map
-- [ ] Countdowns for important dates, shown in the sidebar
+- [x] Countdowns for important dates, shown in the sidebar
 - [ ] [BIG] Today planner: a "Plan my day" flow to pick tasks, fit them to your available time, order them, and time-block them
 - [ ] [BIG] Weekly review: a guided page showing what you finished, what slipped, outcomes, and one-click rescheduling of leftovers
 - [ ] Progress view: completion trends, streaks and a calm "done for today" state

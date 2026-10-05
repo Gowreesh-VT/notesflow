@@ -24,6 +24,7 @@ import {
   startEntry,
   stopEntries,
 } from "@/lib/time-tracking";
+import { parseCountdown } from "@/lib/backup";
 import { cleanHabitName, DEFAULT_GOAL, parseGoal, toggleCheckin } from "@/lib/habits";
 import { makeOutcome } from "@/lib/outcomes";
 import { nextDueDate } from "@/lib/recurrence";
@@ -36,6 +37,7 @@ import { cleanFilterName, parseFilterCriteria } from "@/lib/filters";
 import {
   INBOX_ID,
   type FilterCriteria,
+  type Countdown,
   type Folder,
   type Habit,
   type HabitGoal,
@@ -92,6 +94,7 @@ export type WorkspaceData = {
   folders: Folder[];
   filters: SavedFilter[];
   habits: Habit[];
+  countdowns: Countdown[];
   tombstones: Tombstone[];
 };
 
@@ -216,12 +219,17 @@ type WorkspaceState = WorkspaceData & {
   /** Checks a habit in (or out) for a day. */
   toggleHabit: (id: string, date: string) => void;
 
+  addCountdown: (name: string, date: string) => string | null;
+  updateCountdown: (id: string, patch: { name?: string; date?: string }) => void;
+  deleteCountdown: (id: string) => void;
+
   mergeData: (incoming: {
     items: Item[];
     lists: TaskList[];
     folders: Folder[];
     filters?: SavedFilter[];
     habits?: Habit[];
+    countdowns?: Countdown[];
   }) => {
     items: number;
     lists: number;
@@ -364,6 +372,7 @@ export const useWorkspace = create<WorkspaceState>()(
       folders: [],
       filters: [],
       habits: [],
+      countdowns: [],
       tombstones: [],
 
       addItem: ({
@@ -1246,8 +1255,36 @@ export const useWorkspace = create<WorkspaceState>()(
           ),
         })),
 
+      addCountdown: (name, date) => {
+        const countdown = parseCountdown(
+          { id: createId(), name, date, createdAt: Date.now() },
+          Date.now(),
+        );
+        if (!countdown) return null;
+        set((s) => ({ countdowns: [...s.countdowns, countdown] }));
+        return countdown.id;
+      },
+
+      updateCountdown: (id, patch) =>
+        set((s) => ({
+          countdowns: s.countdowns.map((c) => {
+            if (c.id !== id) return c;
+            const next = parseCountdown({ ...c, ...patch, updatedAt: Date.now() }, Date.now());
+            return next ?? c;
+          }),
+        })),
+
+      deleteCountdown: (id) =>
+        set((s) => {
+          if (!s.countdowns.some((c) => c.id === id)) return s;
+          return {
+            countdowns: s.countdowns.filter((c) => c.id !== id),
+            tombstones: [...s.tombstones, { collection: "countdown" as const, id, at: Date.now() }],
+          };
+        }),
+
       mergeData: (incoming) => {
-        const { items, lists, folders, filters, habits } = get();
+        const { items, lists, folders, filters, habits, countdowns } = get();
         const itemIds = new Set(items.map((i) => i.id));
         const listIds = new Set(lists.map((l) => l.id));
         const folderIds = new Set(folders.map((f) => f.id));
@@ -1261,12 +1298,15 @@ export const useWorkspace = create<WorkspaceState>()(
         const newFilters = (incoming.filters ?? []).filter((f) => !filterIds.has(f.id));
         const habitIds = new Set(habits.map((h) => h.id));
         const newHabits = (incoming.habits ?? []).filter((h) => !habitIds.has(h.id));
+        const countdownIds = new Set(countdowns.map((c) => c.id));
+        const newCountdowns = (incoming.countdowns ?? []).filter((c) => !countdownIds.has(c.id));
         set({
           items: [...newItems, ...items],
           lists: [...lists, ...newLists],
           folders: [...folders, ...newFolders],
           filters: [...filters, ...newFilters],
           habits: [...habits, ...newHabits],
+          countdowns: [...countdowns, ...newCountdowns],
         });
         return { items: newItems.length, lists: newLists.length };
       },
@@ -1286,7 +1326,7 @@ export const useWorkspace = create<WorkspaceState>()(
     }),
     {
       name: WORKSPACE_KEY,
-      version: 5,
+      version: 6,
       skipHydration: true,
       partialize: (s) => ({
         items: s.items,
@@ -1294,10 +1334,11 @@ export const useWorkspace = create<WorkspaceState>()(
         folders: s.folders,
         filters: s.filters,
         habits: s.habits,
+        countdowns: s.countdowns,
         tombstones: s.tombstones,
       }),
       // v1 lists and folders had no updatedAt; v1 had no tombstones; before v3 there were no sections; before v4
-      // there were no saved filters; before v5 there were no habits.
+      // there were no saved filters; before v5 there were no habits; before v6 no countdowns.
       migrate: (persisted) => {
         const old = (persisted ?? {}) as Partial<WorkspaceData>;
         const stamp = <T extends { createdAt: number; updatedAt?: number }>(x: T) => ({
@@ -1310,6 +1351,7 @@ export const useWorkspace = create<WorkspaceState>()(
           folders: (old.folders ?? []).map(stamp),
           filters: old.filters ?? [],
           habits: old.habits ?? [],
+          countdowns: old.countdowns ?? [],
           tombstones: old.tombstones ?? [],
         };
       },
@@ -1343,8 +1385,16 @@ export function upgradeLegacyStorage(storage: Pick<Storage, "getItem" | "setItem
   storage.setItem(
     WORKSPACE_KEY,
     JSON.stringify({
-      state: { items, lists, folders: [], filters: [], habits: [], tombstones: [] },
-      version: 5,
+      state: {
+        items,
+        lists,
+        folders: [],
+        filters: [],
+        habits: [],
+        countdowns: [],
+        tombstones: [],
+      },
+      version: 6,
     }),
   );
   return true;
