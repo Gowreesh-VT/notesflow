@@ -22,7 +22,7 @@ import {
 import type { Item } from "@/lib/types";
 import { displayTitle, formatClock } from "@/lib/utils";
 import { useUi } from "@/store/ui";
-import { PlanCheckbox } from "./PlanCheckbox";
+import { TaskCheckbox } from "./TaskCheckbox";
 
 /** Height of one minute on the grid: a half-hour slot is 48px, a quarter hour 24px. */
 const PX_PER_MINUTE = 1.6;
@@ -128,7 +128,7 @@ function Block({
         )}
       >
         <span className={clsx("flex", !short && "pt-0.5")}>
-          <PlanCheckbox item={item} small />
+          <TaskCheckbox item={item} small />
         </span>
         <button
           type="button"

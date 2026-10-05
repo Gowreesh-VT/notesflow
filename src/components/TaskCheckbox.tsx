@@ -14,7 +14,15 @@ const PRIORITY_BOX: Record<Priority, string> = {
 };
 
 /** The rounded-square task checkbox, coloured by priority; finishing a task asks for its outcome. */
-export function TaskCheckbox({ item, disabled = false }: { item: Item; disabled?: boolean }) {
+export function TaskCheckbox({
+  item,
+  disabled = false,
+  small = false,
+}: {
+  item: Item;
+  disabled?: boolean;
+  small?: boolean;
+}) {
   const toggleDone = useWorkspace((s) => s.toggleDone);
   const promptOutcome = useUi((s) => s.promptOutcome);
   return (
@@ -29,7 +37,8 @@ export function TaskCheckbox({ item, disabled = false }: { item: Item; disabled?
         if (finishedId) promptOutcome(finishedId);
       }}
       className={clsx(
-        "flex size-[18px] shrink-0 items-center justify-center rounded-[5px] border-2 transition-colors",
+        "flex shrink-0 items-center justify-center border-2 transition-colors",
+        small ? "size-3.5 rounded-[4px]" : "size-[18px] rounded-[5px]",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500",
         item.status === "done"
           ? "border-stone-400 bg-stone-400 text-white dark:border-stone-600 dark:bg-stone-600"
@@ -38,8 +47,8 @@ export function TaskCheckbox({ item, disabled = false }: { item: Item; disabled?
             : clsx(PRIORITY_BOX[item.priority], "hover:border-accent-500"),
       )}
     >
-      {item.status === "done" && <Check size={12} strokeWidth={3.5} aria-hidden />}
-      {item.status === "wontdo" && <Ban size={11} strokeWidth={3} aria-hidden />}
+      {item.status === "done" && <Check size={small ? 9 : 12} strokeWidth={3.5} aria-hidden />}
+      {item.status === "wontdo" && <Ban size={small ? 8 : 11} strokeWidth={3} aria-hidden />}
     </button>
   );
 }

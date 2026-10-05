@@ -16,18 +16,12 @@ import {
   type Quadrant,
   type QuadrantInfo,
 } from "@/lib/matrix";
-import { INBOX_ID, type Item, type Priority } from "@/lib/types";
+import { INBOX_ID, type Item } from "@/lib/types";
 import { displayTitle, formatDueRange } from "@/lib/utils";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
+import { TaskCheckbox } from "./TaskCheckbox";
 import { ViewHeader } from "./ViewHeader";
-
-const PRIORITY_BOX: Record<Priority, string> = {
-  none: "border-stone-300 dark:border-stone-600",
-  low: "border-sky-500 bg-sky-500/10",
-  medium: "border-amber-500 bg-amber-500/10",
-  high: "border-red-500 bg-red-500/10",
-};
 
 const QUADRANT_DOT: Record<Quadrant, string> = {
   do: "bg-red-500",
@@ -56,9 +50,7 @@ function MatrixRow({
   selected: boolean;
   onMove: (direction: MatrixDirection) => void;
 }) {
-  const toggleDone = useWorkspace((s) => s.toggleDone);
   const selectItem = useUi((s) => s.selectItem);
-  const promptOutcome = useUi((s) => s.promptOutcome);
   const [dragging, setDragging] = useState(false);
   const bucket = dueBucket(item, today);
   const title = displayTitle(item);
@@ -79,21 +71,7 @@ function MatrixRow({
         dragging && "opacity-50",
       )}
     >
-      <button
-        type="button"
-        role="checkbox"
-        aria-checked={false}
-        aria-label={`Mark “${title}” as done`}
-        onClick={() => {
-          const finishedId = toggleDone(item.id);
-          if (finishedId) promptOutcome(finishedId);
-        }}
-        className={clsx(
-          "flex size-[18px] shrink-0 items-center justify-center rounded-[5px] border-2 transition-colors hover:border-accent-500",
-          "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500",
-          PRIORITY_BOX[item.priority],
-        )}
-      />
+      <TaskCheckbox item={item} />
       <button
         type="button"
         data-matrix-item={item.id}

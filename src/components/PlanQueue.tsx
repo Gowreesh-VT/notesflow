@@ -11,7 +11,7 @@ import type { Item } from "@/lib/types";
 import { displayTitle, formatDueWithTime } from "@/lib/utils";
 import { useUi } from "@/store/ui";
 import { EnergyIcon } from "./EnergyField";
-import { PlanCheckbox } from "./PlanCheckbox";
+import { TaskCheckbox } from "./TaskCheckbox";
 
 type QueueProps = {
   items: Item[];
@@ -73,7 +73,7 @@ function QueueRow({
             : "hover:bg-stone-100 dark:hover:bg-stone-800/60",
         )}
       >
-        <PlanCheckbox item={item} />
+        <TaskCheckbox item={item} />
         <button
           type="button"
           onClick={() => selectItem(item.id)}
