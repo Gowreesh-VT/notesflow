@@ -139,7 +139,7 @@ function ItemRow({
       {isTask ? (
         <TaskCheckbox item={item} disabled={trashed} />
       ) : (
-        <FileText size={18} aria-hidden className="shrink-0 text-stone-400" />
+        <FileText size={18} aria-hidden className="shrink-0 text-stone-500 dark:text-stone-400" />
       )}
 
       <button
@@ -155,7 +155,7 @@ function ItemRow({
             className={clsx(
               "block truncate text-[15px]",
               closed
-                ? "text-stone-400 line-through dark:text-stone-500"
+                ? "text-stone-500 line-through dark:text-stone-400"
                 : "text-stone-800 dark:text-stone-100",
             )}
           >
@@ -167,7 +167,7 @@ function ItemRow({
             </span>
           )}
         </span>
-        <span className="flex shrink-0 items-center gap-2 text-xs text-stone-400 dark:text-stone-500">
+        <span className="flex shrink-0 items-center gap-2 text-xs text-stone-500 dark:text-stone-400">
           {isTask && item.repeat ? (
             <Repeat size={12} aria-label={describeRepeat(item.repeat)} className="shrink-0" />
           ) : null}
@@ -236,7 +236,7 @@ function ItemRow({
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen(!menuOpen)}
           className={clsx(
-            "-mr-1.5 shrink-0 rounded-md p-1 text-stone-400 hover:bg-stone-200 hover:text-stone-700 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-accent-500 dark:hover:bg-stone-700 dark:hover:text-stone-200",
+            "-mr-1.5 shrink-0 rounded-md p-1 text-stone-500 hover:bg-stone-200 hover:text-stone-700 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-accent-500 dark:hover:bg-stone-700 dark:hover:text-stone-200 dark:text-stone-400",
             menuOpen ? "opacity-100" : "md:opacity-0 md:group-hover:opacity-100",
           )}
         >
@@ -315,10 +315,13 @@ function GroupHeader({
         <ChevronRight
           size={15}
           aria-hidden
-          className={clsx("shrink-0 text-stone-400 transition-transform", open && "rotate-90")}
+          className={clsx(
+            "shrink-0 text-stone-500 transition-transform dark:text-stone-400",
+            open && "rotate-90",
+          )}
         />
         <span className="truncate">{label}</span>
-        <span className="font-normal text-stone-400 dark:text-stone-500">{count}</span>
+        <span className="font-normal text-stone-500 dark:text-stone-400">{count}</span>
       </button>
       {children && (
         <span className="flex opacity-0 transition-opacity focus-within:opacity-100 group-hover/header:opacity-100">
@@ -344,7 +347,7 @@ function SectionButton({
       aria-label={label}
       title={label}
       onClick={onClick}
-      className="rounded-md p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700 focus-visible:outline-2 focus-visible:outline-accent-500 dark:hover:bg-stone-800 dark:hover:text-stone-200"
+      className="rounded-md p-1 text-stone-500 hover:bg-stone-100 hover:text-stone-700 focus-visible:outline-2 focus-visible:outline-accent-500 dark:hover:bg-stone-800 dark:hover:text-stone-200 dark:text-stone-400"
     >
       {children}
     </button>
@@ -767,7 +770,7 @@ export function ItemList() {
           </span>
         ) : null}
         {!isReadOnlyView && openCount > 0 && (
-          <span className="mt-1 text-sm tabular-nums text-stone-400 dark:text-stone-500">
+          <span className="mt-1 text-sm tabular-nums text-stone-500 dark:text-stone-400">
             {openCount}
           </span>
         )}
@@ -812,7 +815,7 @@ export function ItemList() {
             <Search
               size={15}
               aria-hidden
-              className="pointer-events-none absolute left-2.5 top-2.5 text-stone-400"
+              className="pointer-events-none absolute left-2.5 top-2.5 text-stone-500 dark:text-stone-400"
             />
             <input
               id="list-search"
@@ -851,7 +854,9 @@ export function ItemList() {
               aria-hidden
               className={clsx(
                 "pointer-events-none absolute left-2.5 top-2.5",
-                energyFilter ? "text-accent-600 dark:text-accent-400" : "text-stone-500",
+                energyFilter
+                  ? "text-accent-600 dark:text-accent-400"
+                  : "text-stone-500 dark:text-stone-400",
               )}
             />
             <select
@@ -878,7 +883,7 @@ export function ItemList() {
             <GroupIcon
               size={15}
               aria-hidden
-              className="pointer-events-none absolute left-2.5 top-2.5 text-stone-500"
+              className="pointer-events-none absolute left-2.5 top-2.5 text-stone-500 dark:text-stone-400"
             />
             <select
               aria-label="Group by"
@@ -898,7 +903,7 @@ export function ItemList() {
             <ArrowUpDown
               size={15}
               aria-hidden
-              className="pointer-events-none absolute left-2.5 top-2.5 text-stone-500"
+              className="pointer-events-none absolute left-2.5 top-2.5 text-stone-500 dark:text-stone-400"
             />
             <select
               aria-label="Sort by"
@@ -1072,7 +1077,7 @@ export function ItemList() {
                   : "Add a note title, then press Enter"
               }
               aria-label={kind === "task" ? "New task" : "New note"}
-              className="min-w-0 flex-1 bg-transparent py-2.5 text-sm outline-none placeholder:text-stone-400"
+              className="min-w-0 flex-1 bg-transparent py-2.5 text-sm outline-none placeholder:text-stone-500"
             />
             <TemplatesMenu listId={listId} due={defaultDue} />
             <div

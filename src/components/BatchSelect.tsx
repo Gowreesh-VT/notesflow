@@ -86,7 +86,7 @@ export function SelectCheckbox({
         "flex size-[18px] shrink-0 items-center justify-center rounded-full border-2 transition-colors",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500",
         checked
-          ? "border-accent-600 bg-accent-600 text-white dark:border-accent-500 dark:bg-accent-500"
+          ? "border-accent-600 bg-accent-600 text-white dark:border-accent-500 dark:bg-accent-600"
           : "border-stone-300 hover:border-accent-500 dark:border-stone-600",
       )}
     >

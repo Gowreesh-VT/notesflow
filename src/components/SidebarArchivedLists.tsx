@@ -27,7 +27,7 @@ export function SidebarArchivedLists() {
         onClick={() => setOpen(!open)}
         className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[7px] text-left text-sm text-stone-600 transition-colors hover:bg-stone-200/50 focus-visible:outline-2 focus-visible:outline-accent-500 dark:text-stone-300 dark:hover:bg-stone-900"
       >
-        <Archive size={16} aria-hidden className="shrink-0 text-stone-400" />
+        <Archive size={16} aria-hidden className="shrink-0 text-stone-500 dark:text-stone-400" />
         <span className="min-w-0 flex-1 truncate">Archived lists</span>
         <span className="text-xs tabular-nums text-stone-500 dark:text-stone-400">
           {archived.length}
@@ -35,7 +35,10 @@ export function SidebarArchivedLists() {
         <ChevronRight
           size={14}
           aria-hidden
-          className={clsx("shrink-0 text-stone-400 transition-transform", open && "rotate-90")}
+          className={clsx(
+            "shrink-0 text-stone-500 transition-transform dark:text-stone-400",
+            open && "rotate-90",
+          )}
         />
       </button>
       {open &&

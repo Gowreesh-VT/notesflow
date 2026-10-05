@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useModalFocus } from "@/lib/hooks";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import clsx from "clsx";
@@ -70,6 +71,8 @@ export function FilterEditor({
   filter: SavedFilter | null;
   onClose: () => void;
 }) {
+  const modalRef = useRef<HTMLDivElement>(null);
+  useModalFocus(modalRef);
   const items = useWorkspace((s) => s.items);
   const lists = useWorkspace((s) => s.lists);
   const [name, setName] = useState(filter?.name ?? "");
@@ -102,6 +105,7 @@ export function FilterEditor({
 
   return createPortal(
     <div
+      ref={modalRef}
       className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 pt-[8vh]"
       onMouseDown={onClose}
     >

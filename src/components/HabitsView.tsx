@@ -60,7 +60,14 @@ function HabitRow({ habit, days, today }: { habit: Habit; days: string[]; today:
           <Check size={18} strokeWidth={3} aria-hidden />
         </button>
         <div className="min-w-0 flex-1">
-          <p className={clsx("truncate font-medium", archived && "text-stone-400")}>{habit.name}</p>
+          <p
+            className={clsx(
+              "truncate font-medium",
+              archived && "text-stone-500 dark:text-stone-400",
+            )}
+          >
+            {habit.name}
+          </p>
           <p className="flex flex-wrap items-center gap-x-3 text-xs text-stone-500 dark:text-stone-400">
             {habit.goal.per === "week" && (
               <span
@@ -89,7 +96,9 @@ function HabitRow({ habit, days, today }: { habit: Habit; days: string[]; today:
             const done = isDoneOn(habit, date);
             return (
               <li key={date} className="flex flex-col items-center gap-0.5">
-                <span className="text-[10px] text-stone-400">{weekday(date, "narrow")}</span>
+                <span className="text-[10px] text-stone-500 dark:text-stone-400">
+                  {weekday(date, "narrow")}
+                </span>
                 <button
                   type="button"
                   role="checkbox"

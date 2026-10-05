@@ -107,6 +107,7 @@ export function ReviewView() {
                   {d.count || ""}
                 </span>
                 <span
+                  role="img"
                   aria-label={`${shortDate(d.date)}: ${d.count} finished`}
                   className="w-full rounded-t-md bg-emerald-400 dark:bg-emerald-600"
                   style={{ height: `${Math.max(d.count ? 6 : 1, (d.count / peak) * 85)}%` }}
@@ -174,7 +175,11 @@ export function ReviewView() {
                     {formatDueLabel(item.due!, today)}
                   </span>
                   <span className="flex items-center gap-1">
-                    <CalendarArrowUp size={13} aria-hidden className="text-stone-400" />
+                    <CalendarArrowUp
+                      size={13}
+                      aria-hidden
+                      className="text-stone-500 dark:text-stone-400"
+                    />
                     {[
                       ["Today", today],
                       ["Tomorrow", tomorrow],

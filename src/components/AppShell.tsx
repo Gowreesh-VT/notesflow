@@ -67,7 +67,7 @@ export function AppShell() {
         {ready && <SyncBanner />}
         <main id="main" className="min-h-0 flex-1 bg-white dark:bg-stone-900">
           {!ready ? (
-            <p className="p-6 text-sm text-stone-500" role="status">
+            <p className="p-6 text-sm text-stone-500 dark:text-stone-400" role="status">
               Loading your workspace…
             </p>
           ) : (

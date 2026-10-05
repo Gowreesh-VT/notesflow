@@ -124,7 +124,7 @@ export function RepeatField({
                     className={clsx(
                       "size-7 rounded-full text-xs font-medium",
                       on
-                        ? "bg-accent-600 text-white dark:bg-accent-500"
+                        ? "bg-accent-600 text-white dark:bg-accent-600"
                         : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-300",
                     )}
                   >

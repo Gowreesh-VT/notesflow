@@ -108,7 +108,7 @@ function QueueRow({
           onClick={() => {
             setTime(time !== null ? null : minutesToClock(suggest(item) ?? 9 * 60));
           }}
-          className="shrink-0 rounded-md p-1.5 text-stone-400 hover:bg-stone-200 hover:text-stone-700 focus-visible:outline-2 focus-visible:outline-accent-500 dark:hover:bg-stone-700 dark:hover:text-stone-200"
+          className="shrink-0 rounded-md p-1.5 text-stone-500 hover:bg-stone-200 hover:text-stone-700 focus-visible:outline-2 focus-visible:outline-accent-500 dark:hover:bg-stone-700 dark:hover:text-stone-200 dark:text-stone-400"
         >
           <CalendarClock size={16} aria-hidden />
         </button>
@@ -192,7 +192,7 @@ export function PlanQueue({
         >
           To plan
         </h2>
-        <span className="text-xs tabular-nums text-stone-400 dark:text-stone-500">
+        <span className="text-xs tabular-nums text-stone-500 dark:text-stone-400">
           {items.length}
         </span>
         {total > 0 && (

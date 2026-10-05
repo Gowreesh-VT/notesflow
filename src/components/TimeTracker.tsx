@@ -48,7 +48,7 @@ export function TimeTracker({ item, readOnly }: { item: Item; readOnly: boolean 
           (running ? (
             <button
               type="button"
-              className="btn bg-accent-600 text-white hover:bg-accent-700 dark:bg-accent-500"
+              className="btn bg-accent-600 text-white hover:bg-accent-700 dark:bg-accent-600"
               onClick={() => stopTimer(item.id)}
             >
               <Pause size={15} aria-hidden /> Stop

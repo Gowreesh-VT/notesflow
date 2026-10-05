@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useModalFocus } from "@/lib/hooks";
 import { BellRing, X } from "lucide-react";
 import { notificationPermission, showNotification } from "@/lib/notifications";
 import { useUi } from "@/store/ui";
@@ -9,6 +10,7 @@ import { PushSettings } from "./PushSettings";
 
 function SettingsDialog({ onClose }: { onClose: () => void }) {
   const dialog = useRef<HTMLDivElement>(null);
+  useModalFocus(dialog);
   const defaultTime = useUi((s) => s.defaultReminderTime);
   const quietHours = useUi((s) => s.quietHours);
   const { setDefaultReminderTime, setQuietHours } = useUi.getState();

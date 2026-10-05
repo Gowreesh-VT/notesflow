@@ -450,12 +450,12 @@ export function TimelineView() {
                           size={15}
                           aria-hidden
                           className={clsx(
-                            "shrink-0 text-stone-400 transition-transform",
+                            "shrink-0 text-stone-500 transition-transform dark:text-stone-400",
                             open && "rotate-90",
                           )}
                         />
                         <span className="truncate">{group.name}</span>
-                        <span className="font-normal text-stone-400 dark:text-stone-500">
+                        <span className="font-normal text-stone-500 dark:text-stone-400">
                           {group.items.length}
                         </span>
                       </button>

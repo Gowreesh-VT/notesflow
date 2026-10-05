@@ -90,7 +90,7 @@ function MatrixRow({
           {title}
         </span>
         {listName && (
-          <span className="hidden max-w-24 truncate text-xs text-stone-400 lg:inline dark:text-stone-500">
+          <span className="hidden max-w-24 truncate text-xs text-stone-500 lg:inline dark:text-stone-400">
             {listName}
           </span>
         )}
@@ -102,7 +102,7 @@ function MatrixRow({
                 ? "font-medium text-red-600 dark:text-red-400"
                 : bucket === "today"
                   ? "font-medium text-accent-600 dark:text-accent-400"
-                  : "text-stone-400 dark:text-stone-500",
+                  : "text-stone-500 dark:text-stone-400",
             )}
           >
             {formatDueRange(item.due, item.dueTime, item.startDate, today)}
@@ -168,7 +168,7 @@ function QuadrantPanel({
         <div className="min-w-0 flex-1">
           <h2 id={headingId} className="text-sm font-semibold text-stone-800 dark:text-stone-100">
             {quadrant.name}
-            <span className="ml-2 font-normal text-stone-400 dark:text-stone-500">
+            <span className="ml-2 font-normal text-stone-500 dark:text-stone-400">
               {items.length}
               <span className="sr-only"> {items.length === 1 ? "task" : "tasks"}</span>
             </span>
@@ -179,7 +179,7 @@ function QuadrantPanel({
         </div>
       </header>
       {items.length === 0 ? (
-        <p className="px-4 pb-4 text-xs text-stone-400 dark:text-stone-500">
+        <p className="px-4 pb-4 text-xs text-stone-500 dark:text-stone-400">
           No tasks. Drag one here.
         </p>
       ) : (

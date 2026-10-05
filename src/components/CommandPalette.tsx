@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { exportBackup } from "@/lib/data-actions";
 import { sortFilters } from "@/lib/filters";
 import { activeLists, filterItems, SMART_VIEWS } from "@/lib/items-logic";
-import { useToday } from "@/lib/hooks";
+import { useModalFocus, useToday } from "@/lib/hooks";
 import { INBOX_ID, type Item } from "@/lib/types";
 import { displayTitle, toDateKey } from "@/lib/utils";
 import type { Theme } from "@/lib/types";
@@ -33,6 +33,8 @@ export function openDailyNote(date = toDateKey(new Date())) {
 }
 
 function PaletteDialog({ onClose }: { onClose: () => void }) {
+  const modalRef = useRef<HTMLDivElement>(null);
+  useModalFocus(modalRef);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const input = useRef<HTMLInputElement>(null);
@@ -155,6 +157,7 @@ function PaletteDialog({ onClose }: { onClose: () => void }) {
       onMouseDown={onClose}
     >
       <div
+        ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-label="Command palette"
@@ -193,12 +196,16 @@ function PaletteDialog({ onClose }: { onClose: () => void }) {
             >
               <span className="truncate">{command.label}</span>
               {command.hint && (
-                <span className="ml-3 shrink-0 text-xs text-stone-500">{command.hint}</span>
+                <span className="ml-3 shrink-0 text-xs text-stone-500 dark:text-stone-400">
+                  {command.hint}
+                </span>
               )}
             </li>
           ))}
           {commands.length === 0 && (
-            <li className="px-3 py-6 text-center text-sm text-stone-500">No results.</li>
+            <li className="px-3 py-6 text-center text-sm text-stone-500 dark:text-stone-400">
+              No results.
+            </li>
           )}
         </ul>
       </div>

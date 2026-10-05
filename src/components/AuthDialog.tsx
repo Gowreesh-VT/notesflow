@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useModalFocus } from "@/lib/hooks";
 import { createPortal } from "react-dom";
 import { signIn } from "next-auth/react";
 
@@ -31,6 +32,8 @@ export function AuthDialog({
   initialError?: string | null;
   onClose: () => void;
 }) {
+  const modalRef = useRef<HTMLDivElement>(null);
+  useModalFocus(modalRef);
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -96,6 +99,7 @@ export function AuthDialog({
       onMouseDown={onClose}
     >
       <div
+        ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="auth-title"
@@ -127,7 +131,9 @@ export function AuthDialog({
             >
               Continue with Google
             </button>
-            <p className="my-3 text-center text-xs text-stone-500">or with email</p>
+            <p className="my-3 text-center text-xs text-stone-500 dark:text-stone-400">
+              or with email
+            </p>
           </>
         )}
 
@@ -137,7 +143,7 @@ export function AuthDialog({
         >
           {mode === "signup" && (
             <label className="block text-sm">
-              Name <span className="text-stone-500">(optional)</span>
+              Name <span className="text-stone-500 dark:text-stone-400">(optional)</span>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -173,7 +179,9 @@ export function AuthDialog({
                 className="field mt-1"
               />
               {mode === "signup" && (
-                <span className="mt-1 block text-xs text-stone-500">At least 10 characters.</span>
+                <span className="mt-1 block text-xs text-stone-500 dark:text-stone-400">
+                  At least 10 characters.
+                </span>
               )}
               {mode === "signin" && emailReset && (
                 <button

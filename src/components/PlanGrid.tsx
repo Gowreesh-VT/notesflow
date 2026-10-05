@@ -248,7 +248,13 @@ export function PlanGrid({
       <p id={hintId} className="sr-only">
         Alt+Up or Alt+Down moves a task by 15 minutes; add Shift to change its length.
       </p>
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
+      {/* Focusable so keyboard users can scroll the day. */}
+      <div
+        ref={scrollRef}
+        tabIndex={0}
+        aria-label="Day schedule"
+        className="min-h-0 flex-1 overflow-y-auto focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent-500"
+      >
         <div className="flex py-3 pr-2">
           <div
             aria-hidden
@@ -260,7 +266,7 @@ export function PlanGrid({
               .map((m) => (
                 <span
                   key={m}
-                  className="absolute right-2 -translate-y-1/2 text-[11px] tabular-nums text-stone-400 dark:text-stone-500"
+                  className="absolute right-2 -translate-y-1/2 text-[11px] tabular-nums text-stone-500 dark:text-stone-400"
                   style={{ top: minutesToOffset(m, PX_PER_MINUTE, win) }}
                 >
                   {clockLabel(m)}

@@ -21,7 +21,7 @@ export function SidebarCountdowns() {
   return (
     <section aria-label="Countdowns">
       <div className="flex items-center justify-between px-2.5 pb-1 pt-4">
-        <h2 className="text-[11px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
+        <h2 className="text-[11px] font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
           Countdowns
         </h2>
         <button
@@ -79,12 +79,16 @@ export function SidebarCountdowns() {
             key={c.id}
             className="group flex items-center gap-2.5 rounded-lg px-2.5 py-[7px] text-sm"
           >
-            <Hourglass size={16} aria-hidden className="shrink-0 text-stone-400" />
+            <Hourglass
+              size={16}
+              aria-hidden
+              className="shrink-0 text-stone-500 dark:text-stone-400"
+            />
             <button
               type="button"
               className={clsx(
                 "min-w-0 flex-1 truncate text-left",
-                past ? "text-stone-400" : "text-stone-600 dark:text-stone-300",
+                past ? "text-stone-500 dark:text-stone-400" : "text-stone-600 dark:text-stone-300",
               )}
               title={`${c.name}: ${formatDate(new Date(`${c.date}T00:00`), { dateStyle: "long" })}. Click to rename.`}
               onClick={() => {

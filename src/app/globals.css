@@ -21,7 +21,7 @@
   --color-stone-200: #e3e8ef;
   --color-stone-300: #cdd5df;
   --color-stone-400: #97a3b4;
-  --color-stone-500: #66728a;
+  --color-stone-500: #5d687e; /* dark enough for 4.5:1 text contrast on every light surface */
   --color-stone-600: #4a5568;
   --color-stone-700: #353e4f;
   --color-stone-800: #222834;
@@ -85,7 +85,7 @@ body {
       focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500 disabled:opacity-50;
   }
   .btn-primary {
-    @apply bg-accent-600 text-white shadow-sm hover:bg-accent-700 dark:bg-accent-500 dark:hover:bg-accent-400;
+    @apply bg-accent-600 text-white shadow-sm hover:bg-accent-700 dark:bg-accent-600 dark:hover:bg-accent-500;
   }
   .btn-ghost {
     @apply text-stone-600 hover:bg-stone-200/70 dark:text-stone-300 dark:hover:bg-stone-800;
@@ -94,12 +94,24 @@ body {
     @apply text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40;
   }
   .field {
-    @apply w-full rounded-xl border border-stone-300 bg-white/80 px-3 py-1.5 text-sm placeholder:text-stone-400
+    @apply w-full rounded-xl border border-stone-300 bg-white/80 px-3 py-1.5 text-sm placeholder:text-stone-500
       focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-accent-500
       dark:border-stone-700 dark:bg-stone-900 dark:placeholder:text-stone-500;
   }
   .heading-display {
     font-family: var(--font-display);
     letter-spacing: -0.01em;
+  }
+}
+
+/* Respect the system "reduce motion" setting: no animations, transitions or smooth scrolling. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

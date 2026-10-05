@@ -59,7 +59,11 @@ export function HabitHeatmap({ habit, today }: { habit: Habit; today: string }) 
         aria-label={`${habit.name}, ${title}`}
       >
         {WEEKDAYS.map((_, i) => WEEKDAYS[(localePrefs().weekStart + i) % 7]).map((d, i) => (
-          <span key={i} aria-hidden className="text-center text-[10px] text-stone-400">
+          <span
+            key={i}
+            aria-hidden
+            className="text-center text-[10px] text-stone-500 dark:text-stone-400"
+          >
             {d}
           </span>
         ))}

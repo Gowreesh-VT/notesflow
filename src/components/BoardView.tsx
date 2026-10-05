@@ -118,7 +118,7 @@ function BoardCard({
         {isTask ? (
           <TaskCheckbox item={item} />
         ) : (
-          <FileText size={18} aria-hidden className="text-stone-400" />
+          <FileText size={18} aria-hidden className="text-stone-500 dark:text-stone-400" />
         )}
       </span>
       <button
@@ -137,7 +137,7 @@ function BoardCard({
           className={clsx(
             "line-clamp-3 text-sm break-words",
             closed
-              ? "text-stone-400 line-through dark:text-stone-500"
+              ? "text-stone-500 line-through dark:text-stone-400"
               : "text-stone-800 dark:text-stone-100",
           )}
         >
@@ -201,7 +201,7 @@ function IconButton({
       aria-label={label}
       title={label}
       onClick={onClick}
-      className="rounded-md p-1 text-stone-400 hover:bg-stone-200 hover:text-stone-700 focus-visible:outline-2 focus-visible:outline-accent-500 dark:hover:bg-stone-800 dark:hover:text-stone-200"
+      className="rounded-md p-1 text-stone-500 hover:bg-stone-200 hover:text-stone-700 focus-visible:outline-2 focus-visible:outline-accent-500 dark:hover:bg-stone-800 dark:hover:text-stone-200 dark:text-stone-400"
     >
       {children}
     </button>
@@ -286,7 +286,7 @@ function Column({
           aria-label={`Expand section ${name}`}
           title={`Expand ${name}`}
           onClick={() => toggleSectionCollapsed(list.id, section.id)}
-          className="rounded-md p-1 text-stone-500 hover:bg-stone-200 focus-visible:outline-2 focus-visible:outline-accent-500 dark:hover:bg-stone-800"
+          className="rounded-md p-1 text-stone-500 hover:bg-stone-200 focus-visible:outline-2 focus-visible:outline-accent-500 dark:hover:bg-stone-800 dark:text-stone-400"
         >
           <ChevronRight size={15} aria-hidden />
         </button>
@@ -295,7 +295,7 @@ function Column({
           className="truncate text-[13px] font-semibold text-stone-700 [writing-mode:vertical-rl] dark:text-stone-200"
         >
           {name}
-          <span className="ml-1.5 font-normal text-stone-400 dark:text-stone-500">
+          <span className="ml-1.5 font-normal text-stone-500 dark:text-stone-400">
             {column.items.length}
           </span>
         </h2>
@@ -329,7 +329,7 @@ function Column({
             aria-label={`Collapse section ${name}`}
             title={`Collapse ${name}`}
             onClick={() => toggleSectionCollapsed(list.id, section.id)}
-            className="rounded-md p-1 text-stone-400 hover:bg-stone-200 hover:text-stone-700 focus-visible:outline-2 focus-visible:outline-accent-500 dark:hover:bg-stone-800 dark:hover:text-stone-200"
+            className="rounded-md p-1 text-stone-500 hover:bg-stone-200 hover:text-stone-700 focus-visible:outline-2 focus-visible:outline-accent-500 dark:hover:bg-stone-800 dark:hover:text-stone-200 dark:text-stone-400"
           >
             <ChevronRight size={15} aria-hidden className="rotate-90" />
           </button>
@@ -342,7 +342,7 @@ function Column({
           )}
         >
           <span className="truncate">{name}</span>
-          <span className="font-normal text-stone-400 dark:text-stone-500">
+          <span className="font-normal text-stone-500 dark:text-stone-400">
             {column.items.length}
           </span>
         </h2>

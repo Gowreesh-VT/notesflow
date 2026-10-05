@@ -128,10 +128,10 @@ function DayNumber({ n, isToday, inMonth }: { n: number; isToday: boolean; inMon
       className={clsx(
         "flex size-6 items-center justify-center rounded-full text-xs tabular-nums",
         isToday
-          ? "bg-accent-600 font-semibold text-white dark:bg-accent-500"
+          ? "bg-accent-600 font-semibold text-white dark:bg-accent-600"
           : inMonth
             ? "text-stone-700 dark:text-stone-200"
-            : "text-stone-400 dark:text-stone-500",
+            : "text-stone-500 dark:text-stone-400",
       )}
     >
       {n}

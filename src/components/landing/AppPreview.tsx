@@ -63,10 +63,12 @@ export function AppPreview() {
             >
               <Icon size={15} />
               <span className="flex-1">{label}</span>
-              {count ? <span className="text-xs text-stone-500">{count}</span> : null}
+              {count ? (
+                <span className="text-xs text-stone-500 dark:text-stone-400">{count}</span>
+              ) : null}
             </div>
           ))}
-          <p className="px-2.5 pb-1 pt-4 text-[10px] font-semibold uppercase tracking-wide text-stone-500">
+          <p className="px-2.5 pb-1 pt-4 text-[10px] font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
             Lists
           </p>
           <div className="flex items-center gap-2 px-2.5 py-1.5 text-stone-600 dark:text-stone-300">
@@ -79,7 +81,7 @@ export function AppPreview() {
 
         <div className="w-full min-w-0 border-stone-200 p-4 sm:w-[22rem] sm:shrink-0 md:border-r dark:border-stone-800">
           <h3 className="heading-display text-2xl font-semibold">Today</h3>
-          <div className="mt-3 rounded-xl border border-stone-300 bg-white/80 px-3 py-2 text-stone-400 dark:border-stone-700 dark:bg-stone-900">
+          <div className="mt-3 rounded-xl border border-stone-300 bg-white/80 px-3 py-2 text-stone-500 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-400">
             Add a task… “Pay rent tomorrow !high”
           </div>
           <ul className="mt-3 space-y-0.5">
@@ -104,12 +106,13 @@ export function AppPreview() {
                 <span className="min-w-0 flex-1">
                   <span
                     className={
-                      "block font-medium " + (task.done ? "text-stone-400 line-through" : "")
+                      "block font-medium " +
+                      (task.done ? "text-stone-500 line-through dark:text-stone-400" : "")
                     }
                   >
                     {task.title}
                   </span>
-                  <span className="mt-0.5 flex items-center gap-2 text-xs text-stone-500">
+                  <span className="mt-0.5 flex items-center gap-2 text-xs text-stone-500 dark:text-stone-400">
                     {task.meta}
                     {task.flag && <Flag size={12} className={task.flag} />}
                   </span>
@@ -117,10 +120,12 @@ export function AppPreview() {
               </li>
             ))}
             <li className="flex items-start gap-2.5 rounded-xl px-3 py-2.5">
-              <FileText size={18} className="mt-0.5 shrink-0 text-stone-400" />
+              <FileText size={18} className="mt-0.5 shrink-0 text-stone-500 dark:text-stone-400" />
               <span>
                 <span className="block font-medium">Meeting notes</span>
-                <span className="text-xs text-stone-500">Agenda, decisions and next steps</span>
+                <span className="text-xs text-stone-500 dark:text-stone-400">
+                  Agenda, decisions and next steps
+                </span>
               </span>
             </li>
           </ul>
@@ -129,15 +134,15 @@ export function AppPreview() {
         <div className="hidden min-w-0 flex-1 bg-white p-5 sm:block dark:bg-stone-900">
           <h3 className="heading-display text-2xl font-semibold">Send the project proposal</h3>
           <dl className="mt-4 grid grid-cols-[5rem_1fr] gap-y-3 text-stone-600 dark:text-stone-300">
-            <dt className="text-stone-500">Due</dt>
+            <dt className="text-stone-500 dark:text-stone-400">Due</dt>
             <dd>Today</dd>
-            <dt className="text-stone-500">Priority</dt>
+            <dt className="text-stone-500 dark:text-stone-400">Priority</dt>
             <dd>
               <span className="rounded-md bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800 dark:bg-red-950 dark:text-red-300">
                 High
               </span>
             </dd>
-            <dt className="text-stone-500">List</dt>
+            <dt className="text-stone-500 dark:text-stone-400">List</dt>
             <dd>Work</dd>
           </dl>
           <div className="mt-5 rounded-xl bg-stone-50 p-3 font-mono text-xs leading-relaxed text-stone-600 dark:bg-stone-950 dark:text-stone-300">

@@ -48,7 +48,7 @@ export function TemplatesMenu({ listId, due }: { listId: string; due: string | n
             }}
             className="absolute right-0 top-full z-20 mt-2 w-72 rounded-xl border border-stone-200 bg-white p-1 shadow-lift dark:border-stone-700 dark:bg-stone-900"
           >
-            <p className="px-2.5 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+            <p className="px-2.5 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
               New task from template
             </p>
             {templates.length === 0 ? (
@@ -90,7 +90,7 @@ export function TemplatesMenu({ listId, due }: { listId: string; due: string | n
                     </button>
                     <button
                       type="button"
-                      className="mr-1 rounded-md p-1 text-stone-400 opacity-0 hover:bg-stone-200 hover:text-stone-700 focus-visible:opacity-100 group-hover:opacity-100 dark:hover:bg-stone-700 dark:hover:text-stone-200"
+                      className="mr-1 rounded-md p-1 text-stone-500 opacity-0 hover:bg-stone-200 hover:text-stone-700 focus-visible:opacity-100 group-hover:opacity-100 dark:hover:bg-stone-700 dark:hover:text-stone-200 dark:text-stone-400"
                       aria-label={`Delete template ${displayTitle(t)}`}
                       onClick={() => {
                         if (window.confirm(`Delete the template “${displayTitle(t)}”?`))

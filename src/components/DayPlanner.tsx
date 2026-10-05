@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useModalFocus } from "@/lib/hooks";
 import { createPortal } from "react-dom";
 import { ArrowDown, ArrowUp, X } from "lucide-react";
 import clsx from "clsx";
@@ -39,6 +40,8 @@ export function DayPlanner({
   today: string;
   onClose: () => void;
 }) {
+  const modalRef = useRef<HTMLDivElement>(null);
+  useModalFocus(modalRef);
   const items = useWorkspace((s) => s.items);
   const lists = useWorkspace((s) => s.lists);
   const updateItem = useWorkspace((s) => s.updateItem);
@@ -125,6 +128,7 @@ export function DayPlanner({
       onMouseDown={onClose}
     >
       <div
+        ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="day-planner-title"
@@ -158,7 +162,7 @@ export function DayPlanner({
                   ? "bg-accent-100 font-semibold text-accent-800 dark:bg-accent-950 dark:text-accent-200"
                   : i < step
                     ? "text-accent-700 dark:text-accent-300"
-                    : "text-stone-400",
+                    : "text-stone-500 dark:text-stone-400",
               )}
             >
               {i + 1}. {label}
@@ -281,7 +285,7 @@ export function DayPlanner({
                     key={item.id}
                     className="flex items-center gap-2 rounded-lg bg-stone-50 px-2 py-1.5 text-sm dark:bg-stone-800/60"
                   >
-                    <span className="w-5 text-right text-xs tabular-nums text-stone-400">
+                    <span className="w-5 text-right text-xs tabular-nums text-stone-500 dark:text-stone-400">
                       {index + 1}
                     </span>
                     <span className="min-w-0 flex-1 truncate">{displayTitle(item)}</span>

@@ -97,11 +97,11 @@ function SubtaskNode({
           aria-label="Subtask title"
           className={clsx(
             "min-w-0 flex-1 rounded bg-transparent px-1 py-0.5 outline-none focus:bg-white focus:ring-1 focus:ring-accent-300 dark:focus:bg-stone-900",
-            node.done && "text-stone-400 line-through",
+            node.done && "text-stone-500 line-through dark:text-stone-400",
           )}
         />
         {children.length > 0 && (
-          <span className="shrink-0 text-xs tabular-nums text-stone-400">
+          <span className="shrink-0 text-xs tabular-nums text-stone-500 dark:text-stone-400">
             {progress.done}/{progress.total}
           </span>
         )}

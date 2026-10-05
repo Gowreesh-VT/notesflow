@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useModalFocus } from "@/lib/hooks";
 import { SHORTCUT_HELP } from "@/lib/shortcuts";
 import { useUi } from "@/store/ui";
 
 function HelpDialog({ onClose }: { onClose: () => void }) {
   const dialog = useRef<HTMLDivElement>(null);
+  useModalFocus(dialog);
 
   useEffect(() => {
     dialog.current?.focus();
@@ -34,7 +36,11 @@ function HelpDialog({ onClose }: { onClose: () => void }) {
         <h2 id="shortcut-help-title" className="mb-3 text-base font-semibold">
           Keyboard shortcuts
         </h2>
-        <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
+        <div
+          tabIndex={0}
+          aria-label="Shortcut list"
+          className="max-h-[60vh] space-y-4 overflow-y-auto pr-1 focus-visible:outline-2 focus-visible:outline-accent-500"
+        >
           {SHORTCUT_HELP.map((group) => (
             <section key={group.title} aria-label={group.title}>
               <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">

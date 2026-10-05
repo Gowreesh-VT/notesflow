@@ -65,7 +65,7 @@ export function SplitPane({ listId, name }: { listId: string; name: string }) {
       <header className="flex items-center gap-2 px-4 pb-2 pt-5">
         <h2 className="heading-display min-w-0 truncate text-lg font-semibold">{name}</h2>
         {tasks.length > 0 && (
-          <span className="mt-0.5 text-sm tabular-nums text-stone-400 dark:text-stone-500">
+          <span className="mt-0.5 text-sm tabular-nums text-stone-500 dark:text-stone-400">
             {tasks.length}
           </span>
         )}
@@ -125,7 +125,7 @@ export function SplitPane({ listId, name }: { listId: string; name: string }) {
                             ? "font-medium text-red-600 dark:text-red-400"
                             : bucket === "today"
                               ? "font-medium text-accent-600 dark:text-accent-400"
-                              : "text-stone-400 dark:text-stone-500",
+                              : "text-stone-500 dark:text-stone-400",
                         )}
                       >
                         {formatDueRange(item.due, item.dueTime, item.startDate, today)}

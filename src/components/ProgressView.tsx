@@ -40,7 +40,7 @@ export function ProgressView() {
           <Leaf
             size={28}
             aria-hidden
-            className={doneForToday ? "text-emerald-500" : "text-stone-400"}
+            className={doneForToday ? "text-emerald-500" : "text-stone-500 dark:text-stone-400"}
           />
           <div>
             <p className="heading-display text-xl font-semibold">
@@ -122,6 +122,7 @@ export function ProgressView() {
                 title={`${d.date}: ${d.count}`}
               >
                 <span
+                  role="img"
                   aria-label={`${formatDate(new Date(`${d.date}T00:00`), { month: "short", day: "numeric" })}: ${d.count}`}
                   className={clsx(
                     "w-full rounded-t-sm",

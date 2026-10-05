@@ -39,7 +39,7 @@ export function NavItem({
         aria-hidden
         className={clsx(
           "shrink-0",
-          active ? "text-accent-600 dark:text-accent-400" : "text-stone-400",
+          active ? "text-accent-600 dark:text-accent-400" : "text-stone-500 dark:text-stone-400",
         )}
       >
         {icon}

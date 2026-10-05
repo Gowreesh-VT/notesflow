@@ -54,6 +54,7 @@ export function FocusStatsPanel() {
                 {d.minutes ? minutesLabel(d.minutes) : ""}
               </span>
               <span
+                role="img"
                 aria-label={`${dayLabel(d.date, today)}: ${minutesLabel(d.minutes)}`}
                 className={
                   d.date === today

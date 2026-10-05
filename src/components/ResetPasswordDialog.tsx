@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useModalFocus } from "@/lib/hooks";
 import { createPortal } from "react-dom";
 import { signIn } from "next-auth/react";
 
 /** Opened from the link in a password reset email (/app?reset=…): choose a new password, then sign in. */
 export function ResetPasswordDialog({ token, onClose }: { token: string; onClose: () => void }) {
+  const modalRef = useRef<HTMLDivElement>(null);
+  useModalFocus(modalRef);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -14,6 +17,7 @@ export function ResetPasswordDialog({ token, onClose }: { token: string; onClose
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-[12vh]">
       <div
+        ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="reset-title"
@@ -71,7 +75,9 @@ export function ResetPasswordDialog({ token, onClose }: { token: string; onClose
               onChange={(e) => setPassword(e.target.value)}
               className="field mt-1"
             />
-            <span className="mt-1 block text-xs text-stone-500">At least 10 characters.</span>
+            <span className="mt-1 block text-xs text-stone-500 dark:text-stone-400">
+              At least 10 characters.
+            </span>
           </label>
           <label className="block text-sm">
             Repeat it

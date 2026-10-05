@@ -119,7 +119,7 @@ export function DragHandle({
       {...props}
       aria-hidden
       title={label}
-      className="absolute left-0 top-1/2 flex -translate-y-1/2 cursor-grab touch-none text-stone-400 opacity-0 transition-opacity active:cursor-grabbing group-hover:opacity-100 dark:text-stone-500"
+      className="absolute left-0 top-1/2 flex -translate-y-1/2 cursor-grab touch-none text-stone-500 opacity-0 transition-opacity active:cursor-grabbing group-hover:opacity-100 dark:text-stone-400"
     >
       <GripVertical size={12} />
     </span>

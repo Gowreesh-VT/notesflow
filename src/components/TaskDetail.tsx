@@ -134,8 +134,8 @@ export function TaskDetail({ item }: { item: Item }) {
           aria-label="Task title"
           placeholder="Task title"
           className={clsx(
-            "heading-display min-w-0 flex-1 bg-transparent text-2xl font-semibold outline-none placeholder:text-stone-400",
-            item.status !== "open" && "text-stone-400 line-through",
+            "heading-display min-w-0 flex-1 bg-transparent text-2xl font-semibold outline-none placeholder:text-stone-500",
+            item.status !== "open" && "text-stone-500 line-through dark:text-stone-400",
           )}
         />
       </div>

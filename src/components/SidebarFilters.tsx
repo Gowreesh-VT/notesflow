@@ -33,7 +33,7 @@ export function SidebarFilters() {
   return (
     <>
       <div className="flex items-center justify-between px-2.5 pb-1 pt-4">
-        <h2 className="text-[11px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
+        <h2 className="text-[11px] font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
           Filters
         </h2>
         <button

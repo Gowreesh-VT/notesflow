@@ -131,7 +131,7 @@ export default function Landing() {
               See what is inside
             </a>
           </div>
-          <p className="mt-3 text-sm text-stone-500">
+          <p className="mt-3 text-sm text-stone-500 dark:text-stone-400">
             No account needed. Your data stays on your device until you choose to sync.
           </p>
 
@@ -229,7 +229,7 @@ export default function Landing() {
         </section>
       </main>
 
-      <footer className="border-t border-stone-200 py-8 text-sm text-stone-500 dark:border-stone-800">
+      <footer className="border-t border-stone-200 py-8 text-sm text-stone-500 dark:border-stone-800 dark:text-stone-400">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5">
           <span>© {new Date().getFullYear()} Notesflow</span>
           <nav aria-label="Footer" className="flex gap-4">

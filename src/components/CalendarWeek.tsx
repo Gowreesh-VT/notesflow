@@ -160,7 +160,7 @@ function DayHeading({
         className={clsx(
           "flex size-6 shrink-0 items-center justify-center rounded-full text-sm tabular-nums",
           isToday
-            ? "bg-accent-600 font-semibold text-white dark:bg-accent-500"
+            ? "bg-accent-600 font-semibold text-white dark:bg-accent-600"
             : "text-stone-800 dark:text-stone-100",
         )}
       >

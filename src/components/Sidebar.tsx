@@ -273,7 +273,7 @@ export function Sidebar() {
             />
           ))}
 
-          <h2 className="px-2.5 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
+          <h2 className="px-2.5 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
             Views
           </h2>
           {PLANNER_VIEWS.filter((v) => v.kind !== "settings" && !hiddenViews.includes(v.kind)).map(
@@ -292,7 +292,7 @@ export function Sidebar() {
           )}
 
           <div className="flex items-center justify-between px-2.5 pb-1 pt-4">
-            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
+            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
               Lists
             </h2>
             <span className="flex">
@@ -418,7 +418,7 @@ export function Sidebar() {
 
           {tags.length > 0 && (
             <>
-              <h2 className="px-2.5 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
+              <h2 className="px-2.5 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
                 Tags
               </h2>
               {tags.map(({ tag, count }) => (
