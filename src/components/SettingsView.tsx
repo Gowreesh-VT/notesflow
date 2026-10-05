@@ -10,6 +10,7 @@ import { setPreferences, usePreferences } from "@/store/preferences";
 import { useSyncStore } from "@/store/sync";
 import { useUi } from "@/store/ui";
 import { AccentPicker } from "./AccentPicker";
+import { DataSettings } from "./DataSettings";
 import { ViewHeader } from "./ViewHeader";
 
 export function SettingsSection({
@@ -271,6 +272,8 @@ export function SettingsView() {
             })}
           </fieldset>
         </SettingsSection>
+
+        <DataSettings />
 
         <SettingsSection
           title="Reminders"
