@@ -8,15 +8,17 @@ import { formatRelativeTime } from "@/lib/utils";
 import { disablePush } from "@/lib/push-client";
 import { useSyncStore } from "@/store/sync";
 import { AuthDialog, authErrorMessage } from "./AuthDialog";
+import { ResetPasswordDialog } from "./ResetPasswordDialog";
 import { SyncRunner } from "./SyncRunner";
 
 type CloudStatus = {
   configured: boolean;
   google: boolean;
+  email?: boolean;
   database: "ok" | "missing-tables" | "unreachable" | null;
 };
 
-function AccountPanel({ google }: { google: boolean }) {
+function AccountPanel({ google, emailReset }: { google: boolean; emailReset: boolean }) {
   const { data, status: authStatus } = useSession();
   const sync = useSyncStore();
   // Sign-in failures from the Google redirect come back as ?error=..., and the landing page links with ?signin=1.
@@ -31,17 +33,27 @@ function AccountPanel({ google }: { google: boolean }) {
       (initialError !== null || new URLSearchParams(window.location.search).has("signin")),
   );
 
+  // The link in a password reset email opens /app?reset=<token>.
+  const [resetToken, setResetToken] = useState<string | null>(() =>
+    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("reset"),
+  );
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.has("error") || params.has("signin")) {
+    if (params.has("error") || params.has("signin") || params.has("reset")) {
       params.delete("error");
       params.delete("signin");
+      params.delete("reset");
       const rest = params.toString();
       window.history.replaceState(null, "", window.location.pathname + (rest ? `?${rest}` : ""));
     }
   }, []);
 
   if (authStatus === "loading") return null;
+
+  if (resetToken) {
+    return <ResetPasswordDialog token={resetToken} onClose={() => setResetToken(null)} />;
+  }
 
   if (!data?.user) {
     return (
@@ -54,7 +66,12 @@ function AccountPanel({ google }: { google: boolean }) {
           <LogIn size={14} aria-hidden /> Sign in to sync
         </button>
         {open && (
-          <AuthDialog google={google} initialError={initialError} onClose={() => setOpen(false)} />
+          <AuthDialog
+            google={google}
+            emailReset={emailReset}
+            initialError={initialError}
+            onClose={() => setOpen(false)}
+          />
         )}
       </>
     );
@@ -160,7 +177,7 @@ export function AccountMenu() {
   return (
     <SessionProvider>
       <SyncRunner />
-      <AccountPanel google={cloud.google} />
+      <AccountPanel google={cloud.google} emailReset={cloud.email === true} />
     </SessionProvider>
   );
 }

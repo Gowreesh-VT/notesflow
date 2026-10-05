@@ -130,3 +130,16 @@ export const userSecurity = pgTable("user_security", {
     .references(() => users.id, { onDelete: "cascade" }),
   sessionsValidAfter: bigint("sessions_valid_after", { mode: "number" }).notNull(),
 });
+
+/** One-time password reset links. Only a SHA-256 hash of the token is stored; links expire after an hour. */
+export const passwordResets = pgTable(
+  "password_reset",
+  {
+    tokenHash: text("token_hash").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    expiresAt: bigint("expires_at", { mode: "number" }).notNull(),
+  },
+  (table) => [index("password_reset_user_idx").on(table.userId)],
+);

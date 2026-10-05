@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { signIn } from "next-auth/react";
 
-type Mode = "signin" | "signup";
+type Mode = "signin" | "signup" | "forgot";
 
 const AUTH_ERRORS: Record<string, string> = {
   OAuthAccountNotLinked:
@@ -21,10 +21,13 @@ export function authErrorMessage(code: string | null | undefined): string | null
 
 export function AuthDialog({
   google,
+  emailReset = false,
   initialError,
   onClose,
 }: {
   google: boolean;
+  /** Password reset by email is set up on this server. */
+  emailReset?: boolean;
   initialError?: string | null;
   onClose: () => void;
 }) {
@@ -34,6 +37,7 @@ export function AuthDialog({
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(initialError ?? null);
   const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const emailInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -44,7 +48,22 @@ export function AuthDialog({
     event.preventDefault();
     setBusy(true);
     setError(null);
+    setNotice(null);
     try {
+      if (mode === "forgot") {
+        const response = await fetch("/api/password-reset", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        });
+        const body = (await response.json().catch(() => null)) as {
+          message?: string;
+          error?: string;
+        } | null;
+        if (response.ok) setNotice(body?.message ?? "Check your email for a reset link.");
+        else setError(body?.error ?? "Could not send a reset link.");
+        return;
+      }
       if (mode === "signup") {
         const response = await fetch("/api/register", {
           method: "POST",
@@ -87,13 +106,19 @@ export function AuthDialog({
         className="w-full max-w-sm rounded-xl border border-stone-200 bg-white p-5 shadow-lift dark:border-stone-700 dark:bg-stone-900"
       >
         <h2 id="auth-title" className="text-lg font-semibold">
-          {mode === "signin" ? "Sign in to sync" : "Create your account"}
+          {mode === "signin"
+            ? "Sign in to sync"
+            : mode === "signup"
+              ? "Create your account"
+              : "Reset your password"}
         </h2>
         <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
-          Your tasks and notes stay on this device and sync to your account across devices.
+          {mode === "forgot"
+            ? "Enter your account’s email and we’ll send you a link to choose a new password."
+            : "Your tasks and notes stay on this device and sync to your account across devices."}
         </p>
 
-        {google && (
+        {google && mode !== "forgot" && (
           <>
             <button
               type="button"
@@ -106,7 +131,10 @@ export function AuthDialog({
           </>
         )}
 
-        <form onSubmit={submit} className={google ? "space-y-3" : "mt-4 space-y-3"}>
+        <form
+          onSubmit={submit}
+          className={google && mode !== "forgot" ? "space-y-3" : "mt-4 space-y-3"}
+        >
           {mode === "signup" && (
             <label className="block text-sm">
               Name <span className="text-stone-500">(optional)</span>
@@ -131,22 +159,36 @@ export function AuthDialog({
               className="field mt-1"
             />
           </label>
-          <label className="block text-sm">
-            Password
-            <input
-              type="password"
-              required
-              minLength={mode === "signup" ? 10 : 1}
-              maxLength={128}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete={mode === "signup" ? "new-password" : "current-password"}
-              className="field mt-1"
-            />
-            {mode === "signup" && (
-              <span className="mt-1 block text-xs text-stone-500">At least 10 characters.</span>
-            )}
-          </label>
+          {mode !== "forgot" && (
+            <label className="block text-sm">
+              Password
+              <input
+                type="password"
+                required
+                minLength={mode === "signup" ? 10 : 1}
+                maxLength={128}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                className="field mt-1"
+              />
+              {mode === "signup" && (
+                <span className="mt-1 block text-xs text-stone-500">At least 10 characters.</span>
+              )}
+              {mode === "signin" && emailReset && (
+                <button
+                  type="button"
+                  className="mt-1 block text-xs text-accent-600 hover:underline dark:text-accent-400"
+                  onClick={() => {
+                    setMode("forgot");
+                    setError(null);
+                  }}
+                >
+                  Forgot your password?
+                </button>
+              )}
+            </label>
+          )}
 
           <p
             role="alert"
@@ -155,9 +197,20 @@ export function AuthDialog({
           >
             {error}
           </p>
+          {notice && (
+            <p role="status" className="text-sm text-emerald-700 dark:text-emerald-400">
+              {notice}
+            </p>
+          )}
 
           <button type="submit" className="btn btn-primary w-full" disabled={busy}>
-            {busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
+            {busy
+              ? "Please wait…"
+              : mode === "signin"
+                ? "Sign in"
+                : mode === "signup"
+                  ? "Create account"
+                  : "Send reset link"}
           </button>
         </form>
 
@@ -168,9 +221,10 @@ export function AuthDialog({
             onClick={() => {
               setMode(mode === "signin" ? "signup" : "signin");
               setError(null);
+              setNotice(null);
             }}
           >
-            {mode === "signin" ? "Create an account" : "I already have an account"}
+            {mode === "signin" ? "Create an account" : "Back to sign in"}
           </button>
           <button type="button" className="btn btn-ghost" onClick={onClose}>
             Not now

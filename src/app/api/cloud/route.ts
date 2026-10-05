@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDatabaseStatus, isCloudConfigured, isGoogleConfigured } from "@/server/db";
+import { isEmailConfigured } from "@/server/email";
 import { vapidPublicKey } from "@/server/web-push";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +16,8 @@ export async function GET() {
       google: configured && isGoogleConfigured(),
       // Public key for push reminders, or null when they are not set up.
       push: configured ? vapidPublicKey() : null,
+      // Password reset by email needs an email provider.
+      email: configured && isEmailConfigured(),
     },
     { headers: { "Cache-Control": "no-store" } },
   );

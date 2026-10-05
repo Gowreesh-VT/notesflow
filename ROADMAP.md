@@ -96,7 +96,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 - [x] Export to CSV, Markdown and iCal
 - [x] Import from CSV and JSON (TickTick and Todoist exports)
 - [x] [BIG] Account settings: change password, delete the account and all its data
-- [ ] [BIG] Password reset by email (needs an email provider and keys from the owner)
+- [x] [BIG] Password reset by email (needs an email provider and keys from the owner)
 - [ ] Keyboard shortcuts for all common actions, and a vim-style navigation mode
 - [ ] Accessibility audit pass: focus order, labels, contrast, reduced motion
 - [ ] Performance pass: virtualise long lists and trim the initial bundle
