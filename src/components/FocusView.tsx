@@ -16,6 +16,7 @@ import { formatElapsed } from "@/lib/time-tracking";
 import { displayTitle } from "@/lib/utils";
 import { useFocus } from "@/store/focus";
 import { useWorkspace } from "@/store/workspace";
+import { FocusStatsPanel } from "./FocusStatsPanel";
 import { ViewHeader } from "./ViewHeader";
 
 function NumberSetting({
@@ -181,6 +182,8 @@ export function FocusView() {
             Focused time is added to the task’s tracked time. Pick a task first to record it.
           </p>
         </section>
+
+        <FocusStatsPanel />
 
         <section aria-label="Timer settings" className="space-y-3">
           <h2 className="text-sm font-semibold">Timer</h2>
