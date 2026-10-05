@@ -57,6 +57,7 @@ import { getDragItem, isItemDrag, setDragItem } from "@/lib/dnd";
 import { formatDuration } from "@/lib/duration";
 import { planMove, planStep } from "@/lib/ordering";
 import { useToday } from "@/lib/hooks";
+import { todayTally } from "@/lib/progress";
 import { describeRepeat } from "@/lib/recurrence";
 import { dropOnListPatch, pinnedList, SPLIT_DRAG_TYPE, viewListId } from "@/lib/split";
 import { BoardView } from "./BoardView";
@@ -541,6 +542,10 @@ export function ItemList() {
     : [];
 
   const energyLabel = ENERGY_OPTIONS.find((o) => o.value === energyFilter)?.label;
+  const finishedToday = useMemo(
+    () => (view.kind === "smart" && view.id === "today" ? todayTally(items, today).finished : 0),
+    [items, today, view],
+  );
   const emptyMessage = energyLabel
     ? `No ${energyLabel.toLowerCase()} tasks here.`
     : query
@@ -551,12 +556,14 @@ export function ItemList() {
           ? "Completed tasks will show up here."
           : view.kind === "smart" && view.id === "wontdo"
             ? "Tasks you mark as Won’t Do show up here."
-            : view.kind === "smart" &&
-                (view.id === "today" || view.id === "tomorrow" || view.id === "week")
-              ? "Nothing due. Enjoy the calm."
-              : view.kind === "filter"
-                ? "Nothing matches this filter."
-                : "Nothing here yet. Add a task or note above.";
+            : view.kind === "smart" && view.id === "today" && finishedToday > 0
+              ? `Done for today. You finished ${finishedToday} task${finishedToday === 1 ? "" : "s"}; rest is part of the work.`
+              : view.kind === "smart" &&
+                  (view.id === "today" || view.id === "tomorrow" || view.id === "week")
+                ? "Nothing due. Enjoy the calm."
+                : view.kind === "filter"
+                  ? "Nothing matches this filter."
+                  : "Nothing here yet. Add a task or note above.";
 
   // Manual order can be changed by dragging (or Alt+Arrow keys) in a list or the Inbox, when nothing is hidden by a
   // search or filter. Elsewhere the order is still shown, just not editable.

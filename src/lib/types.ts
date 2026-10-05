@@ -203,7 +203,7 @@ export type View =
   | { kind: PlannerViewKind };
 
 export type PlannerViewKind =
-  "calendar" | "matrix" | "timeline" | "plan" | "focus" | "habits" | "review";
+  "calendar" | "matrix" | "timeline" | "plan" | "focus" | "habits" | "review" | "progress";
 
 export type ItemSort = "default" | "manual" | "due" | "priority" | "title" | "updated";
 

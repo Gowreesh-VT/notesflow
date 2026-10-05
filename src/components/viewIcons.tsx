@@ -4,6 +4,7 @@ import {
   ClipboardCheck,
   Clock3,
   Grid2x2,
+  TrendingUp,
   Repeat2,
   Timer,
 } from "lucide-react";
@@ -17,4 +18,5 @@ export const PLANNER_ICONS: Record<PlannerViewKind, typeof CalendarFold> = {
   focus: Timer,
   habits: Repeat2,
   review: ClipboardCheck,
+  progress: TrendingUp,
 };
