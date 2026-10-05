@@ -31,7 +31,7 @@ npm run format       # prettier --write (format:check verifies)
 
 Routes: `/` is the public landing page (`src/app/page.tsx`, static, with the decorative `AppPreview`), `/app` is the
 app itself (the PWA `start_url`), `/~offline` is the offline fallback. Keep the landing page honest: only describe
-features that exist; upcoming ones belong in its "Growing steadily" list.
+features that exist (its "Growing steadily" section lists features already inside, never promises).
 
 Layout: `src/app` (route + layout), `src/components` (UI: `Sidebar`, `ItemList`, `TaskDetail`, `NoteDetail`,
 `MarkdownEditor`, `CommandPalette`), `src/store` (`workspace.ts` holds items, lists and folders; `ui.ts` holds view

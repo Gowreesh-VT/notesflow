@@ -57,7 +57,7 @@ const FEATURES = [
   {
     icon: Download,
     title: "Yours to take with you",
-    body: "Export a full backup or any note as Markdown at any time. Your data is never locked in.",
+    body: "Export a full backup, a spreadsheet, Markdown or calendar events at any time, and bring tasks in from other apps. Your data is never locked in.",
   },
 ];
 
@@ -76,7 +76,7 @@ const STEPS = [
   },
 ];
 
-const COMING = [
+const ALSO_INSIDE = [
   { icon: CalendarDays, label: "Calendar views" },
   { icon: Columns3, label: "Board view" },
   { icon: Bell, label: "Reminders" },
@@ -196,10 +196,10 @@ export default function Landing() {
         <section className="mx-auto max-w-6xl px-5 py-16 text-center">
           <h2 className="heading-display text-3xl font-semibold sm:text-4xl">Growing steadily</h2>
           <p className="mx-auto mt-3 max-w-xl text-stone-600 dark:text-stone-300">
-            Notesflow is improved a little every day. On the way:
+            Notesflow is improved a little every day. Already inside:
           </p>
           <ul className="mt-6 flex flex-wrap justify-center gap-2">
-            {COMING.map(({ icon: Icon, label }) => (
+            {ALSO_INSIDE.map(({ icon: Icon, label }) => (
               <li
                 key={label}
                 className="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white/70 px-4 py-2 text-sm text-stone-700 dark:border-stone-800 dark:bg-stone-900 dark:text-stone-200"
