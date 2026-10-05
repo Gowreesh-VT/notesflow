@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { isCalendarLayout, isDateKey, type CalendarLayout } from "@/lib/calendar";
 import { isGroupBy, type GroupBy } from "@/lib/items-logic";
 import { cleanOutcomeLabels, DEFAULT_OUTCOME_LABELS } from "@/lib/outcomes";
 import { DEFAULT_REMINDER_TIME, isClock, type QuietHours } from "@/lib/reminders";
@@ -39,6 +40,11 @@ type UiState = {
   settingsOpen: boolean;
   /** Editable outcome choices (kept on this device). */
   outcomeLabels: string[];
+  calendarLayout: CalendarLayout;
+  /** Day the calendar is showing (null = today); not persisted, so the calendar opens on today. */
+  calendarDate: string | null;
+  /** Calendar also shows completed tasks. */
+  calendarShowDone: boolean;
   setTheme: (theme: Theme) => void;
   setEditorMode: (mode: EditorMode) => void;
   setSort: (sort: ItemSort) => void;
@@ -58,6 +64,9 @@ type UiState = {
   setQuietHours: (quiet: QuietHours | null) => void;
   setSettingsOpen: (open: boolean) => void;
   setOutcomeLabels: (labels: string[]) => void;
+  setCalendarLayout: (layout: CalendarLayout) => void;
+  setCalendarDate: (date: string | null) => void;
+  setCalendarShowDone: (show: boolean) => void;
 };
 
 export const useUi = create<UiState>()(
@@ -82,6 +91,9 @@ export const useUi = create<UiState>()(
       quietHours: null,
       settingsOpen: false,
       outcomeLabels: DEFAULT_OUTCOME_LABELS,
+      calendarLayout: "month",
+      calendarDate: null,
+      calendarShowDone: false,
       setTheme: (theme) => set({ theme }),
       setEditorMode: (editorMode) => set({ editorMode }),
       setSort: (sort) => set({ sort }),
@@ -108,6 +120,13 @@ export const useUi = create<UiState>()(
       },
       setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
       setOutcomeLabels: (labels) => set({ outcomeLabels: cleanOutcomeLabels(labels) }),
+      setCalendarLayout: (layout) => {
+        if (isCalendarLayout(layout)) set({ calendarLayout: layout });
+      },
+      setCalendarDate: (date) => {
+        if (date === null || isDateKey(date)) set({ calendarDate: date });
+      },
+      setCalendarShowDone: (calendarShowDone) => set({ calendarShowDone }),
     }),
     {
       name: "notesflow:ui",
@@ -124,6 +143,8 @@ export const useUi = create<UiState>()(
         outcomeLabels: s.outcomeLabels,
         defaultReminderTime: s.defaultReminderTime,
         quietHours: s.quietHours,
+        calendarLayout: s.calendarLayout,
+        calendarShowDone: s.calendarShowDone,
       }),
       // v1 stored a different sort field; only theme and editor mode carry over.
       migrate: (persisted) => {

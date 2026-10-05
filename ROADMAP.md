@@ -61,10 +61,10 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 
 ### Phase 4 — Views (days 29–40)
 
-- [ ] [BIG] Calendar view, month layout, showing tasks on their due dates
-- [ ] Calendar week layout with due times
-- [ ] Calendar day and agenda layouts
-- [ ] Drag a task to another day in the calendar to reschedule it
+- [x] [BIG] Calendar view, month layout, showing tasks on their due dates
+- [x] Calendar week layout with due times
+- [x] Calendar day and agenda layouts
+- [x] Drag a task to another day in the calendar to reschedule it
 - [x] [BIG] Board (Kanban) view for a list, with sections as columns
 - [x] Drag cards between board columns
 - [x] Eisenhower matrix view: tasks placed by priority and due date

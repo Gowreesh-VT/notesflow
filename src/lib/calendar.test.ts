@@ -1,0 +1,325 @@
+import { describe, expect, it } from "vitest";
+import {
+  addMonths,
+  agendaGroups,
+  calendarTasks,
+  clockToMinutes,
+  isCalendarLayout,
+  isDateKey,
+  isTimedOn,
+  layoutTimedTasks,
+  minutesToClock,
+  monthMatrix,
+  reschedulePatch,
+  startOfWeek,
+  taskSpan,
+  tasksByDay,
+  timeAtOffset,
+  weekDays,
+  weekdayIndex,
+} from "./calendar";
+import { INBOX_ID, type Item } from "./types";
+
+const make = (id: string, patch: Partial<Item> = {}): Item => ({
+  id,
+  kind: "task",
+  title: id,
+  body: "",
+  listId: INBOX_ID,
+  createdAt: 1,
+  updatedAt: 1,
+  deletedAt: null,
+  pinned: false,
+  status: "open",
+  completedAt: null,
+  priority: "none",
+  due: null,
+  subtasks: [],
+  sectionId: null,
+  ...patch,
+});
+
+const ids = (items: { id: string }[]) => items.map((i) => i.id);
+
+describe("weeks", () => {
+  it("numbers weekdays from Monday", () => {
+    expect(weekdayIndex("2026-10-05")).toBe(0); // Monday
+    expect(weekdayIndex("2026-10-11")).toBe(6); // Sunday
+  });
+
+  it("starts weeks on Monday, across month and year boundaries", () => {
+    expect(startOfWeek("2026-10-05")).toBe("2026-10-05");
+    expect(startOfWeek("2026-10-11")).toBe("2026-10-05");
+    expect(startOfWeek("2026-01-01")).toBe("2025-12-29");
+  });
+
+  it("lists the seven days of a week", () => {
+    expect(weekDays("2026-03-01")).toEqual([
+      "2026-02-23",
+      "2026-02-24",
+      "2026-02-25",
+      "2026-02-26",
+      "2026-02-27",
+      "2026-02-28",
+      "2026-03-01",
+    ]);
+  });
+
+  it("keeps whole days across daylight-saving changes", () => {
+    // Europe and the US change the clocks in late March / early November.
+    expect(weekDays("2026-03-29")).toContain("2026-03-29");
+    expect(weekDays("2026-03-29")[6]).toBe("2026-03-29");
+    expect(weekDays("2026-11-01")).toHaveLength(7);
+    expect(new Set(weekDays("2026-11-01")).size).toBe(7);
+  });
+});
+
+describe("months", () => {
+  it("adds months, clamping to shorter months and leap years", () => {
+    expect(addMonths("2026-01-31", 1)).toBe("2026-02-28");
+    expect(addMonths("2028-01-31", 1)).toBe("2028-02-29");
+    expect(addMonths("2026-12-15", 1)).toBe("2027-01-15");
+    expect(addMonths("2026-01-15", -1)).toBe("2025-12-15");
+    expect(addMonths("2026-03-31", -13)).toBe("2025-02-28");
+  });
+
+  it("builds whole Monday-to-Sunday weeks covering the month", () => {
+    const weeks = monthMatrix("2026-10-05");
+    expect(weeks[0][0]).toBe("2026-09-28");
+    expect(weeks.at(-1)!.at(-1)).toBe("2026-11-01");
+    expect(weeks).toHaveLength(5);
+    for (const week of weeks) expect(week).toHaveLength(7);
+  });
+
+  it("uses four rows for a February that fits exactly and six when needed", () => {
+    // February 2027 starts on a Monday and has 28 days.
+    expect(monthMatrix("2027-02-10")).toHaveLength(4);
+    // August 2026 starts on a Saturday and has 31 days.
+    expect(monthMatrix("2026-08-01")).toHaveLength(6);
+  });
+
+  it("covers leap days", () => {
+    const days = monthMatrix("2028-02-01").flat();
+    expect(days).toContain("2028-02-29");
+    expect(days).toContain("2028-03-01");
+    expect(monthMatrix("2026-02-01").flat()).not.toContain("2026-02-29");
+  });
+
+  it("recognises real date keys only", () => {
+    expect(isDateKey("2028-02-29")).toBe(true);
+    expect(isDateKey("2026-02-29")).toBe(false);
+    expect(isDateKey("2026-1-1")).toBe(false);
+    expect(isDateKey(null)).toBe(false);
+  });
+});
+
+describe("tasks on days", () => {
+  it("shows live, dated tasks outside templates and archived lists", () => {
+    const items = [
+      make("open", { due: "2026-10-05" }),
+      make("undated"),
+      make("note", { kind: "note", due: "2026-10-05" }),
+      make("trashed", { due: "2026-10-05", deletedAt: 5 }),
+      make("template", { due: "2026-10-05", template: true }),
+      make("archived", { due: "2026-10-05", listId: "old" }),
+      make("done", { due: "2026-10-05", status: "done" }),
+      make("skipped", { due: "2026-10-05", status: "wontdo" }),
+    ];
+    const archived = new Set(["old"]);
+    expect(ids(calendarTasks(items, { archived }))).toEqual(["open"]);
+    expect(ids(calendarTasks(items, { archived, showDone: true }))).toEqual(["open", "done"]);
+  });
+
+  it("spans multi-day tasks from their start to their due date", () => {
+    expect(taskSpan({ due: "2026-10-08", startDate: "2026-10-05" })).toEqual({
+      start: "2026-10-05",
+      end: "2026-10-08",
+    });
+    expect(taskSpan({ due: "2026-10-08", startDate: null })).toEqual({
+      start: "2026-10-08",
+      end: "2026-10-08",
+    });
+    expect(taskSpan({ due: null })).toBeNull();
+  });
+
+  it("puts a multi-day task on every day it spans, clipped to the days shown", () => {
+    const task = make("trip", { startDate: "2026-09-29", due: "2026-10-02" });
+    const days = weekDays("2026-10-01"); // Sep 28 – Oct 4
+    const byDay = tasksByDay([task], days);
+    expect(byDay.get("2026-09-28")).toEqual([]);
+    expect(byDay.get("2026-09-29")).toEqual([{ item: task, first: true, last: false }]);
+    expect(byDay.get("2026-10-01")).toEqual([{ item: task, first: false, last: false }]);
+    expect(byDay.get("2026-10-02")).toEqual([{ item: task, first: false, last: true }]);
+    expect(byDay.get("2026-10-03")).toEqual([]);
+
+    const later = tasksByDay([task], weekDays("2026-10-08"));
+    expect([...later.values()].every((entries) => entries.length === 0)).toBe(true);
+  });
+
+  it("spans a multi-day task across a month boundary in the month grid", () => {
+    const task = make("trip", { startDate: "2026-10-30", due: "2026-11-02" });
+    const byDay = tasksByDay([task], monthMatrix("2026-10-01").flat());
+    expect(byDay.get("2026-10-30")).toHaveLength(1);
+    expect(byDay.get("2026-11-01")).toHaveLength(1);
+    // The October grid ends on Sunday, November 1.
+    expect(byDay.has("2026-11-02")).toBe(false);
+  });
+
+  it("orders a day: multi-day first, then all-day, then by time", () => {
+    const tasks = [
+      make("late", { due: "2026-10-05", dueTime: "17:00" }),
+      make("early", { due: "2026-10-05", dueTime: "09:00" }),
+      make("allday", { due: "2026-10-05" }),
+      make("high", { due: "2026-10-05", priority: "high" }),
+      make("span", { startDate: "2026-10-04", due: "2026-10-05", dueTime: "08:00" }),
+    ];
+    const entries = tasksByDay(tasks, ["2026-10-05"]).get("2026-10-05")!;
+    expect(entries.map((e) => e.item.id)).toEqual(["span", "high", "allday", "early", "late"]);
+  });
+});
+
+describe("time grid", () => {
+  it("validates layouts", () => {
+    expect(isCalendarLayout("week")).toBe(true);
+    expect(isCalendarLayout("year")).toBe(false);
+  });
+
+  it("converts clocks and minutes", () => {
+    expect(clockToMinutes("00:00")).toBe(0);
+    expect(clockToMinutes("14:30")).toBe(870);
+    expect(minutesToClock(870)).toBe("14:30");
+    expect(minutesToClock(5)).toBe("00:05");
+    expect(minutesToClock(-10)).toBe("00:00");
+    expect(minutesToClock(2000)).toBe("23:59");
+  });
+
+  it("snaps an offset in the grid to a slot", () => {
+    expect(timeAtOffset(0, 48)).toBe("00:00");
+    expect(timeAtOffset(48 * 9 + 47, 48)).toBe("09:45");
+    expect(timeAtOffset(48 * 9 + 20, 48, 30)).toBe("09:00");
+    expect(timeAtOffset(48 * 9 + 24, 48, 30)).toBe("09:30");
+    expect(timeAtOffset(-5, 48)).toBe("00:00");
+    expect(timeAtOffset(48 * 30, 48)).toBe("23:45");
+  });
+
+  it("is timed only on its due day", () => {
+    const task = make("t", { startDate: "2026-10-04", due: "2026-10-05", dueTime: "09:00" });
+    expect(isTimedOn(task, "2026-10-05")).toBe(true);
+    expect(isTimedOn(task, "2026-10-04")).toBe(false);
+    expect(isTimedOn(make("a", { due: "2026-10-05" }), "2026-10-05")).toBe(false);
+  });
+
+  it("sizes blocks by estimate, 30 minutes by default, cut at midnight", () => {
+    const blocks = layoutTimedTasks([
+      make("a", { due: "2026-10-05", dueTime: "09:00", estimate: 90 }),
+      make("b", { due: "2026-10-05", dueTime: "13:00" }),
+      make("c", { due: "2026-10-05", dueTime: "23:45", estimate: 60 }),
+      make("d", { due: "2026-10-05", dueTime: "15:00", estimate: 5 }),
+      make("allday", { due: "2026-10-05" }),
+    ]);
+    const byId = Object.fromEntries(blocks.map((b) => [b.item.id, b]));
+    expect(Object.keys(byId)).toEqual(["a", "b", "d", "c"]);
+    expect(byId.a).toMatchObject({ start: 540, end: 630, column: 0, columns: 1 });
+    expect(byId.b).toMatchObject({ start: 780, end: 810 });
+    expect(byId.c).toMatchObject({ start: 1425, end: 1440 });
+    expect(byId.d.end - byId.d.start).toBe(15);
+  });
+
+  it("puts overlapping tasks side by side and reuses free columns", () => {
+    const blocks = layoutTimedTasks([
+      make("a", { due: "2026-10-05", dueTime: "09:00", estimate: 120 }),
+      make("b", { due: "2026-10-05", dueTime: "09:30" }),
+      make("c", { due: "2026-10-05", dueTime: "10:00" }),
+      make("d", { due: "2026-10-05", dueTime: "12:00" }),
+    ]);
+    const byId = Object.fromEntries(blocks.map((b) => [b.item.id, b]));
+    expect(byId.a).toMatchObject({ column: 0, columns: 2 });
+    expect(byId.b).toMatchObject({ column: 1, columns: 2 });
+    // b ends at 10:00, so c takes its column.
+    expect(byId.c).toMatchObject({ column: 1, columns: 2 });
+    // a ends at 11:00: d starts a new group on its own.
+    expect(byId.d).toMatchObject({ column: 0, columns: 1 });
+  });
+});
+
+describe("agenda", () => {
+  const today = "2026-10-05";
+
+  it("lists overdue tasks first, then each day with tasks, for 30 days", () => {
+    const tasks = [
+      make("old", { due: "2026-09-01" }),
+      make("older", { due: "2026-08-01" }),
+      make("doneOld", { due: "2026-09-01", status: "done" }),
+      make("today", { due: today, dueTime: "10:00" }),
+      make("todayAllDay", { due: today }),
+      make("next", { due: "2026-10-07" }),
+      make("last", { due: "2026-11-03" }),
+      make("tooFar", { due: "2026-11-04" }),
+    ];
+    const groups = agendaGroups(tasks, today);
+    expect(groups.map((g) => g.day)).toEqual(["overdue", today, "2026-10-07", "2026-11-03"]);
+    expect(ids(groups[0].items)).toEqual(["older", "old"]);
+    expect(ids(groups[1].items)).toEqual(["todayAllDay", "today"]);
+  });
+
+  it("lists a multi-day task once, on its due date", () => {
+    const groups = agendaGroups([make("trip", { startDate: today, due: "2026-10-08" })], today);
+    expect(groups).toEqual([
+      { day: "2026-10-08", items: [expect.objectContaining({ id: "trip" })] },
+    ]);
+  });
+
+  it("is empty without tasks", () => {
+    expect(agendaGroups([], today)).toEqual([]);
+  });
+});
+
+describe("rescheduling", () => {
+  it("moves the due date and keeps the time", () => {
+    expect(reschedulePatch({ due: "2026-10-05" }, "2026-10-05", "2026-10-09")).toEqual({
+      due: "2026-10-09",
+    });
+  });
+
+  it("sets a time when dropped on a slot", () => {
+    expect(reschedulePatch({ due: "2026-10-05" }, null, "2026-10-06", "14:30")).toEqual({
+      due: "2026-10-06",
+      dueTime: "14:30",
+    });
+  });
+
+  it("makes a task all-day when dropped in the all-day row", () => {
+    expect(reschedulePatch({ due: "2026-10-05" }, "2026-10-05", "2026-10-05", null)).toEqual({
+      due: "2026-10-05",
+      dueTime: null,
+    });
+  });
+
+  it("shifts a multi-day task by the days it was dragged, from whichever day it was picked up", () => {
+    const trip = { startDate: "2026-10-05", due: "2026-10-08" };
+    expect(reschedulePatch(trip, "2026-10-06", "2026-10-08")).toEqual({
+      startDate: "2026-10-07",
+      due: "2026-10-10",
+    });
+    expect(reschedulePatch(trip, null, "2026-10-01")).toEqual({
+      startDate: "2026-09-28",
+      due: "2026-10-01",
+    });
+  });
+
+  it("crosses month, year and leap-day boundaries", () => {
+    expect(reschedulePatch({ due: "2028-02-28" }, null, "2028-02-29").due).toBe("2028-02-29");
+    expect(
+      reschedulePatch({ due: "2026-12-31", startDate: "2026-12-30" }, null, "2027-01-02"),
+    ).toEqual({
+      due: "2027-01-02",
+      startDate: "2027-01-01",
+    });
+  });
+
+  it("gives an undated task the drop day", () => {
+    expect(reschedulePatch({ due: null }, "2026-10-01", "2026-10-03")).toEqual({
+      due: "2026-10-03",
+    });
+  });
+});
