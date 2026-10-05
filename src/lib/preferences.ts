@@ -44,6 +44,7 @@ export const DEFAULT_PREFERENCES: PreferenceValues = {
   textSize: "default",
   ...DEFAULT_LOCALE_PREFS,
   editorMode: "split",
+  vimKeys: false,
   outcomeLabels: DEFAULT_OUTCOME_LABELS,
   dayEnd: "21:00",
   hiddenViews: [],
@@ -65,6 +66,7 @@ export function cleanPreferenceValues(raw: Record<string, unknown>): PreferenceV
     dateOrder: pick(raw.dateOrder, DATE_ORDERS, d.dateOrder),
     clock: pick(raw.clock, CLOCK_FORMATS, d.clock),
     editorMode: pick(raw.editorMode, EDITOR_MODES, d.editorMode),
+    vimKeys: raw.vimKeys === true,
     outcomeLabels: Array.isArray(raw.outcomeLabels)
       ? cleanOutcomeLabels(raw.outcomeLabels.filter((l): l is string => typeof l === "string"))
       : d.outcomeLabels,

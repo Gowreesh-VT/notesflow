@@ -1,21 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { SHORTCUT_HELP } from "@/lib/shortcuts";
 import { useUi } from "@/store/ui";
-
-const SHORTCUTS: { keys: string; label: string }[] = [
-  { keys: "Ctrl/⌘ + K", label: "Open the command palette" },
-  { keys: "Alt + N", label: "New note" },
-  { keys: "Alt + T", label: "New task" },
-  { keys: "Alt + J", label: "Open today’s daily note" },
-  { keys: "/", label: "Search the current list" },
-  { keys: "Alt + ↑ / ↓", label: "Move a list, or a task in manual order" },
-  { keys: "Alt + ← / →", label: "Move a task a day earlier or later in the calendar" },
-  { keys: "?", label: "Show this help" },
-  { keys: "Ctrl/⌘ + click", label: "Select several items" },
-  { keys: "Shift + click", label: "Select a range of items" },
-  { keys: "Esc", label: "Close dialogs or clear the selection" },
-];
 
 function HelpDialog({ onClose }: { onClose: () => void }) {
   const dialog = useRef<HTMLDivElement>(null);
@@ -42,23 +29,32 @@ function HelpDialog({ onClose }: { onClose: () => void }) {
             onClose();
           }
         }}
-        className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-4 shadow-lift outline-none dark:border-stone-700 dark:bg-stone-900"
+        className="w-full max-w-lg rounded-2xl border border-stone-200 bg-white p-4 shadow-lift outline-none dark:border-stone-700 dark:bg-stone-900"
       >
         <h2 id="shortcut-help-title" className="mb-3 text-base font-semibold">
           Keyboard shortcuts
         </h2>
-        <dl className="space-y-2 text-sm">
-          {SHORTCUTS.map((shortcut) => (
-            <div key={shortcut.keys} className="flex items-center justify-between gap-4">
-              <dt className="text-stone-600 dark:text-stone-300">{shortcut.label}</dt>
-              <dd>
-                <kbd className="rounded border border-stone-300 bg-stone-100 px-1.5 py-0.5 font-mono text-xs dark:border-stone-600 dark:bg-stone-800">
-                  {shortcut.keys}
-                </kbd>
-              </dd>
-            </div>
+        <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
+          {SHORTCUT_HELP.map((group) => (
+            <section key={group.title} aria-label={group.title}>
+              <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
+                {group.title}
+              </h3>
+              <dl className="space-y-1.5 text-sm">
+                {group.items.map((shortcut) => (
+                  <div key={shortcut.keys} className="flex items-center justify-between gap-4">
+                    <dt className="text-stone-600 dark:text-stone-300">{shortcut.label}</dt>
+                    <dd>
+                      <kbd className="whitespace-pre rounded border border-stone-300 bg-stone-100 px-1.5 py-0.5 font-mono text-xs dark:border-stone-600 dark:bg-stone-800">
+                        {shortcut.keys}
+                      </kbd>
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
           ))}
-        </dl>
+        </div>
         <div className="mt-4 flex justify-end">
           <button type="button" className="btn" onClick={onClose}>
             Close

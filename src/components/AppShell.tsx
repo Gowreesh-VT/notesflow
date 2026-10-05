@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { SMART_VIEWS } from "@/lib/items-logic";
 import { setLocalePrefs } from "@/lib/locale";
-import { INBOX_ID } from "@/lib/types";
 import { usePreferences } from "@/store/preferences";
 import { useUi } from "@/store/ui";
 import { useSyncStore } from "@/store/sync";
@@ -14,16 +13,12 @@ import { FocusBar } from "./FocusBar";
 import { ReminderRunner } from "./ReminderRunner";
 import { ReminderSettings } from "./ReminderSettings";
 import { SyncBanner } from "./SyncBanner";
-import { CommandPalette, openDailyNote } from "./CommandPalette";
+import { CommandPalette } from "./CommandPalette";
+import { KeyboardShortcuts } from "./KeyboardShortcuts";
 import { ShortcutHelp } from "./ShortcutHelp";
 import { Sidebar } from "./Sidebar";
 import { Workspace } from "./Workspace";
 import { ThemeSync } from "./ThemeSync";
-
-function isTypingTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  return target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
-}
 
 export function AppShell() {
   const [ready, setReady] = useState(false);
@@ -57,41 +52,6 @@ export function AppShell() {
     };
   }, []);
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      const ui = useUi.getState();
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        ui.setPaletteOpen(!ui.paletteOpen);
-      } else if (event.altKey && event.code === "KeyN") {
-        event.preventDefault();
-        const view = ui.view;
-        const listId = view.kind === "list" ? view.id : INBOX_ID;
-        ui.selectItem(useWorkspace.getState().addItem({ kind: "note", listId }));
-      } else if (event.altKey && event.code === "KeyT") {
-        event.preventDefault();
-        if (ui.view.kind === "smart" && ["trash", "completed", "wontdo"].includes(ui.view.id)) {
-          ui.setView({ kind: "smart", id: "inbox" });
-        }
-        window.setTimeout(() => document.getElementById("quick-add")?.focus(), 0);
-      } else if (event.altKey && event.code === "KeyJ") {
-        event.preventDefault();
-        openDailyNote();
-      } else if (event.key === "/" && !isTypingTarget(event.target)) {
-        event.preventDefault();
-        // The list search is hidden in narrow layouts; fall back to the command palette there.
-        const search = document.getElementById("list-search");
-        if (search && search.offsetParent !== null) search.focus();
-        else ui.setPaletteOpen(true);
-      } else if (event.key === "?" && !isTypingTarget(event.target) && !ui.paletteOpen) {
-        event.preventDefault();
-        ui.setHelpOpen(!ui.helpOpen);
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
-
   return (
     <div className="flex h-dvh overflow-hidden">
       <ThemeSync />
@@ -117,6 +77,7 @@ export function AppShell() {
       </div>
       {ready && <CommandPalette />}
       {ready && <ShortcutHelp />}
+      {ready && <KeyboardShortcuts />}
       {ready && <OutcomePrompt />}
       {ready && <ReminderRunner />}
       {ready && <FocusBar />}

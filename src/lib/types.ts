@@ -206,6 +206,8 @@ export type Preferences = {
   dateOrder: "auto" | "dmy" | "mdy";
   clock: "auto" | "12h" | "24h";
   editorMode: EditorMode;
+  /** Vim-style keys (j/k, gg/G, dd) on top of the standard shortcuts. */
+  vimKeys: boolean;
   /** Outcome choices offered when a task is finished. */
   outcomeLabels: string[];
   /** When the working day ends (HH:MM); scheduling suggestions plan up to it. */

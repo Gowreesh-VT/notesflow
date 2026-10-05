@@ -228,6 +228,25 @@ export function SettingsView() {
           />
         </SettingsSection>
 
+        <SettingsSection title="Keyboard">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={prefs.vimKeys}
+              onChange={(e) => set({ vimKeys: e.target.checked })}
+              className="size-4 accent-accent-600"
+            />
+            Vim-style keys: j and k to move, g g and G for first and last, d d to delete
+          </label>
+          <button
+            type="button"
+            className="btn btn-ghost border border-stone-200 dark:border-stone-700"
+            onClick={() => useUi.getState().setHelpOpen(true)}
+          >
+            Show all keyboard shortcuts
+          </button>
+        </SettingsSection>
+
         <SettingsSection
           title="Planning"
           description="Scheduling suggestions plan your remaining work up to the end of your day."
