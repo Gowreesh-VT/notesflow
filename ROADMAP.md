@@ -68,7 +68,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 - [ ] [BIG] Board (Kanban) view for a list, with sections as columns
 - [ ] Drag cards between board columns
 - [x] Eisenhower matrix view: tasks placed by priority and due date
-- [ ] [BIG] Timeline view of tasks with a start and due date
+- [x] [BIG] Timeline view of tasks with a start and due date
 - [ ] [BIG] Plan view: a day timeline where tasks can be dragged into time slots
 - [ ] Split view: pin one list beside another and drag tasks between them
 
