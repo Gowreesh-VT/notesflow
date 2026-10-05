@@ -46,6 +46,7 @@ import { useUi, type Theme } from "@/store/ui";
 import { AccountMenu } from "./AccountMenu";
 import { InstallButton } from "./InstallButton";
 import { LogoMark } from "./Logo";
+import { NavItem } from "./NavItem";
 import { PLANNER_ICONS } from "./viewIcons";
 import { DragHandle, DropLine, useReorder } from "./Reorder";
 import { SidebarArchivedLists } from "./SidebarArchivedLists";
@@ -66,52 +67,6 @@ const SMART_ICONS: Record<SmartViewId, React.ReactNode> = {
 const COUNTED: SmartViewId[] = ["inbox", "today", "tomorrow", "week", "all"];
 /** Archive-like views sit at the bottom of the sidebar, as in TickTick. */
 const ARCHIVE_VIEWS: SmartViewId[] = ["completed", "wontdo", "trash"];
-
-function NavItem({
-  icon,
-  label,
-  count,
-  active,
-  onClick,
-  indent = false,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  count?: number;
-  active: boolean;
-  onClick: () => void;
-  indent?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-current={active ? "page" : undefined}
-      className={clsx(
-        "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[7px] text-left text-sm transition-colors",
-        "focus-visible:outline-2 focus-visible:outline-accent-500",
-        indent && "pl-7",
-        active
-          ? "bg-stone-200/80 font-medium text-stone-900 dark:bg-stone-800 dark:text-stone-50"
-          : "text-stone-600 hover:bg-stone-200/50 dark:text-stone-300 dark:hover:bg-stone-900",
-      )}
-    >
-      <span
-        aria-hidden
-        className={clsx(
-          "shrink-0",
-          active ? "text-accent-600 dark:text-accent-400" : "text-stone-400",
-        )}
-      >
-        {icon}
-      </span>
-      <span className="min-w-0 flex-1 truncate">{label}</span>
-      {count !== undefined && count > 0 && (
-        <span className="text-xs tabular-nums text-stone-500 dark:text-stone-400">{count}</span>
-      )}
-    </button>
-  );
-}
 
 const THEMES: { value: Theme; label: string; icon: React.ReactNode }[] = [
   { value: "light", label: "Light", icon: <Sun size={16} /> },

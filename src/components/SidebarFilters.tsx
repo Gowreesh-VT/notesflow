@@ -2,13 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { Funnel, Pencil, Plus, X } from "lucide-react";
-import clsx from "clsx";
 import { sortFilters } from "@/lib/filters";
 import { archivedListIds, countInView, sameView } from "@/lib/items-logic";
 import { useToday } from "@/lib/hooks";
 import type { SavedFilter } from "@/lib/types";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
+import { NavItem } from "./NavItem";
 import { FilterEditor } from "./FilterEditor";
 
 /** The sidebar's "Filters" section: saved filters with their counts, plus create, edit and delete. */
@@ -52,33 +52,14 @@ export function SidebarFilters() {
         const count = counts.get(filter.id) ?? 0;
         return (
           <div key={filter.id} className="group flex items-center">
-            <button
-              type="button"
+            <NavItem
+              icon={<Funnel size={16} />}
+              label={filter.name}
+              count={count}
+              active={active}
               onClick={() => setView({ kind: "filter", id: filter.id })}
-              aria-current={active ? "page" : undefined}
-              className={clsx(
-                "flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2.5 py-[7px] text-left text-sm transition-colors",
-                "focus-visible:outline-2 focus-visible:outline-accent-500",
-                active
-                  ? "bg-stone-200/80 font-medium text-stone-900 dark:bg-stone-800 dark:text-stone-50"
-                  : "text-stone-600 hover:bg-stone-200/50 dark:text-stone-300 dark:hover:bg-stone-900",
-              )}
-            >
-              <Funnel
-                size={16}
-                aria-hidden
-                className={clsx(
-                  "shrink-0",
-                  active ? "text-accent-600 dark:text-accent-400" : "text-stone-400",
-                )}
-              />
-              <span className="min-w-0 flex-1 truncate">{filter.name}</span>
-              {count > 0 && (
-                <span className="text-xs tabular-nums text-stone-500 dark:text-stone-400">
-                  {count}
-                </span>
-              )}
-            </button>
+              className="min-w-0 flex-1"
+            />
             <button
               type="button"
               className="btn btn-ghost px-1 py-0.5 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
