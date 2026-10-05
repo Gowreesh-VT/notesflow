@@ -8,6 +8,7 @@ import { useSyncStore } from "@/store/sync";
 import { upgradeLegacyStorage, useWorkspace } from "@/store/workspace";
 import { NavRail } from "./NavRail";
 import { OutcomePrompt } from "./Outcome";
+import { FocusBar } from "./FocusBar";
 import { ReminderRunner } from "./ReminderRunner";
 import { ReminderSettings } from "./ReminderSettings";
 import { SyncBanner } from "./SyncBanner";
@@ -111,6 +112,7 @@ export function AppShell() {
       {ready && <ShortcutHelp />}
       {ready && <OutcomePrompt />}
       {ready && <ReminderRunner />}
+      {ready && <FocusBar />}
       {ready && <ReminderSettings />}
     </div>
   );

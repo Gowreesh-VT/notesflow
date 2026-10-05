@@ -87,6 +87,8 @@ export type TimeEntry = {
   end: number | null;
   /** Added by hand rather than with the timer. */
   manual?: boolean;
+  /** Recorded by the Pomodoro focus timer. */
+  focus?: boolean;
 };
 
 /** How a finished task went: a short label (from the editable choices) and an optional one-line note. */
@@ -174,7 +176,7 @@ export type View =
   /** Whole-workspace layouts (Phase 4): they show tasks from every list in their own way. */
   | { kind: PlannerViewKind };
 
-export type PlannerViewKind = "calendar" | "matrix" | "timeline" | "plan";
+export type PlannerViewKind = "calendar" | "matrix" | "timeline" | "plan" | "focus";
 
 export type ItemSort = "default" | "manual" | "due" | "priority" | "title" | "updated";
 

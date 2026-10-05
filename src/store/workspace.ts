@@ -158,6 +158,8 @@ type WorkspaceState = WorkspaceData & {
   startTimer: (itemId: string) => void;
   stopTimer: (itemId: string) => void;
   addTimeEntry: (itemId: string, minutes: number) => void;
+  /** Records a finished stretch of Pomodoro focus on a task. Stretches shorter than a few seconds are ignored. */
+  addFocusEntry: (itemId: string, start: number, end: number) => void;
   deleteTimeEntry: (itemId: string, entryId: string) => void;
   /** Turns a subtask (with its own subtasks) into a task in the same list; returns the new task id. */
   subtaskToTask: (itemId: string, subtaskId: string) => string | null;
@@ -789,6 +791,22 @@ export const useWorkspace = create<WorkspaceState>()(
               : item,
           ),
         })),
+
+      addFocusEntry: (itemId, start, end) => {
+        if (!(end - start >= 5_000)) return;
+        set((s) => ({
+          items: mapItem(s.items, itemId, (item) =>
+            item.kind === "task"
+              ? touch(item, {
+                  timeEntries: [
+                    ...(item.timeEntries ?? []),
+                    { id: createId(), start, end, focus: true },
+                  ].slice(-MAX_TIME_ENTRIES),
+                })
+              : item,
+          ),
+        }));
+      },
 
       addTimeEntry: (itemId, minutes) => {
         if (!Number.isInteger(minutes) || minutes <= 0) return;

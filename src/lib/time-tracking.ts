@@ -53,7 +53,9 @@ export function parseTimeEntries(raw: unknown): TimeEntry[] {
       running = true;
     }
     const entry: TimeEntry = { id: r.id, start: r.start, end };
-    return [r.manual === true ? { ...entry, manual: true } : entry];
+    if (r.manual === true) entry.manual = true;
+    if (r.focus === true) entry.focus = true;
+    return [entry];
   });
   return entries.slice(-MAX_TIME_ENTRIES);
 }

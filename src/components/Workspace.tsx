@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
+import { createElement, useEffect } from "react";
 import clsx from "clsx";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
 import { isPlannerView } from "@/lib/items-logic";
+import type { PlannerViewKind } from "@/lib/types";
 import { canPin, pinnedList } from "@/lib/split";
 import { CalendarView } from "./CalendarView";
+import { FocusView } from "./FocusView";
 import { ItemList } from "./ItemList";
 import { MatrixView } from "./MatrixView";
 import { PlanView } from "./PlanView";
@@ -14,6 +16,14 @@ import { SplitPane } from "./SplitPane";
 import { TimelineView } from "./TimelineView";
 import { NoteDetail } from "./NoteDetail";
 import { TaskDetail } from "./TaskDetail";
+
+const PLANNER_COMPONENTS: Record<PlannerViewKind, () => React.JSX.Element> = {
+  calendar: CalendarView,
+  matrix: MatrixView,
+  timeline: TimelineView,
+  plan: PlanView,
+  focus: FocusView,
+};
 
 // The list takes the full width; the detail panel only opens beside it when something is selected.
 export function Workspace() {
@@ -34,19 +44,7 @@ export function Workspace() {
   return (
     <div className="flex h-full">
       <div className={selected ? "hidden min-w-0 flex-1 md:block" : "min-w-0 flex-1"}>
-        {isPlannerView(view) ? (
-          view.kind === "calendar" ? (
-            <CalendarView />
-          ) : view.kind === "matrix" ? (
-            <MatrixView />
-          ) : view.kind === "timeline" ? (
-            <TimelineView />
-          ) : (
-            <PlanView />
-          )
-        ) : (
-          <ItemList />
-        )}
+        {isPlannerView(view) ? createElement(PLANNER_COMPONENTS[view.kind]) : <ItemList />}
       </div>
       {/* Split view needs room: beside the list on large screens, and on extra-wide ones also beside details. */}
       {pinned && (

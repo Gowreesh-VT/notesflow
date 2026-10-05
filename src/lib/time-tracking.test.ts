@@ -32,3 +32,11 @@ describe("time tracking helpers", () => {
     ]);
   });
 });
+
+describe("focus entries", () => {
+  it("keeps the focus flag", () => {
+    expect(parseTimeEntries([{ id: "f", start: 1, end: 2, focus: true }])).toEqual([
+      { id: "f", start: 1, end: 2, focus: true },
+    ]);
+  });
+});

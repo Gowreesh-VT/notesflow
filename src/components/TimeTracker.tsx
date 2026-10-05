@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Pause, Play, Plus, X } from "lucide-react";
+import { Pause, Play, Plus, Timer, X } from "lucide-react";
 import { formatDuration, parseDuration } from "@/lib/duration";
 import { useNow } from "@/lib/hooks";
 import { formatElapsed, runningEntry, trackedMinutes } from "@/lib/time-tracking";
 import type { Item } from "@/lib/types";
+import { useFocus } from "@/store/focus";
 import { useWorkspace } from "@/store/workspace";
 
 const formatEntryDate = (ms: number) =>
@@ -59,6 +60,16 @@ export function TimeTracker({ item, readOnly }: { item: Item; readOnly: boolean 
               <Play size={15} aria-hidden /> Start timer
             </button>
           ))}
+        {!readOnly && item.status === "open" && (
+          <button
+            type="button"
+            className="btn btn-ghost"
+            title="Start a Pomodoro focus session on this task"
+            onClick={() => useFocus.getState().start(item.id)}
+          >
+            <Timer size={15} aria-hidden /> Focus
+          </button>
+        )}
         {!readOnly && (
           <form
             className="flex items-center gap-1"
