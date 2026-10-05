@@ -47,6 +47,7 @@ const empty = (): SyncData => ({
   lists: [],
   folders: [],
   filters: [],
+  habits: [],
   tombstones: [],
 });
 const rec = (
@@ -116,6 +117,7 @@ describe("collectChanges", () => {
       lists: [list("l", { updatedAt: 30 })],
       folders: [],
       filters: [],
+      habits: [],
       tombstones: [{ collection: "item", id: "gone", at: 7 }],
     };
     const changes = collectChanges(data, 20);
@@ -278,6 +280,7 @@ describe("conflicts", () => {
       lists: [],
       folders: [],
       filters: [],
+      habits: [],
       tombstones: [],
     };
     // "edited" changed here after the last push (40) and elsewhere; "old" only changed elsewhere.

@@ -9,6 +9,7 @@ import type { PlannerViewKind } from "@/lib/types";
 import { canPin, pinnedList } from "@/lib/split";
 import { CalendarView } from "./CalendarView";
 import { FocusView } from "./FocusView";
+import { HabitsView } from "./HabitsView";
 import { ItemList } from "./ItemList";
 import { MatrixView } from "./MatrixView";
 import { PlanView } from "./PlanView";
@@ -23,6 +24,7 @@ const PLANNER_COMPONENTS: Record<PlannerViewKind, () => React.JSX.Element> = {
   timeline: TimelineView,
   plan: PlanView,
   focus: FocusView,
+  habits: HabitsView,
 };
 
 // The list takes the full width; the detail panel only opens beside it when something is selected.

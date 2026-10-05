@@ -37,6 +37,7 @@ describe("backup", () => {
       ],
       folders: [{ id: "f", name: "Life", createdAt: 1, updatedAt: 2 }],
       filters: [],
+      habits: [],
     };
     expect(parseBackup(JSON.stringify(createBackup(data, 5)))).toEqual(data);
   });
@@ -326,7 +327,7 @@ describe("saved filters in backups", () => {
   };
 
   it("exports and imports filters", () => {
-    const data = { items: [], lists: [], folders: [], filters: [filter] };
+    const data = { items: [], lists: [], folders: [], filters: [filter], habits: [] };
     expect(parseBackup(JSON.stringify(createBackup(data, 5))).filters).toEqual([filter]);
   });
 
@@ -341,5 +342,22 @@ describe("saved filters in backups", () => {
     expect(parseBackup(broken, 9).filters).toEqual([
       { id: "y", name: "Bare", criteria: EMPTY_CRITERIA, createdAt: 9, updatedAt: 9 },
     ]);
+  });
+});
+
+describe("habits in backups", () => {
+  it("round-trips habits and drops broken ones", () => {
+    const habit = {
+      id: "h1",
+      name: "Read",
+      goal: { per: "week" as const, times: 3 },
+      checkins: ["2026-10-01"],
+      createdAt: 1,
+      updatedAt: 2,
+    };
+    const data = { items: [], lists: [], folders: [], filters: [], habits: [habit] };
+    expect(parseBackup(JSON.stringify(createBackup(data, 5))).habits).toEqual([habit]);
+    const old = JSON.stringify({ app: "notesflow", version: 2, items: [], lists: [], folders: [] });
+    expect(parseBackup(old).habits).toEqual([]);
   });
 });

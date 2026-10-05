@@ -7,12 +7,14 @@ import {
   type ListSection,
   type Subtask,
   type Priority,
+  type Habit,
   type SavedFilter,
   type TaskList,
   type TaskStatus,
 } from "./types";
 import { asMinutes } from "./duration";
 import { cleanFilterName, parseFilterCriteria } from "./filters";
+import { cleanCheckins, cleanHabitName, parseGoal } from "./habits";
 import { isEnergy } from "./items-logic";
 import { asOrder } from "./ordering";
 import { parseOutcome } from "./outcomes";
@@ -178,6 +180,24 @@ export function parseFilter(raw: unknown, now: number): SavedFilter | null {
   };
 }
 
+export function parseHabit(raw: unknown, now: number): Habit | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const name = cleanHabitName(asString(r.name));
+  if (!name || !asString(r.id)) return null;
+  const habit: Habit = {
+    id: asString(r.id),
+    name,
+    goal: parseGoal(r.goal),
+    checkins: cleanCheckins(r.checkins),
+    createdAt: asTime(r.createdAt, now),
+    updatedAt: asTime(r.updatedAt, asTime(r.createdAt, now)),
+  };
+  if (typeof r.archivedAt === "number" && Number.isFinite(r.archivedAt))
+    habit.archivedAt = r.archivedAt;
+  return habit;
+}
+
 function parseArray<T>(raw: unknown, parse: (value: unknown) => T | null): T[] {
   return Array.isArray(raw) ? raw.flatMap((value) => parse(value) ?? []) : [];
 }
@@ -187,6 +207,7 @@ export type BackupData = {
   lists: TaskList[];
   folders: Folder[];
   filters: SavedFilter[];
+  habits: Habit[];
 };
 
 export function createBackup(data: BackupData, now = Date.now()): Backup {
@@ -216,6 +237,7 @@ export function parseBackup(text: string, now = Date.now()): BackupData {
       folders: parseArray(record.folders, (v) => parseFolder(v, now)),
       // Backups made before saved filters existed have none.
       filters: parseArray(record.filters, (v) => parseFilter(v, now)),
+      habits: parseArray(record.habits, (v) => parseHabit(v, now)),
     };
   }
 
@@ -252,5 +274,5 @@ export function parseBackup(text: string, now = Date.now()): BackupData {
     } satisfies LegacyTask;
   });
   const { items, lists } = migrateLegacyData(legacyNotes, legacyTasks, now);
-  return { items, lists, folders: [], filters: [] };
+  return { items, lists, folders: [], filters: [], habits: [] };
 }

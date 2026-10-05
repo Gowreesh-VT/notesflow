@@ -74,6 +74,7 @@ export const PLANNER_VIEWS: { kind: PlannerViewKind; label: string }[] = [
   { kind: "timeline", label: "Timeline" },
   { kind: "plan", label: "Plan my day" },
   { kind: "focus", label: "Focus" },
+  { kind: "habits", label: "Habits" },
 ];
 
 /** Calendar, matrix, timeline and plan views lay out tasks themselves instead of listing them. */

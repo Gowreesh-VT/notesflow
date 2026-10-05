@@ -34,6 +34,7 @@ export function SyncRunner() {
         state.lists !== previous.lists ||
         state.folders !== previous.folders ||
         state.filters !== previous.filters ||
+        state.habits !== previous.habits ||
         state.tombstones !== previous.tombstones
       ) {
         requestSync();

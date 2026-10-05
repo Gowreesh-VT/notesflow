@@ -1,0 +1,193 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { Archive, ArchiveRestore, Check, Pencil, Plus, Trash2 } from "lucide-react";
+import clsx from "clsx";
+import { isDoneOn, lastDays } from "@/lib/habits";
+import { useToday } from "@/lib/hooks";
+import type { Habit } from "@/lib/types";
+import { useWorkspace } from "@/store/workspace";
+import { ViewHeader } from "./ViewHeader";
+
+const weekday = (date: string, style: "narrow" | "short" | "long") => {
+  const [y, m, d] = date.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: style });
+};
+const fullDate = (date: string) => {
+  const [y, m, d] = date.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+};
+
+function HabitRow({ habit, days, today }: { habit: Habit; days: string[]; today: string }) {
+  const { toggleHabit, updateHabit, deleteHabit } = useWorkspace.getState();
+  const archived = Boolean(habit.archivedAt);
+  return (
+    <li className="group rounded-2xl border border-stone-200 bg-white p-3 dark:border-stone-800 dark:bg-stone-900">
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={isDoneOn(habit, today)}
+          aria-label={`${habit.name}: done today`}
+          disabled={archived}
+          onClick={() => toggleHabit(habit.id, today)}
+          className={clsx(
+            "flex size-9 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
+            "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500",
+            isDoneOn(habit, today)
+              ? "border-emerald-500 bg-emerald-500 text-white"
+              : "border-stone-300 text-transparent hover:border-emerald-400 dark:border-stone-600",
+          )}
+        >
+          <Check size={18} strokeWidth={3} aria-hidden />
+        </button>
+        <div className="min-w-0 flex-1">
+          <p className={clsx("truncate font-medium", archived && "text-stone-400")}>{habit.name}</p>
+          <p className="text-xs text-stone-500 dark:text-stone-400">
+            {habit.checkins.length} check-in{habit.checkins.length === 1 ? "" : "s"}
+          </p>
+        </div>
+        <ol className="flex gap-1" aria-label={`${habit.name}: last 7 days`}>
+          {days.map((date) => {
+            const done = isDoneOn(habit, date);
+            return (
+              <li key={date} className="flex flex-col items-center gap-0.5">
+                <span className="text-[10px] text-stone-400">{weekday(date, "narrow")}</span>
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={done}
+                  aria-label={`${habit.name}: ${fullDate(date)}`}
+                  disabled={archived}
+                  onClick={() => toggleHabit(habit.id, date)}
+                  className={clsx(
+                    "size-6 rounded-md border transition-colors",
+                    "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent-500",
+                    done
+                      ? "border-emerald-500 bg-emerald-500"
+                      : "border-stone-200 bg-stone-50 hover:border-emerald-300 dark:border-stone-700 dark:bg-stone-800",
+                    date === today && !done && "border-stone-400 dark:border-stone-500",
+                  )}
+                />
+              </li>
+            );
+          })}
+        </ol>
+        <span className="flex opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+          <button
+            type="button"
+            className="btn btn-ghost px-1.5 py-1"
+            aria-label={`Rename ${habit.name}`}
+            onClick={() => {
+              const name = window.prompt("Rename habit", habit.name);
+              if (name) updateHabit(habit.id, { name });
+            }}
+          >
+            <Pencil size={14} />
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost px-1.5 py-1"
+            aria-label={archived ? `Restore ${habit.name}` : `Archive ${habit.name}`}
+            onClick={() => updateHabit(habit.id, { archived: !archived })}
+          >
+            {archived ? <ArchiveRestore size={14} /> : <Archive size={14} />}
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost px-1.5 py-1 text-red-600 dark:text-red-400"
+            aria-label={`Delete ${habit.name}`}
+            onClick={() => {
+              if (window.confirm(`Delete the habit “${habit.name}” and all its check-ins?`)) {
+                deleteHabit(habit.id);
+              }
+            }}
+          >
+            <Trash2 size={14} />
+          </button>
+        </span>
+      </div>
+    </li>
+  );
+}
+
+/** Habits with today's check-in and the last seven days. */
+export function HabitsView() {
+  const habits = useWorkspace((s) => s.habits);
+  const addHabit = useWorkspace((s) => s.addHabit);
+  const today = useToday();
+  const [draft, setDraft] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
+  const days = useMemo(() => lastDays(today, 7), [today]);
+  const active = habits.filter((h) => !h.archivedAt);
+  const archived = habits.filter((h) => h.archivedAt);
+  const doneToday = active.filter((h) => isDoneOn(h, today)).length;
+
+  return (
+    <div className="flex h-full flex-col overflow-y-auto">
+      <ViewHeader title="Habits">
+        {active.length > 0 && (
+          <span className="text-sm text-stone-500 dark:text-stone-400">
+            {doneToday} of {active.length} done today
+          </span>
+        )}
+      </ViewHeader>
+      <div className="mx-auto w-full max-w-3xl space-y-4 px-4 pb-10 sm:px-6">
+        <form
+          className="flex gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (addHabit(draft)) setDraft("");
+          }}
+        >
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="New habit, e.g. “Read 20 pages”"
+            aria-label="New habit"
+            className="field"
+          />
+          <button type="submit" className="btn btn-primary" disabled={!draft.trim()}>
+            <Plus size={16} aria-hidden /> Add
+          </button>
+        </form>
+
+        {active.length === 0 ? (
+          <p className="py-10 text-center text-sm text-stone-500 dark:text-stone-400">
+            Add a habit you want to build, then check it in each day.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {active.map((h) => (
+              <HabitRow key={h.id} habit={h} days={days} today={today} />
+            ))}
+          </ul>
+        )}
+
+        {archived.length > 0 && (
+          <section aria-label="Archived habits">
+            <button
+              type="button"
+              className="btn btn-ghost px-2 text-xs"
+              aria-expanded={showArchived}
+              onClick={() => setShowArchived(!showArchived)}
+            >
+              {showArchived ? "Hide" : "Show"} {archived.length} archived
+            </button>
+            {showArchived && (
+              <ul className="mt-2 space-y-2">
+                {archived.map((h) => (
+                  <HabitRow key={h.id} habit={h} days={days} today={today} />
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
+      </div>
+    </div>
+  );
+}

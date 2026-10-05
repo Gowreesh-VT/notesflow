@@ -3,7 +3,7 @@ import { syncOnce, type SyncResponse } from "./sync";
 import { useSyncStore } from "@/store/sync";
 import { useWorkspace } from "@/store/workspace";
 
-const EMPTY = { items: [], lists: [], folders: [], filters: [], tombstones: [] };
+const EMPTY = { items: [], lists: [], folders: [], filters: [], habits: [], tombstones: [] };
 
 class SyncHttpError extends Error {
   constructor(
@@ -78,8 +78,8 @@ async function syncRound(): Promise<void> {
     const workspace = useWorkspace;
     const result = await syncOnce({
       getData: () => {
-        const { items, lists, folders, filters, tombstones } = workspace.getState();
-        return { items, lists, folders, filters, tombstones };
+        const { items, lists, folders, filters, habits, tombstones } = workspace.getState();
+        return { items, lists, folders, filters, habits, tombstones };
       },
       setData: (partial) => workspace.getState().setData(partial),
       dropTombstones: (t) => workspace.getState().dropTombstones(t),

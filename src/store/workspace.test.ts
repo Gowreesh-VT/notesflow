@@ -967,3 +967,28 @@ describe("manual order", () => {
     expect(state().lists.find((l) => l.id === a)).not.toHaveProperty("order");
   });
 });
+
+describe("habits", () => {
+  it("adds, checks in, renames, archives and deletes habits with a tombstone", () => {
+    const id = state().addHabit("  Stretch ")!;
+    expect(state().addHabit("  ")).toBeNull();
+    state().toggleHabit(id, "2026-10-05");
+    state().toggleHabit(id, "2026-10-04");
+    expect(state().habits[0]).toMatchObject({
+      name: "Stretch",
+      checkins: ["2026-10-04", "2026-10-05"],
+    });
+    state().toggleHabit(id, "2026-10-05");
+    expect(state().habits[0].checkins).toEqual(["2026-10-04"]);
+    state().updateHabit(id, { name: "Stretch 10 min", archived: true });
+    expect(state().habits[0]).toMatchObject({
+      name: "Stretch 10 min",
+      archivedAt: expect.any(Number),
+    });
+    state().updateHabit(id, { archived: false });
+    expect(state().habits[0]).not.toHaveProperty("archivedAt");
+    state().deleteHabit(id);
+    expect(state().habits).toEqual([]);
+    expect(state().tombstones).toContainEqual(expect.objectContaining({ collection: "habit", id }));
+  });
+});

@@ -24,6 +24,7 @@ import {
   startEntry,
   stopEntries,
 } from "@/lib/time-tracking";
+import { cleanHabitName, DEFAULT_GOAL, parseGoal, toggleCheckin } from "@/lib/habits";
 import { makeOutcome } from "@/lib/outcomes";
 import { nextDueDate } from "@/lib/recurrence";
 import { makeReminder, MAX_REMINDERS, parseReminders } from "@/lib/reminders";
@@ -36,6 +37,8 @@ import {
   INBOX_ID,
   type FilterCriteria,
   type Folder,
+  type Habit,
+  type HabitGoal,
   type Item,
   type ItemKind,
   type Priority,
@@ -88,6 +91,7 @@ export type WorkspaceData = {
   lists: TaskList[];
   folders: Folder[];
   filters: SavedFilter[];
+  habits: Habit[];
   tombstones: Tombstone[];
 };
 
@@ -206,11 +210,18 @@ type WorkspaceState = WorkspaceData & {
   updateFilter: (id: string, patch: { name?: string; criteria?: FilterCriteria }) => void;
   deleteFilter: (id: string) => void;
 
+  addHabit: (name: string, goal?: HabitGoal) => string | null;
+  updateHabit: (id: string, patch: { name?: string; goal?: HabitGoal; archived?: boolean }) => void;
+  deleteHabit: (id: string) => void;
+  /** Checks a habit in (or out) for a day. */
+  toggleHabit: (id: string, date: string) => void;
+
   mergeData: (incoming: {
     items: Item[];
     lists: TaskList[];
     folders: Folder[];
     filters?: SavedFilter[];
+    habits?: Habit[];
   }) => {
     items: number;
     lists: number;
@@ -352,6 +363,7 @@ export const useWorkspace = create<WorkspaceState>()(
       lists: [],
       folders: [],
       filters: [],
+      habits: [],
       tombstones: [],
 
       addItem: ({
@@ -1187,8 +1199,55 @@ export const useWorkspace = create<WorkspaceState>()(
           };
         }),
 
+      addHabit: (name, goal = DEFAULT_GOAL) => {
+        const clean = cleanHabitName(name);
+        if (!clean) return null;
+        const now = Date.now();
+        const habit: Habit = {
+          id: createId(),
+          name: clean,
+          goal: parseGoal(goal),
+          checkins: [],
+          createdAt: now,
+          updatedAt: now,
+        };
+        set((s) => ({ habits: [...s.habits, habit] }));
+        return habit.id;
+      },
+
+      updateHabit: (id, patch) =>
+        set((s) => ({
+          habits: s.habits.map((h) => {
+            if (h.id !== id) return h;
+            const next: Habit = { ...h, updatedAt: Date.now() };
+            if (patch.name !== undefined) next.name = cleanHabitName(patch.name) ?? h.name;
+            if (patch.goal) next.goal = parseGoal(patch.goal);
+            if (patch.archived === true) next.archivedAt = Date.now();
+            if (patch.archived === false) delete next.archivedAt;
+            return next;
+          }),
+        })),
+
+      deleteHabit: (id) =>
+        set((s) => {
+          if (!s.habits.some((h) => h.id === id)) return s;
+          return {
+            habits: s.habits.filter((h) => h.id !== id),
+            tombstones: [...s.tombstones, { collection: "habit" as const, id, at: Date.now() }],
+          };
+        }),
+
+      toggleHabit: (id, date) =>
+        set((s) => ({
+          habits: s.habits.map((h) =>
+            h.id === id
+              ? { ...h, checkins: toggleCheckin(h.checkins, date), updatedAt: Date.now() }
+              : h,
+          ),
+        })),
+
       mergeData: (incoming) => {
-        const { items, lists, folders, filters } = get();
+        const { items, lists, folders, filters, habits } = get();
         const itemIds = new Set(items.map((i) => i.id));
         const listIds = new Set(lists.map((l) => l.id));
         const folderIds = new Set(folders.map((f) => f.id));
@@ -1200,11 +1259,14 @@ export const useWorkspace = create<WorkspaceState>()(
           .map((i) => (knownLists.has(i.listId) ? i : { ...i, listId: INBOX_ID }));
         const filterIds = new Set(filters.map((f) => f.id));
         const newFilters = (incoming.filters ?? []).filter((f) => !filterIds.has(f.id));
+        const habitIds = new Set(habits.map((h) => h.id));
+        const newHabits = (incoming.habits ?? []).filter((h) => !habitIds.has(h.id));
         set({
           items: [...newItems, ...items],
           lists: [...lists, ...newLists],
           folders: [...folders, ...newFolders],
           filters: [...filters, ...newFilters],
+          habits: [...habits, ...newHabits],
         });
         return { items: newItems.length, lists: newLists.length };
       },
@@ -1224,17 +1286,18 @@ export const useWorkspace = create<WorkspaceState>()(
     }),
     {
       name: WORKSPACE_KEY,
-      version: 4,
+      version: 5,
       skipHydration: true,
       partialize: (s) => ({
         items: s.items,
         lists: s.lists,
         folders: s.folders,
         filters: s.filters,
+        habits: s.habits,
         tombstones: s.tombstones,
       }),
       // v1 lists and folders had no updatedAt; v1 had no tombstones; before v3 there were no sections; before v4
-      // there were no saved filters.
+      // there were no saved filters; before v5 there were no habits.
       migrate: (persisted) => {
         const old = (persisted ?? {}) as Partial<WorkspaceData>;
         const stamp = <T extends { createdAt: number; updatedAt?: number }>(x: T) => ({
@@ -1246,6 +1309,7 @@ export const useWorkspace = create<WorkspaceState>()(
           lists: (old.lists ?? []).map(stamp).map((l) => ({ ...l, sections: l.sections ?? [] })),
           folders: (old.folders ?? []).map(stamp),
           filters: old.filters ?? [],
+          habits: old.habits ?? [],
           tombstones: old.tombstones ?? [],
         };
       },
@@ -1279,8 +1343,8 @@ export function upgradeLegacyStorage(storage: Pick<Storage, "getItem" | "setItem
   storage.setItem(
     WORKSPACE_KEY,
     JSON.stringify({
-      state: { items, lists, folders: [], filters: [], tombstones: [] },
-      version: 4,
+      state: { items, lists, folders: [], filters: [], habits: [], tombstones: [] },
+      version: 5,
     }),
   );
   return true;

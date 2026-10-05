@@ -204,3 +204,24 @@ describe("withinRateLimit", () => {
     expect(await withinRateLimit(db, "test:other", 3, 60_000, t0)).toBe(true);
   });
 });
+
+describe("habit sync", () => {
+  it("stores and returns habits like any other record", async () => {
+    const habit = {
+      id: "habit-1",
+      name: "Meditate",
+      goal: { per: "day", times: 1 },
+      checkins: ["2026-10-05"],
+      createdAt: 1,
+      updatedAt: 50,
+    };
+    const result = await syncForUser(db, "alice", {
+      cursor: 0,
+      changes: [{ collection: "habit", id: habit.id, updatedAt: 50, deleted: false, data: habit }],
+    });
+    expect(result.records.find((r) => r.id === "habit-1")).toMatchObject({
+      collection: "habit",
+      data: { name: "Meditate", checkins: ["2026-10-05"] },
+    });
+  });
+});

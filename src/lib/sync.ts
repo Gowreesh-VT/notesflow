@@ -1,5 +1,13 @@
-import { parseFilter, parseFolder, parseItem, parseList } from "./backup";
-import type { Folder, Item, SavedFilter, SyncCollection, TaskList, Tombstone } from "./types";
+import { parseFilter, parseFolder, parseHabit, parseItem, parseList } from "./backup";
+import type {
+  Folder,
+  Habit,
+  Item,
+  SavedFilter,
+  SyncCollection,
+  TaskList,
+  Tombstone,
+} from "./types";
 
 /** One synced record as sent over the wire. `data` is null for deletions. */
 export type SyncRecord = {
@@ -15,18 +23,20 @@ export type SyncData = {
   lists: TaskList[];
   folders: Folder[];
   filters: SavedFilter[];
+  habits: Habit[];
   tombstones: Tombstone[];
 };
 
 export type SyncState = { cursor: number; lastPushAt: number };
 
-export const COLLECTIONS: SyncCollection[] = ["item", "list", "folder", "filter"];
+export const COLLECTIONS: SyncCollection[] = ["item", "list", "folder", "filter", "habit"];
 
 const PARSERS = {
   item: parseItem,
   list: parseList,
   folder: parseFolder,
   filter: parseFilter,
+  habit: parseHabit,
 } as const;
 
 /** The SyncData array that holds each collection. */
@@ -35,6 +45,7 @@ const FIELDS = {
   list: "lists",
   folder: "folders",
   filter: "filters",
+  habit: "habits",
 } as const satisfies Record<SyncCollection, keyof SyncData>;
 
 const isCollection = (value: unknown): value is SyncCollection =>
@@ -139,19 +150,21 @@ export function applyRecords(
 ): { data: SyncData; changed: boolean; conflicts: number } {
   const valid = records.flatMap((r) => sanitizeRecord(r) ?? []);
   // Keep the original (possibly large) updatedAt values: sanitizeRecord preserves them.
-  const items = mergeCollection(data.items, valid, data.tombstones, "item", since);
-  const lists = mergeCollection(data.lists, valid, data.tombstones, "list", since);
-  const folders = mergeCollection(data.folders, valid, data.tombstones, "folder", since);
-  const filters = mergeCollection(data.filters, valid, data.tombstones, "filter", since);
-  const merged = [items, lists, folders, filters];
+  const next: SyncData = { ...data };
+  const merged = COLLECTIONS.map((collection) => {
+    const field = FIELDS[collection];
+    const result = mergeCollection<{ id: string; updatedAt: number }>(
+      data[field],
+      valid,
+      data.tombstones,
+      collection,
+      since,
+    );
+    (next as Record<string, unknown>)[field] = result.next;
+    return result;
+  });
   return {
-    data: {
-      ...data,
-      items: items.next,
-      lists: lists.next,
-      folders: folders.next,
-      filters: filters.next,
-    },
+    data: next,
     changed: merged.some((m) => m.changed),
     conflicts: merged.reduce((sum, m) => sum + m.conflicts, 0),
   };
@@ -195,6 +208,7 @@ export async function syncOnce(
         lists: merged.data.lists,
         folders: merged.data.folders,
         filters: merged.data.filters,
+        habits: merged.data.habits,
       });
     }
     cursor = response.cursor;

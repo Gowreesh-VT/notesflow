@@ -156,7 +156,23 @@ export type SavedFilter = {
   updatedAt: number;
 };
 
-export type SyncCollection = "item" | "list" | "folder" | "filter";
+/** How often a habit should be done: `times` per day or per week. */
+export type HabitGoal = { per: "day" | "week"; times: number };
+
+/** A habit with its daily check-ins. Synced as the "habit" collection. */
+export type Habit = {
+  id: string;
+  name: string;
+  goal: HabitGoal;
+  /** Days it was done, as YYYY-MM-DD, sorted, unique. */
+  checkins: string[];
+  /** Hidden from the habit page while archived. */
+  archivedAt?: number | null;
+  createdAt: number;
+  updatedAt: number;
+};
+
+export type SyncCollection = "item" | "list" | "folder" | "filter" | "habit";
 
 /** Records that something was permanently deleted, so the deletion can reach other devices. */
 export type Tombstone = {
@@ -176,7 +192,7 @@ export type View =
   /** Whole-workspace layouts (Phase 4): they show tasks from every list in their own way. */
   | { kind: PlannerViewKind };
 
-export type PlannerViewKind = "calendar" | "matrix" | "timeline" | "plan" | "focus";
+export type PlannerViewKind = "calendar" | "matrix" | "timeline" | "plan" | "focus" | "habits";
 
 export type ItemSort = "default" | "manual" | "due" | "priority" | "title" | "updated";
 
@@ -189,4 +205,5 @@ export type Backup = {
   folders: Folder[];
   /** Saved filters; absent in backups made before filters existed. */
   filters?: SavedFilter[];
+  habits?: Habit[];
 };
