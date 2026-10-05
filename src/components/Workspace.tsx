@@ -11,6 +11,7 @@ import { CalendarView } from "./CalendarView";
 import { FocusView } from "./FocusView";
 import { HabitsView } from "./HabitsView";
 import { ProgressView } from "./ProgressView";
+import { QuickView } from "./QuickView";
 import { ReviewView } from "./ReviewView";
 import { ItemList } from "./ItemList";
 import { MatrixView } from "./MatrixView";
@@ -29,6 +30,7 @@ const PLANNER_COMPONENTS: Record<PlannerViewKind, () => React.JSX.Element> = {
   habits: HabitsView,
   review: ReviewView,
   progress: ProgressView,
+  quick: QuickView,
 };
 
 // The list takes the full width; the detail panel only opens beside it when something is selected.

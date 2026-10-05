@@ -85,7 +85,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 - [x] Progress view: completion trends, streaks and a calm "done for today" state
 - [x] Smart scheduling suggestions based on local rules, for example an overloaded day, a task longer than the time left, or overdue tasks to move
 - [x] Outcomes insights: filter by outcome and see how outcomes break down in the weekly review
-- [ ] "What can I do in 15 minutes?" view using estimates and energy tags
+- [x] "What can I do in 15 minutes?" view using estimates and energy tags
 
 ### Phase 6 — Personalise, import and polish (days 53–60)
 

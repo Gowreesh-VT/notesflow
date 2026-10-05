@@ -61,6 +61,9 @@ Templates are items with `template: true`; every view, count and tag list must k
 Saved filters (`"filter"`), habits (`"habit"`) and countdowns (`"countdown"`) are synced collections too: a new collection must be added
 everywhere `COLLECTIONS` is used (sync, backup, store, SyncRunner). Archived lists (`archivedAt`) and their items stay
 out of smart views, counts, tags and list pickers (use `activeLists`/`isArchived` from `items-logic.ts`).
+Whole-workspace views (calendar, matrix, timeline, plan, focus, habits, review, progress, quick) are
+`PlannerViewKind`s: add one to `PLANNER_VIEWS`, `PLANNER_ICONS` and `PLANNER_COMPONENTS` in `Workspace.tsx`. The
+Pomodoro state (`src/store/focus.ts`) is device-local; focused time is saved as `focus: true` time entries on tasks.
 `filterItems`/`countInView` take an optional context with the saved filters and archived list ids; pass it.
 Completing a repeating task goes through `setStatus`, which returns the id of the finished copy; use that id for
 anything that follows completion (such as the outcome prompt). Reminder firing state (`src/store/alarms.ts`) and
