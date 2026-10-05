@@ -71,7 +71,10 @@ export function AppShell() {
         openDailyNote();
       } else if (event.key === "/" && !isTypingTarget(event.target)) {
         event.preventDefault();
-        document.getElementById("list-search")?.focus();
+        // The list search is hidden in narrow layouts; fall back to the command palette there.
+        const search = document.getElementById("list-search");
+        if (search && search.offsetParent !== null) search.focus();
+        else ui.setPaletteOpen(true);
       } else if (event.key === "?" && !isTypingTarget(event.target) && !ui.paletteOpen) {
         event.preventDefault();
         ui.setHelpOpen(!ui.helpOpen);
