@@ -202,7 +202,8 @@ export type View =
   /** Whole-workspace layouts (Phase 4): they show tasks from every list in their own way. */
   | { kind: PlannerViewKind };
 
-export type PlannerViewKind = "calendar" | "matrix" | "timeline" | "plan" | "focus" | "habits";
+export type PlannerViewKind =
+  "calendar" | "matrix" | "timeline" | "plan" | "focus" | "habits" | "review";
 
 export type ItemSort = "default" | "manual" | "due" | "priority" | "title" | "updated";
 
