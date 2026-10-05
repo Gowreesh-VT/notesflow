@@ -36,7 +36,7 @@ export const viewport: Viewport = {
 };
 
 // Applies the saved look (written by ThemeSync; older versions kept the theme in the UI store) before first paint to avoid a light/dark flash.
-const themeScript = `(function(){try{var a=JSON.parse(localStorage.getItem("notesflow:appearance")||"null");if(!a){var u=JSON.parse(localStorage.getItem("notesflow:ui")||"{}").state;a={theme:u&&u.theme}}var s=a.theme||"system";var d=s==="dark"||(s==="system"&&matchMedia("(prefers-color-scheme: dark)").matches);var r=document.documentElement;r.classList.toggle("dark",d);var v=a.vars||{};for(var k in v)r.style.setProperty(k,v[k])}catch(e){}})()`;
+const themeScript = `(function(){try{var a=JSON.parse(localStorage.getItem("notesflow:appearance")||"null");if(!a){var u=JSON.parse(localStorage.getItem("notesflow:ui")||"{}").state;a={theme:u&&u.theme}}var s=a.theme||"system";var d=s==="dark"||(s==="system"&&matchMedia("(prefers-color-scheme: dark)").matches);var r=document.documentElement;r.classList.toggle("dark",d);var v=a.vars||{};for(var k in v)r.style.setProperty(k,v[k]);var t=a.attrs||{};for(var n in t)r.dataset[n]=t[n]}catch(e){}})()`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

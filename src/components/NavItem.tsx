@@ -26,7 +26,7 @@ export function NavItem({
       onClick={onClick}
       aria-current={active ? "page" : undefined}
       className={clsx(
-        "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[7px] text-left text-sm transition-colors",
+        "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[7px] text-left text-sm transition-colors compact:py-1",
         "focus-visible:outline-2 focus-visible:outline-accent-500",
         indent && "pl-7",
         className,

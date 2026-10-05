@@ -184,6 +184,9 @@ export type Countdown = {
 
 export type Theme = "system" | "light" | "dark";
 export type EditorMode = "edit" | "split" | "preview";
+export type Density = "comfortable" | "compact";
+export type FontChoice = "default" | "system" | "serif" | "mono";
+export type TextSize = "small" | "default" | "large";
 
 /**
  * The account's preferences: one record with id "preferences", synced as the "setting" collection so every device
@@ -194,6 +197,9 @@ export type Preferences = {
   theme: Theme;
   /** An accent preset id ("blue", "teal", …) or a custom "#rrggbb" colour. */
   accent: string;
+  density: Density;
+  font: FontChoice;
+  textSize: TextSize;
   editorMode: EditorMode;
   /** Outcome choices offered when a task is finished. */
   outcomeLabels: string[];

@@ -96,7 +96,7 @@ function BoardCard({
       onDragOver={movable ? (e) => dnd.overCard(e, columnId, index) : undefined}
       onKeyDown={movable ? (e) => dnd.stepCard(e, item.id) : undefined}
       className={clsx(
-        "group relative flex gap-2.5 rounded-xl border px-3 py-2.5 shadow-soft transition-colors",
+        "group relative flex gap-2.5 rounded-xl border px-3 py-2.5 shadow-soft transition-colors compact:py-1.5",
         movable && "cursor-grab active:cursor-grabbing",
         selected || checked
           ? "border-accent-300 bg-accent-50 dark:border-accent-800 dark:bg-accent-950/50"

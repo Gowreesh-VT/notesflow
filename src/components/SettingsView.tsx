@@ -148,6 +148,36 @@ export function SettingsView() {
             onChange={(theme) => set({ theme })}
           />
           <AccentPicker value={prefs.accent} onChange={(accent) => set({ accent })} />
+          <Choice
+            label="Density"
+            value={prefs.density}
+            options={[
+              { value: "comfortable", label: "Comfortable" },
+              { value: "compact", label: "Compact" },
+            ]}
+            onChange={(density) => set({ density })}
+          />
+          <Choice
+            label="Font"
+            value={prefs.font}
+            options={[
+              { value: "default", label: "Geist" },
+              { value: "system", label: "System" },
+              { value: "serif", label: "Serif" },
+              { value: "mono", label: "Mono" },
+            ]}
+            onChange={(font) => set({ font })}
+          />
+          <Choice
+            label="Text size"
+            value={prefs.textSize}
+            options={[
+              { value: "small", label: "Small" },
+              { value: "default", label: "Default" },
+              { value: "large", label: "Large" },
+            ]}
+            onChange={(textSize) => set({ textSize })}
+          />
         </SettingsSection>
 
         <SettingsSection title="Notes">

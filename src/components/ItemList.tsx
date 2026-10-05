@@ -126,7 +126,7 @@ function ItemRow({
       onDragStart={splitOpen ? (e) => setDragItem(e, item.id) : undefined}
       {...reorder?.row}
       className={clsx(
-        "group relative flex min-h-11 items-center gap-3 rounded-lg px-3 py-1.5 transition-colors",
+        "group relative flex min-h-11 items-center gap-3 rounded-lg px-3 py-1.5 transition-colors compact:min-h-8 compact:py-0.5",
         selected || checked
           ? "bg-accent-50 dark:bg-accent-950/50"
           : "hover:bg-stone-100 dark:hover:bg-stone-800/60",

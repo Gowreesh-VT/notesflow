@@ -67,7 +67,7 @@ function QueueRow({
         }}
         onDragEnd={onDragEnd}
         className={clsx(
-          "group flex min-h-11 cursor-grab items-center gap-2.5 rounded-lg px-2 py-1 transition-colors active:cursor-grabbing",
+          "group flex min-h-11 cursor-grab items-center gap-2.5 rounded-lg px-2 py-1 transition-colors active:cursor-grabbing compact:min-h-8 compact:py-0.5",
           selected
             ? "bg-accent-50 dark:bg-accent-950/50"
             : "hover:bg-stone-100 dark:hover:bg-stone-800/60",

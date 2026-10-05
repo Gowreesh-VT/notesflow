@@ -1,12 +1,23 @@
 import { DEFAULT_ACCENT, isAccent } from "./accent";
 import { cleanOutcomeLabels, DEFAULT_OUTCOME_LABELS } from "./outcomes";
 import { isClock } from "./reminders";
-import type { EditorMode, PlannerViewKind, Preferences, Theme } from "./types";
+import type {
+  Density,
+  EditorMode,
+  FontChoice,
+  PlannerViewKind,
+  Preferences,
+  TextSize,
+  Theme,
+} from "./types";
 
 export const PREFERENCES_ID = "preferences";
 
 export const THEMES: Theme[] = ["system", "light", "dark"];
 export const EDITOR_MODES: EditorMode[] = ["edit", "split", "preview"];
+export const DENSITIES: Density[] = ["comfortable", "compact"];
+export const FONTS: FontChoice[] = ["default", "system", "serif", "mono"];
+export const TEXT_SIZES: TextSize[] = ["small", "default", "large"];
 
 /** Views that can be hidden from the sidebar (Settings itself always stays reachable). */
 export const HIDEABLE_VIEWS: PlannerViewKind[] = [
@@ -27,6 +38,9 @@ export type PreferenceValues = Omit<Preferences, "id" | "updatedAt">;
 export const DEFAULT_PREFERENCES: PreferenceValues = {
   theme: "system",
   accent: DEFAULT_ACCENT,
+  density: "comfortable",
+  font: "default",
+  textSize: "default",
   editorMode: "split",
   outcomeLabels: DEFAULT_OUTCOME_LABELS,
   dayEnd: "21:00",
@@ -42,6 +56,9 @@ export function cleanPreferenceValues(raw: Record<string, unknown>): PreferenceV
   return {
     theme: pick(raw.theme, THEMES, d.theme),
     accent: isAccent(raw.accent) ? raw.accent.toLowerCase() : d.accent,
+    density: pick(raw.density, DENSITIES, d.density),
+    font: pick(raw.font, FONTS, d.font),
+    textSize: pick(raw.textSize, TEXT_SIZES, d.textSize),
     editorMode: pick(raw.editorMode, EDITOR_MODES, d.editorMode),
     outcomeLabels: Array.isArray(raw.outcomeLabels)
       ? cleanOutcomeLabels(raw.outcomeLabels.filter((l): l is string => typeof l === "string"))

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { sanitizeRecord } from "./sync";
 import {
+  cleanPreferenceValues,
   clockMinutes,
   currentPreferences,
   DEFAULT_PREFERENCES,
@@ -33,6 +34,9 @@ describe("preferences", () => {
       id: PREFERENCES_ID,
       theme: "dark",
       accent: "blue",
+      density: "comfortable",
+      font: "default",
+      textSize: "default",
       editorMode: "split",
       outcomeLabels: ["Nailed it"],
       dayEnd: "21:00",
@@ -72,6 +76,12 @@ describe("preferences", () => {
         data: record,
       }),
     ).toMatchObject({ collection: "setting", data: { theme: "dark" } });
+  });
+
+  it("keeps only known density, font and text size choices", () => {
+    expect(
+      cleanPreferenceValues({ density: "compact", font: "serif", textSize: "huge" }),
+    ).toMatchObject({ density: "compact", font: "serif", textSize: "default" });
   });
 
   it("reads clock times as minutes", () => {
