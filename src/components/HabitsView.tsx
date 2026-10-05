@@ -18,14 +18,15 @@ import type { Habit } from "@/lib/types";
 import { useWorkspace } from "@/store/workspace";
 import { HabitHeatmap } from "./HabitHeatmap";
 import { ViewHeader } from "./ViewHeader";
+import { formatDate } from "@/lib/locale";
 
 const weekday = (date: string, style: "narrow" | "short" | "long") => {
   const [y, m, d] = date.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: style });
+  return formatDate(new Date(y, m - 1, d), { weekday: style });
 };
 const fullDate = (date: string) => {
   const [y, m, d] = date.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+  return formatDate(new Date(y, m - 1, d), {
     weekday: "long",
     month: "long",
     day: "numeric",

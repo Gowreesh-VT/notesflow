@@ -25,10 +25,11 @@ import { DayPlanner } from "./DayPlanner";
 import { Suggestions } from "./Suggestions";
 import { PlanQueue } from "./PlanQueue";
 import { ViewHeader } from "./ViewHeader";
+import { formatDate } from "@/lib/locale";
 
 function longDate(day: string): string {
   const [y, m, d] = day.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+  return formatDate(new Date(y, m - 1, d), {
     weekday: "long",
     month: "long",
     day: "numeric",

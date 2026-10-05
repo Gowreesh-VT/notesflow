@@ -2,6 +2,7 @@ import { isOpenTask } from "./items-logic";
 import { sortByOrder } from "./ordering";
 import { INBOX_ID, type Item, type TaskList } from "./types";
 import { addDays, daysBetween, displayTitle, formatDueLabel } from "./utils";
+import { formatDate } from "./locale";
 
 /** Week zoom shows about three weeks at a time, month zoom about three months. */
 export type TimelineZoom = "week" | "month";
@@ -205,7 +206,7 @@ export function monthSpans(range: TimelineRange): MonthSpan[] {
     const end = minKey(addDays(next, -1), range.to);
     spans.push({
       key: start.slice(0, 7),
-      label: new Date(y, m - 1, 1).toLocaleDateString(undefined, {
+      label: formatDate(new Date(y, m - 1, 1), {
         month: "long",
         year: "numeric",
       }),

@@ -8,9 +8,10 @@ import { formatElapsed, runningEntry, trackedMinutes } from "@/lib/time-tracking
 import type { Item } from "@/lib/types";
 import { useFocus } from "@/store/focus";
 import { useWorkspace } from "@/store/workspace";
+import { formatDateTime } from "@/lib/locale";
 
 const formatEntryDate = (ms: number) =>
-  new Date(ms).toLocaleString(undefined, {
+  formatDateTime(new Date(ms), {
     month: "short",
     day: "numeric",
     hour: "numeric",

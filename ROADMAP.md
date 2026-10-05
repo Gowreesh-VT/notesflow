@@ -92,7 +92,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 - [x] [BIG] Settings page for all preferences, synced to the account
 - [x] Themes: accent colour presets and a custom accent colour
 - [x] Density (compact or comfortable) and font choices
-- [ ] Week start day, date format and time format settings
+- [x] Week start day, date format and time format settings
 - [ ] Export to CSV, Markdown and iCal
 - [ ] Import from CSV and JSON (TickTick and Todoist exports)
 - [ ] [BIG] Account settings: change password, delete the account and all its data

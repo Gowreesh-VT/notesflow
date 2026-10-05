@@ -15,9 +15,10 @@ import { formatClock } from "@/lib/utils";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
 import { NotificationPermission } from "./NotificationPermission";
+import { formatDateTime } from "@/lib/locale";
 
 const formatWhen = (ms: number) =>
-  new Date(ms).toLocaleString(undefined, {
+  formatDateTime(new Date(ms), {
     weekday: "short",
     month: "short",
     day: "numeric",

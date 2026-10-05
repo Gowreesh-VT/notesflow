@@ -1,4 +1,5 @@
 import { DEFAULT_ACCENT, isAccent } from "./accent";
+import { CLOCK_FORMATS, DATE_ORDERS, DEFAULT_LOCALE_PREFS, WEEK_STARTS } from "./locale";
 import { cleanOutcomeLabels, DEFAULT_OUTCOME_LABELS } from "./outcomes";
 import { isClock } from "./reminders";
 import type {
@@ -41,6 +42,7 @@ export const DEFAULT_PREFERENCES: PreferenceValues = {
   density: "comfortable",
   font: "default",
   textSize: "default",
+  ...DEFAULT_LOCALE_PREFS,
   editorMode: "split",
   outcomeLabels: DEFAULT_OUTCOME_LABELS,
   dayEnd: "21:00",
@@ -59,6 +61,9 @@ export function cleanPreferenceValues(raw: Record<string, unknown>): PreferenceV
     density: pick(raw.density, DENSITIES, d.density),
     font: pick(raw.font, FONTS, d.font),
     textSize: pick(raw.textSize, TEXT_SIZES, d.textSize),
+    weekStart: pick(raw.weekStart, WEEK_STARTS, d.weekStart),
+    dateOrder: pick(raw.dateOrder, DATE_ORDERS, d.dateOrder),
+    clock: pick(raw.clock, CLOCK_FORMATS, d.clock),
     editorMode: pick(raw.editorMode, EDITOR_MODES, d.editorMode),
     outcomeLabels: Array.isArray(raw.outcomeLabels)
       ? cleanOutcomeLabels(raw.outcomeLabels.filter((l): l is string => typeof l === "string"))

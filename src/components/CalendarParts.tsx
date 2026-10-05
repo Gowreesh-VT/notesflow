@@ -9,6 +9,7 @@ import { INBOX_ID, type Item, type Priority } from "@/lib/types";
 import { addDays, displayTitle, formatClock, formatDueRange } from "@/lib/utils";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
+import { formatDate, formatTime } from "@/lib/locale";
 
 /** Pieces shared by the calendar layouts: task chips, date labels, quick add on a day and rescheduling. */
 
@@ -18,7 +19,7 @@ const dateOf = (day: string) => {
 };
 
 export const formatDay = (day: string, options: Intl.DateTimeFormatOptions): string =>
-  dateOf(day).toLocaleDateString(undefined, options);
+  formatDate(dateOf(day), options);
 
 /** "Monday, October 5, 2026", for labels. */
 export const fullDate = (day: string): string =>
@@ -26,7 +27,7 @@ export const fullDate = (day: string): string =>
 
 /** An hour of the day as a short local label, such as "9 AM" or "09". */
 export const formatHour = (hour: number): string =>
-  new Date(2000, 0, 1, hour).toLocaleTimeString(undefined, { hour: "numeric" });
+  formatTime(new Date(2000, 0, 1, hour), { hour: "numeric" });
 
 export const PRIORITY_DOT: Record<Priority, string> = {
   none: "bg-stone-400 dark:bg-stone-500",

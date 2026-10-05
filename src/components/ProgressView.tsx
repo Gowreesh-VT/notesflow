@@ -7,6 +7,7 @@ import { useToday } from "@/lib/hooks";
 import { completionStreak, completionsPerDay, todayTally } from "@/lib/progress";
 import { useWorkspace } from "@/store/workspace";
 import { ViewHeader } from "./ViewHeader";
+import { formatDate } from "@/lib/locale";
 
 const RANGES = [7, 30, 90] as const;
 
@@ -121,7 +122,7 @@ export function ProgressView() {
                 title={`${d.date}: ${d.count}`}
               >
                 <span
-                  aria-label={`${new Date(`${d.date}T00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })}: ${d.count}`}
+                  aria-label={`${formatDate(new Date(`${d.date}T00:00`), { month: "short", day: "numeric" })}: ${d.count}`}
                   className={clsx(
                     "w-full rounded-t-sm",
                     d.date === today ? "bg-accent-500" : "bg-accent-300 dark:bg-accent-800",
@@ -133,7 +134,7 @@ export function ProgressView() {
           </ol>
           <div className="mt-1 flex justify-between text-[11px] text-stone-500 dark:text-stone-400">
             <span>
-              {new Date(`${per[0].date}T00:00`).toLocaleDateString(undefined, {
+              {formatDate(new Date(`${per[0].date}T00:00`), {
                 month: "short",
                 day: "numeric",
               })}

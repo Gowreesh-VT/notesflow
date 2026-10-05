@@ -1,4 +1,5 @@
 import type { Item } from "./types";
+import { formatDate } from "./locale";
 
 /**
  * The daily note for a date: a live one first, then one in the trash; the oldest wins if two devices both
@@ -17,7 +18,7 @@ export function findDailyNote(items: Item[], date: string): Item | undefined {
 /** A friendly title for a daily note, such as "Sunday, October 4, 2026". */
 export function dailyNoteTitle(date: string): string {
   const [y, m, d] = date.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+  return formatDate(new Date(y, m - 1, d), {
     weekday: "long",
     month: "long",
     day: "numeric",

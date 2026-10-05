@@ -200,6 +200,11 @@ export type Preferences = {
   density: Density;
   font: FontChoice;
   textSize: TextSize;
+  /** First day of the week: 0 Sunday, 1 Monday, 6 Saturday. */
+  weekStart: 0 | 1 | 6;
+  /** "auto" follows the browser language; "dmy" (5 Oct) or "mdy" (Oct 5). */
+  dateOrder: "auto" | "dmy" | "mdy";
+  clock: "auto" | "12h" | "24h";
   editorMode: EditorMode;
   /** Outcome choices offered when a task is finished. */
   outcomeLabels: string[];

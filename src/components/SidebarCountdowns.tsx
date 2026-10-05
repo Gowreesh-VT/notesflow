@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { countdownLabel, visibleCountdowns } from "@/lib/countdowns";
 import { useToday } from "@/lib/hooks";
 import { useWorkspace } from "@/store/workspace";
+import { formatDate } from "@/lib/locale";
 
 /** Countdowns to important dates, with a small form to add one. */
 export function SidebarCountdowns() {
@@ -85,7 +86,7 @@ export function SidebarCountdowns() {
                 "min-w-0 flex-1 truncate text-left",
                 past ? "text-stone-400" : "text-stone-600 dark:text-stone-300",
               )}
-              title={`${c.name}: ${new Date(`${c.date}T00:00`).toLocaleDateString(undefined, { dateStyle: "long" })}. Click to rename.`}
+              title={`${c.name}: ${formatDate(new Date(`${c.date}T00:00`), { dateStyle: "long" })}. Click to rename.`}
               onClick={() => {
                 const renamed = window.prompt("Rename countdown", c.name);
                 if (renamed) updateCountdown(c.id, { name: renamed });

@@ -1,5 +1,6 @@
 import type { Habit, HabitGoal } from "./types";
 import { addDays } from "./utils";
+import { weekdayPosition } from "./locale";
 
 export const MAX_HABIT_NAME = 80;
 export const MAX_CHECKINS = 3660;
@@ -45,13 +46,10 @@ export const isDoneOn = (habit: Pick<Habit, "checkins">, date: string): boolean 
 export const lastDays = (today: string, count: number): string[] =>
   Array.from({ length: count }, (_, i) => addDays(today, i - (count - 1)));
 
-/** Monday of the week containing `date`. */
-function weekStart(date: string): string {
-  const [y, m, d] = date.split("-").map(Number);
-  return addDays(date, -((new Date(y, m - 1, d).getDay() + 6) % 7));
-}
+/** First day of the week containing `date` (Monday unless changed in preferences). */
+const weekStart = (date: string): string => addDays(date, -weekdayPosition(date));
 
-/** Check-ins in the current period (today, or this Monday–Sunday week) and the target for it. */
+/** Check-ins in the current period (today, or this week) and the target for it. */
 export function periodProgress(
   habit: Pick<Habit, "checkins" | "goal">,
   today: string,
@@ -113,11 +111,11 @@ export function habitStreaks(
   return { current, best: Math.max(best, current), unit: "week" };
 }
 
-/** Days of a month as weeks (Monday first), with null padding: the heat-map grid. */
+/** Days of a month as weeks (from the preferred first day), with null padding: the heat-map grid. */
 export function monthGrid(year: number, month: number): (string | null)[][] {
   const first = `${year}-${String(month).padStart(2, "0")}-01`;
   const daysInMonth = new Date(year, month, 0).getDate();
-  const lead = (new Date(year, month - 1, 1).getDay() + 6) % 7;
+  const lead = weekdayPosition(first);
   const cells: (string | null)[] = [
     ...Array<null>(lead).fill(null),
     ...Array.from({ length: daysInMonth }, (_, i) => addDays(first, i)),

@@ -6,11 +6,12 @@ import { focusStats } from "@/lib/focus-stats";
 import { useToday } from "@/lib/hooks";
 import { INBOX_ID } from "@/lib/types";
 import { useWorkspace } from "@/store/workspace";
+import { formatDate } from "@/lib/locale";
 
 const dayLabel = (date: string, today: string) => {
   if (date === today) return "Today";
   const [y, m, d] = date.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "short" });
+  return formatDate(new Date(y, m - 1, d), { weekday: "short" });
 };
 
 const minutesLabel = (minutes: number) => (minutes ? formatDuration(minutes) : "0m");

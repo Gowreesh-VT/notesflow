@@ -180,6 +180,39 @@ export function SettingsView() {
           />
         </SettingsSection>
 
+        <SettingsSection title="Date and time">
+          <Choice
+            label="Week starts on"
+            value={String(prefs.weekStart) as "0" | "1" | "6"}
+            options={[
+              { value: "1", label: "Monday" },
+              { value: "0", label: "Sunday" },
+              { value: "6", label: "Saturday" },
+            ]}
+            onChange={(day) => set({ weekStart: Number(day) as 0 | 1 | 6 })}
+          />
+          <Choice
+            label="Date format"
+            value={prefs.dateOrder}
+            options={[
+              { value: "auto", label: "Automatic" },
+              { value: "dmy", label: "5 Oct" },
+              { value: "mdy", label: "Oct 5" },
+            ]}
+            onChange={(dateOrder) => set({ dateOrder })}
+          />
+          <Choice
+            label="Time format"
+            value={prefs.clock}
+            options={[
+              { value: "auto", label: "Automatic" },
+              { value: "12h", label: "1:30 PM" },
+              { value: "24h", label: "13:30" },
+            ]}
+            onChange={(clock) => set({ clock })}
+          />
+        </SettingsSection>
+
         <SettingsSection title="Notes">
           <Choice
             label="Editor layout"

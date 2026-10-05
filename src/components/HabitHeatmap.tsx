@@ -6,8 +6,10 @@ import clsx from "clsx";
 import { isDoneOn, monthGrid } from "@/lib/habits";
 import type { Habit } from "@/lib/types";
 import { useWorkspace } from "@/store/workspace";
+import { formatDate, localePrefs } from "@/lib/locale";
 
-const WEEKDAYS = ["M", "T", "W", "T", "F", "S", "S"];
+// Sunday first, as in Date.getDay; rotated to the preferred first day of the week.
+const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
 
 /** A month of check-ins as a grid of squares; past days can be toggled. */
 export function HabitHeatmap({ habit, today }: { habit: Habit; today: string }) {
@@ -15,7 +17,7 @@ export function HabitHeatmap({ habit, today }: { habit: Habit; today: string }) 
   const [ty, tm] = today.split("-").map(Number);
   const [month, setMonth] = useState({ y: ty, m: tm });
   const grid = monthGrid(month.y, month.m);
-  const title = new Date(month.y, month.m - 1, 1).toLocaleDateString(undefined, {
+  const title = formatDate(new Date(month.y, month.m - 1, 1), {
     month: "long",
     year: "numeric",
   });
@@ -56,7 +58,7 @@ export function HabitHeatmap({ habit, today }: { habit: Habit; today: string }) 
         role="grid"
         aria-label={`${habit.name}, ${title}`}
       >
-        {WEEKDAYS.map((d, i) => (
+        {WEEKDAYS.map((_, i) => WEEKDAYS[(localePrefs().weekStart + i) % 7]).map((d, i) => (
           <span key={i} aria-hidden className="text-center text-[10px] text-stone-400">
             {d}
           </span>
@@ -67,7 +69,7 @@ export function HabitHeatmap({ habit, today }: { habit: Habit; today: string }) 
               key={date}
               type="button"
               aria-pressed={isDoneOn(habit, date)}
-              aria-label={`${new Date(`${date}T00:00`).toLocaleDateString(undefined, { month: "long", day: "numeric" })}${isDoneOn(habit, date) ? ", done" : ""}`}
+              aria-label={`${formatDate(new Date(`${date}T00:00`), { month: "long", day: "numeric" })}${isDoneOn(habit, date) ? ", done" : ""}`}
               disabled={date > today}
               onClick={() => toggleHabit(habit.id, date)}
               className={clsx(

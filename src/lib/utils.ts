@@ -1,3 +1,5 @@
+import { formatDate, formatTime } from "./locale";
+
 export function createId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
@@ -81,7 +83,7 @@ export function formatDueLabel(due: string, today: string): string {
   if (due === addDays(today, 1)) return "Tomorrow";
   if (due === addDays(today, -1)) return "Yesterday";
   const [y, m, d] = due.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+  return formatDate(new Date(y, m - 1, d), {
     month: "short",
     day: "numeric",
     year: y === Number(today.slice(0, 4)) ? undefined : "numeric",
@@ -91,7 +93,7 @@ export function formatDueLabel(due: string, today: string): string {
 /** "14:30" as a short local time, such as "2:30 PM" or "14:30". */
 export function formatClock(time: string): string {
   const [h, m] = time.split(":").map(Number);
-  return new Date(2000, 0, 1, h, m).toLocaleTimeString(undefined, {
+  return formatTime(new Date(2000, 0, 1, h, m), {
     hour: "numeric",
     minute: "2-digit",
   });
@@ -123,7 +125,7 @@ export function formatRelativeTime(timestamp: number, now = Date.now()): string 
   if (hours < 24) return `${hours}h ago`;
   const days = Math.round(hours / 24);
   if (days < 7) return `${days}d ago`;
-  return new Date(timestamp).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return formatDate(new Date(timestamp), { month: "short", day: "numeric" });
 }
 
 export function downloadFile(filename: string, content: string, type: string): void {

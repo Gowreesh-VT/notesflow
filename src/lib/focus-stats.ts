@@ -1,5 +1,6 @@
 import type { Item } from "./types";
 import { addDays, toDateKey } from "./utils";
+import { weekdayPosition } from "./locale";
 
 export type FocusStats = {
   todayMinutes: number;
@@ -12,12 +13,8 @@ export type FocusStats = {
   byList: { listId: string; minutes: number }[];
 };
 
-/** Monday of the week containing `dateKey`. */
-export function weekStartOf(dateKey: string): string {
-  const [y, m, d] = dateKey.split("-").map(Number);
-  const weekday = new Date(y, m - 1, d).getDay();
-  return addDays(dateKey, -((weekday + 6) % 7));
-}
+/** First day (as set in preferences; Monday by default) of the week containing `dateKey`. */
+export const weekStartOf = (dateKey: string): string => addDays(dateKey, -weekdayPosition(dateKey));
 
 /**
  * Focus time from Pomodoro entries on tasks (trashed and template tasks included only if not deleted). A stretch

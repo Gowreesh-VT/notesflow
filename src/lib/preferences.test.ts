@@ -31,15 +31,10 @@ describe("preferences", () => {
       99,
     );
     expect(parsed).toEqual({
+      ...DEFAULT_PREFERENCES,
       id: PREFERENCES_ID,
       theme: "dark",
-      accent: "blue",
-      density: "comfortable",
-      font: "default",
-      textSize: "default",
-      editorMode: "split",
       outcomeLabels: ["Nailed it"],
-      dayEnd: "21:00",
       hiddenViews: ["matrix"],
       updatedAt: 10,
     });

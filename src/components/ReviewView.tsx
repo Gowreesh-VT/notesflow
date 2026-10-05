@@ -13,9 +13,10 @@ import { addDays, daysBetween, displayTitle, formatDueLabel } from "@/lib/utils"
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
 import { ViewHeader } from "./ViewHeader";
+import { formatDate } from "@/lib/locale";
 
 const shortDate = (date: string) =>
-  new Date(`${date}T00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  formatDate(new Date(`${date}T00:00`), { month: "short", day: "numeric" });
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
@@ -111,7 +112,7 @@ export function ReviewView() {
                   style={{ height: `${Math.max(d.count ? 6 : 1, (d.count / peak) * 85)}%` }}
                 />
                 <span className="text-[11px] text-stone-500 dark:text-stone-400">
-                  {new Date(`${d.date}T00:00`).toLocaleDateString(undefined, { weekday: "short" })}
+                  {formatDate(new Date(`${d.date}T00:00`), { weekday: "short" })}
                 </span>
               </li>
             ))}

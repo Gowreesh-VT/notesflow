@@ -29,6 +29,7 @@ import { daysBetween, displayTitle } from "@/lib/utils";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
 import { ViewHeader } from "./ViewHeader";
+import { formatDate } from "@/lib/locale";
 
 const BAR_STYLE: Record<Priority, string> = {
   none: "border-accent-500/60 bg-accent-500/15",
@@ -423,7 +424,7 @@ export function TimelineView() {
                       }}
                     >
                       {zoom === "week"
-                        ? `${date.toLocaleDateString(undefined, { weekday: "narrow" })} ${date.getDate()}`
+                        ? `${formatDate(date, { weekday: "narrow" })} ${date.getDate()}`
                         : date.getDate()}
                     </div>
                   );

@@ -1,6 +1,7 @@
 import { compareItems } from "./items-logic";
 import type { Item } from "./types";
 import { addDays, daysBetween } from "./utils";
+import { weekdayPosition } from "./locale";
 
 /**
  * Date maths for the calendar view. Everything works on local date keys (YYYY-MM-DD) and "HH:MM" clocks through the
@@ -22,16 +23,13 @@ export const isCalendarLayout = (value: unknown): value is CalendarLayout =>
 export const isDateKey = (value: unknown): value is string =>
   typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && addDays(value, 0) === value;
 
-/** Day of the week with Monday = 0 … Sunday = 6. */
-export function weekdayIndex(day: string): number {
-  const [y, m, d] = day.split("-").map(Number);
-  return (new Date(y, m - 1, d).getDay() + 6) % 7;
-}
+/** Position in the week, 0 for the preferred first day of the week (Monday unless changed in settings). */
+export const weekdayIndex = (day: string): number => weekdayPosition(day);
 
-/** The Monday on or before `day`. */
+/** The first day of the week on or before `day`. */
 export const startOfWeek = (day: string): string => addDays(day, -weekdayIndex(day));
 
-/** The seven days (Monday to Sunday) of the week containing `day`. */
+/** The seven days of the week containing `day`, from the preferred first day. */
 export const weekDays = (day: string): string[] =>
   Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(day), i));
 
@@ -53,7 +51,7 @@ export function addMonths(day: string, months: number): string {
 }
 
 /**
- * Whole weeks (Monday to Sunday) covering the month of `day`: 4 to 6 rows of seven date keys, including the
+ * Whole weeks (from the preferred first day) covering the month of `day`: 4 to 6 rows of seven date keys, including the
  * leading and trailing days of the neighbouring months.
  */
 export function monthMatrix(day: string): string[][] {

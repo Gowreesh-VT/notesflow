@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { SMART_VIEWS } from "@/lib/items-logic";
+import { setLocalePrefs } from "@/lib/locale";
 import { INBOX_ID } from "@/lib/types";
+import { usePreferences } from "@/store/preferences";
 import { useUi } from "@/store/ui";
 import { useSyncStore } from "@/store/sync";
 import { upgradeLegacyStorage, useWorkspace } from "@/store/workspace";
@@ -25,6 +27,11 @@ function isTypingTarget(target: EventTarget | null): boolean {
 
 export function AppShell() {
   const [ready, setReady] = useState(false);
+  // Date formatting reads these module-wide; set them before any child renders. Views keep week-based
+  // calculations in memos, so a change remounts the workspace.
+  const { weekStart, dateOrder, clock } = usePreferences();
+  setLocalePrefs({ weekStart, dateOrder, clock });
+  const localeKey = `${weekStart}-${dateOrder}-${clock}`;
 
   useEffect(() => {
     let active = true;
@@ -104,7 +111,7 @@ export function AppShell() {
               Loading your workspace…
             </p>
           ) : (
-            <Workspace />
+            <Workspace key={localeKey} />
           )}
         </main>
       </div>
