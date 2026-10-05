@@ -66,7 +66,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 - [ ] Calendar day and agenda layouts
 - [ ] Drag a task to another day in the calendar to reschedule it
 - [x] [BIG] Board (Kanban) view for a list, with sections as columns
-- [ ] Drag cards between board columns
+- [x] Drag cards between board columns
 - [ ] Eisenhower matrix view: tasks placed by priority and due date
 - [ ] [BIG] Timeline view of tasks with a start and due date
 - [ ] [BIG] Plan view: a day timeline where tasks can be dragged into time slots

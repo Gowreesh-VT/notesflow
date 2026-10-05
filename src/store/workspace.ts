@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { moveSectionTo } from "@/lib/board";
 import { itemTags, moveSectionBy } from "@/lib/items-logic";
 import {
   addTagToTitle,
@@ -192,6 +193,8 @@ type WorkspaceState = WorkspaceData & {
   /** Items in a deleted section stay in the list, unsectioned. */
   deleteSection: (listId: string, sectionId: string) => void;
   moveSection: (listId: string, sectionId: string, delta: -1 | 1) => void;
+  /** Moves a section before the one now at `index` (the section count puts it last), as when dragging a column. */
+  moveSectionTo: (listId: string, sectionId: string, index: number) => void;
   toggleSectionCollapsed: (listId: string, sectionId: string) => void;
   addFolder: (name: string) => string | null;
   renameFolder: (id: string, name: string) => void;
@@ -1086,6 +1089,15 @@ export const useWorkspace = create<WorkspaceState>()(
             return l.id === listId && sections !== l.sections
               ? { ...l, sections, updatedAt: Date.now() }
               : l;
+          }),
+        })),
+
+      moveSectionTo: (listId, sectionId, index) =>
+        set((s) => ({
+          lists: s.lists.map((l) => {
+            if (l.id !== listId) return l;
+            const sections = moveSectionTo(l.sections, sectionId, index);
+            return sections !== l.sections ? { ...l, sections, updatedAt: Date.now() } : l;
           }),
         })),
 
