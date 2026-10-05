@@ -9,6 +9,7 @@ import {
   ArrowUpDown,
   Bell,
   ChevronRight,
+  Columns2,
   Columns3,
   CopyPlus,
   FileText,
@@ -52,10 +53,12 @@ import {
   viewTitle,
   type GroupBy,
 } from "@/lib/items-logic";
+import { getDragItem, isItemDrag, setDragItem } from "@/lib/dnd";
 import { formatDuration } from "@/lib/duration";
 import { planMove, planStep } from "@/lib/ordering";
 import { useToday } from "@/lib/hooks";
 import { describeRepeat } from "@/lib/recurrence";
+import { dropOnListPatch, pinnedList, SPLIT_DRAG_TYPE, viewListId } from "@/lib/split";
 import { BoardView } from "./BoardView";
 import { CopyToListForm } from "./CopyToList";
 import { BatchToolbar, SelectCheckbox, SelectToggle, useRowSelection } from "./BatchSelect";
@@ -105,6 +108,8 @@ function ItemRow({
   const listName =
     showList && item.listId !== INBOX_ID ? lists.find((l) => l.id === item.listId)?.name : null;
   const trashed = item.deletedAt !== null;
+  // With a list pinned beside the view, rows can be dragged onto it to move them there.
+  const splitOpen = useUi((s) => pinnedList(lists, s.splitListId, s.view) !== null) && !trashed;
 
   return (
     <li
@@ -114,6 +119,8 @@ function ItemRow({
         e.preventDefault();
         setMenuOpen(true);
       }}
+      draggable={splitOpen || undefined}
+      onDragStart={splitOpen ? (e) => setDragItem(e, item.id) : undefined}
       {...reorder?.row}
       className={clsx(
         "group relative flex min-h-11 items-center gap-3 rounded-lg px-3 py-1.5 transition-colors",
@@ -410,6 +417,10 @@ export function ItemList() {
   const [kind, setKind] = useState<ItemKind>("task");
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set(["finished"]));
   const [menuOpen, setMenuOpen] = useState(false);
+  const splitListId = useUi((s) => s.splitListId);
+  const setSplitListId = useUi((s) => s.setSplitListId);
+  const updateItem = useWorkspace((s) => s.updateItem);
+  const [splitDropOver, setSplitDropOver] = useState(false);
 
   const energyFilter = useUi((s) => s.energyFilter);
   const setEnergyFilter = useUi((s) => s.setEnergyFilter);
@@ -441,6 +452,38 @@ export function ItemList() {
   const title = viewTitle(view, lists, filters);
   const hasSections = Boolean(currentList && currentList.sections.length > 0);
   const board = currentList && listLayout?.[currentList.id] === "board" ? currentList : null;
+
+  // While a list is pinned beside this one, tasks dragged over from it move into the list shown here.
+  const paneListId = pinnedList(lists, splitListId, view) ? viewListId(view) : null;
+  const fromSplit = (e: React.DragEvent) =>
+    isItemDrag(e) && e.dataTransfer.types.includes(SPLIT_DRAG_TYPE);
+  const paneDrop = paneListId
+    ? {
+        onDragOver: (e: React.DragEvent<HTMLElement>) => {
+          if (!fromSplit(e)) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+          if (!splitDropOver) setSplitDropOver(true);
+        },
+        onDragLeave: (e: React.DragEvent<HTMLElement>) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setSplitDropOver(false);
+        },
+        // Board columns handle (and stop) their own drops, so the highlight is cleared on the way down.
+        onDropCapture: () => setSplitDropOver(false),
+        onDrop: (e: React.DragEvent<HTMLElement>) => {
+          if (!fromSplit(e)) return;
+          e.preventDefault();
+          const id = getDragItem(e);
+          const patch = dropOnListPatch(
+            items.find((i) => i.id === id),
+            paneListId,
+          );
+          if (id && patch) updateItem(id, patch);
+        },
+      }
+    : {};
+  const splitDropClass =
+    splitDropOver && paneListId && "rounded-2xl bg-accent-50/60 dark:bg-accent-950/30";
   const groupBy = resolveGroupBy(groupChoices?.[viewKey(view)], {
     hasSections,
     sort,
@@ -904,6 +947,29 @@ export function ItemList() {
                         ))}
                       </select>
                     </label>
+                    {/* Split view only fits on large screens, so it is only offered there. */}
+                    <label className="hidden items-center gap-2 px-2.5 py-1.5 text-sm text-stone-700 lg:flex dark:text-stone-200">
+                      <Columns2 size={15} aria-hidden /> Beside
+                      <select
+                        aria-label="Open a list beside this one"
+                        value={pinnedList(lists, splitListId, view)?.id ?? ""}
+                        onChange={(e) => {
+                          setSplitListId(e.target.value || null);
+                          setMenuOpen(false);
+                        }}
+                        className="field ml-auto w-28 py-1 text-xs"
+                      >
+                        <option value="">None</option>
+                        <option value={INBOX_ID}>Inbox</option>
+                        {activeLists(lists)
+                          .filter((l) => l.id !== currentList.id)
+                          .map((l) => (
+                            <option key={l.id} value={l.id}>
+                              {l.name}
+                            </option>
+                          ))}
+                      </select>
+                    </label>
                     <MenuItem
                       onClick={() => {
                         setMenuOpen(false);
@@ -1007,11 +1073,15 @@ export function ItemList() {
       )}
 
       {board ? (
-        <div data-item-list className="min-h-0 flex-1 pt-1">
+        <div data-item-list {...paneDrop} className={clsx("min-h-0 flex-1 pt-1", splitDropClass)}>
           <BoardView list={board} items={visible} today={today} selectedItemId={selectedItemId} />
         </div>
       ) : (
-        <div data-item-list className="min-h-0 flex-1 overflow-y-auto px-2 pb-6 pt-1 sm:px-4">
+        <div
+          data-item-list
+          {...paneDrop}
+          className={clsx("min-h-0 flex-1 overflow-y-auto px-2 pb-6 pt-1 sm:px-4", splitDropClass)}
+        >
           <p role="status" aria-live="polite" className="sr-only">
             {reorder.announcement}
           </p>

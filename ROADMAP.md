@@ -70,7 +70,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 - [ ] Eisenhower matrix view: tasks placed by priority and due date
 - [ ] [BIG] Timeline view of tasks with a start and due date
 - [ ] [BIG] Plan view: a day timeline where tasks can be dragged into time slots
-- [ ] Split view: pin one list beside another and drag tasks between them
+- [x] Split view: pin one list beside another and drag tasks between them
 
 ### Phase 5 — Focus, habits and planning (days 41–52)
 

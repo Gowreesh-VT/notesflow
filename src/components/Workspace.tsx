@@ -1,12 +1,16 @@
 "use client";
 
+import { useEffect } from "react";
+import clsx from "clsx";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
 import { isPlannerView } from "@/lib/items-logic";
+import { canPin, pinnedList } from "@/lib/split";
 import { CalendarView } from "./CalendarView";
 import { ItemList } from "./ItemList";
 import { MatrixView } from "./MatrixView";
 import { PlanView } from "./PlanView";
+import { SplitPane } from "./SplitPane";
 import { TimelineView } from "./TimelineView";
 import { NoteDetail } from "./NoteDetail";
 import { TaskDetail } from "./TaskDetail";
@@ -14,9 +18,18 @@ import { TaskDetail } from "./TaskDetail";
 // The list takes the full width; the detail panel only opens beside it when something is selected.
 export function Workspace() {
   const items = useWorkspace((s) => s.items);
+  const lists = useWorkspace((s) => s.lists);
   const selectedItemId = useUi((s) => s.selectedItemId);
   const view = useUi((s) => s.view);
+  const splitListId = useUi((s) => s.splitListId);
+  const setSplitListId = useUi((s) => s.setSplitListId);
   const selected = items.find((i) => i.id === selectedItemId) ?? null;
+  const pinned = pinnedList(lists, splitListId, view);
+
+  // A pinned list that was deleted or archived (here or on another device) is unpinned.
+  useEffect(() => {
+    if (splitListId && !canPin(lists, splitListId)) setSplitListId(null);
+  }, [lists, splitListId, setSplitListId]);
 
   return (
     <div className="flex h-full">
@@ -35,6 +48,12 @@ export function Workspace() {
           <ItemList />
         )}
       </div>
+      {/* Split view needs room: beside the list on large screens, and on extra-wide ones also beside details. */}
+      {pinned && (
+        <div className={clsx("hidden", selected ? "2xl:flex" : "lg:flex")}>
+          <SplitPane key={pinned.id} listId={pinned.id} name={pinned.name} />
+        </div>
+      )}
       {selected && (
         <section
           aria-label="Details"
