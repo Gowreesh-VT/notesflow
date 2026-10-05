@@ -1,12 +1,22 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Archive, ArchiveRestore, Check, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  Archive,
+  ArchiveRestore,
+  CalendarDays,
+  Check,
+  Flame,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import clsx from "clsx";
-import { isDoneOn, lastDays } from "@/lib/habits";
+import { habitStreaks, isDoneOn, lastDays, periodProgress } from "@/lib/habits";
 import { useToday } from "@/lib/hooks";
 import type { Habit } from "@/lib/types";
 import { useWorkspace } from "@/store/workspace";
+import { HabitHeatmap } from "./HabitHeatmap";
 import { ViewHeader } from "./ViewHeader";
 
 const weekday = (date: string, style: "narrow" | "short" | "long") => {
@@ -25,6 +35,9 @@ const fullDate = (date: string) => {
 function HabitRow({ habit, days, today }: { habit: Habit; days: string[]; today: string }) {
   const { toggleHabit, updateHabit, deleteHabit } = useWorkspace.getState();
   const archived = Boolean(habit.archivedAt);
+  const [expanded, setExpanded] = useState(false);
+  const progress = periodProgress(habit, today);
+  const streak = habitStreaks(habit, today);
   return (
     <li className="group rounded-2xl border border-stone-200 bg-white p-3 dark:border-stone-800 dark:bg-stone-900">
       <div className="flex flex-wrap items-center gap-3">
@@ -47,8 +60,27 @@ function HabitRow({ habit, days, today }: { habit: Habit; days: string[]; today:
         </button>
         <div className="min-w-0 flex-1">
           <p className={clsx("truncate font-medium", archived && "text-stone-400")}>{habit.name}</p>
-          <p className="text-xs text-stone-500 dark:text-stone-400">
-            {habit.checkins.length} check-in{habit.checkins.length === 1 ? "" : "s"}
+          <p className="flex flex-wrap items-center gap-x-3 text-xs text-stone-500 dark:text-stone-400">
+            {habit.goal.per === "week" && (
+              <span
+                className={clsx(
+                  progress.met && "font-medium text-emerald-600 dark:text-emerald-400",
+                )}
+              >
+                {progress.done}/{progress.target} this week
+              </span>
+            )}
+            <span
+              className="inline-flex items-center gap-1"
+              title={`Best: ${streak.best} ${streak.unit}${streak.best === 1 ? "" : "s"}`}
+            >
+              <Flame size={12} aria-hidden className={streak.current ? "text-amber-500" : ""} />
+              {streak.current} {streak.unit}
+              {streak.current === 1 ? "" : "s"} streak
+            </span>
+            <span>
+              {habit.checkins.length} check-in{habit.checkins.length === 1 ? "" : "s"}
+            </span>
           </p>
         </div>
         <ol className="flex gap-1" aria-label={`${habit.name}: last 7 days`}>
@@ -77,6 +109,36 @@ function HabitRow({ habit, days, today }: { habit: Habit; days: string[]; today:
             );
           })}
         </ol>
+        <select
+          aria-label={`${habit.name}: goal`}
+          value={habit.goal.per === "day" ? "day" : String(habit.goal.times)}
+          disabled={archived}
+          onChange={(e) =>
+            updateHabit(habit.id, {
+              goal:
+                e.target.value === "day"
+                  ? { per: "day", times: 1 }
+                  : { per: "week", times: Number(e.target.value) },
+            })
+          }
+          className="rounded-lg bg-transparent px-1 py-1 text-xs text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800"
+        >
+          <option value="day">Every day</option>
+          {[1, 2, 3, 4, 5, 6].map((n) => (
+            <option key={n} value={n}>
+              {n}× a week
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className="btn btn-ghost px-1.5 py-1"
+          aria-expanded={expanded}
+          aria-label={`${expanded ? "Hide" : "Show"} ${habit.name} history`}
+          onClick={() => setExpanded(!expanded)}
+        >
+          <CalendarDays size={14} />
+        </button>
         <span className="flex opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
           <button
             type="button"
@@ -111,6 +173,7 @@ function HabitRow({ habit, days, today }: { habit: Habit; days: string[]; today:
           </button>
         </span>
       </div>
+      {expanded && <HabitHeatmap habit={habit} today={today} />}
     </li>
   );
 }
