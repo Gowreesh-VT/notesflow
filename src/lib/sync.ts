@@ -108,8 +108,9 @@ function mergeCollection<T extends { id: string; updatedAt: number }>(
     const deletedLocallyAt = tombstones.find(
       (t) => t.collection === collection && t.id === record.id,
     )?.at;
-    // Both this device (since its last push) and another device changed the record: last write wins.
-    if (existing && existing.updatedAt >= since && record.updatedAt !== existing.updatedAt) {
+    // Both this device (after its last push) and another device changed the record: last write wins. A local
+    // edit stamped exactly at the last push time was already pushed, so it is not a conflict.
+    if (existing && existing.updatedAt > since && record.updatedAt !== existing.updatedAt) {
       conflicts++;
     }
 

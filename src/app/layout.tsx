@@ -49,7 +49,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-full">
-        <SerwistProvider swUrl="/serwist/sw.js" disable={process.env.NODE_ENV === "development"}>
+        {/* No reload when the connection returns: the app works offline and sync catches up on its own, while a
+            reload would throw away whatever is being typed. The offline fallback page reloads itself. */}
+        <SerwistProvider
+          swUrl="/serwist/sw.js"
+          disable={process.env.NODE_ENV === "development"}
+          reloadOnOnline={false}
+        >
           {children}
         </SerwistProvider>
       </body>

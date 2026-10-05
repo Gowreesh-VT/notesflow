@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { LogoMark } from "@/components/Logo";
+import { ReloadWhenOnline } from "@/components/ReloadWhenOnline";
 
 export const metadata = { title: "Offline" };
 
 export default function OfflinePage() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-3 p-6 text-center">
+      <ReloadWhenOnline />
       <LogoMark size={48} />
       <h1 className="text-xl font-semibold">You’re offline</h1>
       <p className="text-sm text-stone-600 dark:text-stone-400">

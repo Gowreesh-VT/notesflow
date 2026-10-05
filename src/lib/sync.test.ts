@@ -283,6 +283,8 @@ describe("conflicts", () => {
     // "edited" changed here after the last push (40) and elsewhere; "old" only changed elsewhere.
     expect(applyRecords(data, [record("edited", 60), record("old", 70)], 40).conflicts).toBe(1);
     expect(applyRecords(data, [record("edited", 50)], 40).conflicts).toBe(0);
+    // "edited" (50) was already pushed (last push = 50); a later change from elsewhere is not a conflict.
+    expect(applyRecords(data, [record("edited", 60)], 50).conflicts).toBe(0);
   });
 });
 
