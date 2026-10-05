@@ -1,6 +1,7 @@
 import {
   INBOX_ID,
   type Energy,
+  type PlannerViewKind,
   type Item,
   type ItemSort,
   type ListSection,
@@ -67,8 +68,20 @@ export const archivedLists = <T extends Pick<TaskList, "archivedAt">>(lists: T[]
 export const archivedListIds = (lists: TaskList[]): ReadonlySet<string> =>
   new Set(archivedLists(lists).map((l) => l.id));
 
+export const PLANNER_VIEWS: { kind: PlannerViewKind; label: string }[] = [
+  { kind: "calendar", label: "Calendar" },
+  { kind: "matrix", label: "Matrix" },
+  { kind: "timeline", label: "Timeline" },
+  { kind: "plan", label: "Plan my day" },
+];
+
+/** Calendar, matrix, timeline and plan views lay out tasks themselves instead of listing them. */
+export const isPlannerView = (view: View): view is { kind: PlannerViewKind } =>
+  PLANNER_VIEWS.some((v) => v.kind === view.kind);
+
 export function sameView(a: View, b: View): boolean {
   if (a.kind !== b.kind) return false;
+  if (isPlannerView(a)) return true;
   if (a.kind === "smart" && b.kind === "smart") return a.id === b.id;
   if (a.kind === "list" && b.kind === "list") return a.id === b.id;
   if (a.kind === "filter" && b.kind === "filter") return a.id === b.id;
@@ -76,6 +89,7 @@ export function sameView(a: View, b: View): boolean {
 }
 
 export function viewTitle(view: View, lists: TaskList[], filters: SavedFilter[] = []): string {
+  if (isPlannerView(view)) return PLANNER_VIEWS.find((v) => v.kind === view.kind)!.label;
   if (view.kind === "tag") return `#${view.tag}`;
   if (view.kind === "filter") return findFilter(filters, view.id)?.name ?? "Filter";
   if (view.kind === "list") {
@@ -88,6 +102,7 @@ export function viewTitle(view: View, lists: TaskList[], filters: SavedFilter[] 
 function matchesView(item: Item, view: View, today: string, ctx: ViewContext): boolean {
   if (view.kind === "smart" && view.id === "trash") return item.deletedAt !== null;
   if (item.deletedAt !== null || item.template) return false;
+  if (isPlannerView(view)) return false;
 
   if (view.kind === "list") return item.listId === view.id;
   if (view.kind === "filter") {
@@ -496,6 +511,7 @@ export type ItemGroup = { id: string; label: string; items: Item[] };
 /** A stable key for remembering per-view settings such as grouping. */
 export function viewKey(view: View): string {
   if (view.kind === "tag") return `tag:${view.tag}`;
+  if (isPlannerView(view)) return view.kind;
   return `${view.kind}:${view.id}`;
 }
 

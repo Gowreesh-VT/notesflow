@@ -4,6 +4,8 @@ import Link from "next/link";
 import {
   BellRing,
   CalendarDays,
+  CalendarFold,
+  Clock3,
   CircleHelp,
   Inbox,
   Monitor,
@@ -91,6 +93,20 @@ export function NavRail() {
         onClick={() => setView({ kind: "smart", id: "today" })}
       >
         <CalendarDays size={19} />
+      </RailButton>
+      <RailButton
+        label="Calendar"
+        active={view.kind === "calendar"}
+        onClick={() => setView({ kind: "calendar" })}
+      >
+        <CalendarFold size={19} />
+      </RailButton>
+      <RailButton
+        label="Plan my day"
+        active={view.kind === "plan"}
+        onClick={() => setView({ kind: "plan" })}
+      >
+        <Clock3 size={19} />
       </RailButton>
       <RailButton label="Quick find (⌘K)" onClick={() => setPaletteOpen(true)}>
         <Search size={19} />

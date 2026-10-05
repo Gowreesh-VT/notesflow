@@ -35,6 +35,7 @@ import {
   countInView,
   sameView,
   SMART_VIEWS,
+  PLANNER_VIEWS,
 } from "@/lib/items-logic";
 import { exportBackup, importBackupFile, importMarkdownFiles } from "@/lib/data-actions";
 import { useToday } from "@/lib/hooks";
@@ -45,6 +46,7 @@ import { useUi, type Theme } from "@/store/ui";
 import { AccountMenu } from "./AccountMenu";
 import { InstallButton } from "./InstallButton";
 import { LogoMark } from "./Logo";
+import { PLANNER_ICONS } from "./viewIcons";
 import { DragHandle, DropLine, useReorder } from "./Reorder";
 import { SidebarArchivedLists } from "./SidebarArchivedLists";
 import { SidebarFilters } from "./SidebarFilters";
@@ -312,6 +314,22 @@ export function Sidebar() {
               onClick={() => goTo({ kind: "smart", id: v.id })}
             />
           ))}
+
+          <h2 className="px-2.5 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
+            Views
+          </h2>
+          {PLANNER_VIEWS.map((v) => {
+            const Icon = PLANNER_ICONS[v.kind];
+            return (
+              <NavItem
+                key={v.kind}
+                icon={<Icon size={16} />}
+                label={v.label}
+                active={view.kind === v.kind}
+                onClick={() => goTo({ kind: v.kind })}
+              />
+            );
+          })}
 
           <div className="flex items-center justify-between px-2.5 pb-1 pt-4">
             <h2 className="text-[11px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">

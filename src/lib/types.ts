@@ -170,7 +170,11 @@ export type View =
   | { kind: "smart"; id: SmartViewId }
   | { kind: "list"; id: string }
   | { kind: "tag"; tag: string }
-  | { kind: "filter"; id: string };
+  | { kind: "filter"; id: string }
+  /** Whole-workspace layouts (Phase 4): they show tasks from every list in their own way. */
+  | { kind: PlannerViewKind };
+
+export type PlannerViewKind = "calendar" | "matrix" | "timeline" | "plan";
 
 export type ItemSort = "default" | "manual" | "due" | "priority" | "title" | "updated";
 

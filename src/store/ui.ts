@@ -16,6 +16,10 @@ type UiState = {
   sort: ItemSort;
   /** Grouping chosen per view (keyed by `viewKey`); views without a choice use their default grouping. */
   groupBy: Record<string, GroupBy>;
+  /** Lists shown as a board (sections as columns) instead of a list, by list id. */
+  listLayout: Record<string, "list" | "board">;
+  /** A list pinned beside the current view (split view), or null. */
+  splitListId: string | null;
   view: View;
   query: string;
   selectedItemId: string | null;
@@ -39,6 +43,8 @@ type UiState = {
   setEditorMode: (mode: EditorMode) => void;
   setSort: (sort: ItemSort) => void;
   setGroupBy: (viewKey: string, groupBy: GroupBy) => void;
+  setListLayout: (listId: string, layout: "list" | "board") => void;
+  setSplitListId: (listId: string | null) => void;
   setView: (view: View) => void;
   setQuery: (query: string) => void;
   selectItem: (id: string | null) => void;
@@ -61,6 +67,8 @@ export const useUi = create<UiState>()(
       editorMode: "split",
       sort: "default",
       groupBy: {},
+      listLayout: {},
+      splitListId: null,
       view: INBOX_VIEW,
       query: "",
       selectedItemId: null,
@@ -77,6 +85,9 @@ export const useUi = create<UiState>()(
       setTheme: (theme) => set({ theme }),
       setEditorMode: (editorMode) => set({ editorMode }),
       setSort: (sort) => set({ sort }),
+      setListLayout: (listId, layout) =>
+        set((s) => ({ listLayout: { ...s.listLayout, [listId]: layout } })),
+      setSplitListId: (splitListId) => set({ splitListId }),
       setGroupBy: (viewKey, groupBy) => {
         if (isGroupBy(groupBy)) set((s) => ({ groupBy: { ...s.groupBy, [viewKey]: groupBy } }));
       },
@@ -107,6 +118,8 @@ export const useUi = create<UiState>()(
         editorMode: s.editorMode,
         sort: s.sort,
         groupBy: s.groupBy,
+        listLayout: s.listLayout,
+        splitListId: s.splitListId,
         sidebarCollapsed: s.sidebarCollapsed,
         outcomeLabels: s.outcomeLabels,
         defaultReminderTime: s.defaultReminderTime,

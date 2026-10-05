@@ -2,7 +2,12 @@
 
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
+import { isPlannerView } from "@/lib/items-logic";
+import { CalendarView } from "./CalendarView";
 import { ItemList } from "./ItemList";
+import { MatrixView } from "./MatrixView";
+import { PlanView } from "./PlanView";
+import { TimelineView } from "./TimelineView";
 import { NoteDetail } from "./NoteDetail";
 import { TaskDetail } from "./TaskDetail";
 
@@ -10,12 +15,25 @@ import { TaskDetail } from "./TaskDetail";
 export function Workspace() {
   const items = useWorkspace((s) => s.items);
   const selectedItemId = useUi((s) => s.selectedItemId);
+  const view = useUi((s) => s.view);
   const selected = items.find((i) => i.id === selectedItemId) ?? null;
 
   return (
     <div className="flex h-full">
       <div className={selected ? "hidden min-w-0 flex-1 md:block" : "min-w-0 flex-1"}>
-        <ItemList />
+        {isPlannerView(view) ? (
+          view.kind === "calendar" ? (
+            <CalendarView />
+          ) : view.kind === "matrix" ? (
+            <MatrixView />
+          ) : view.kind === "timeline" ? (
+            <TimelineView />
+          ) : (
+            <PlanView />
+          )
+        ) : (
+          <ItemList />
+        )}
       </div>
       {selected && (
         <section

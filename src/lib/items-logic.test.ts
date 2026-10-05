@@ -11,13 +11,16 @@ import {
   groupBySections,
   groupByTag,
   isEnergy,
+  isPlannerView,
   resolveGroupBy,
   viewKey,
   listTemplates,
   moveSectionBy,
   parseClock,
   parseQuickAdd,
+  sameView,
   subtaskProgress,
+  viewTitle,
 } from "./items-logic";
 import { INBOX_ID, type Item, type View } from "./types";
 
@@ -430,5 +433,17 @@ describe("effectiveSort", () => {
     expect(effectiveSort("manual", smart("today"))).toBe("default");
     expect(effectiveSort("manual", { kind: "tag", tag: "x" })).toBe("default");
     expect(effectiveSort("priority", smart("today"))).toBe("priority");
+  });
+});
+
+describe("planner views", () => {
+  it("are recognised, titled, compared and never list items", () => {
+    const calendar = { kind: "calendar" } as const;
+    expect(isPlannerView(calendar)).toBe(true);
+    expect(isPlannerView(smart("today"))).toBe(false);
+    expect(sameView(calendar, { kind: "calendar" })).toBe(true);
+    expect(sameView(calendar, { kind: "plan" })).toBe(false);
+    expect(viewTitle({ kind: "plan" }, [])).toBe("Plan my day");
+    expect(filterItems([make("x", { due: today })], calendar, "", today)).toEqual([]);
   });
 });
