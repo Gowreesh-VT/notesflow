@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   addMonths,
   calendarTasks,
+  clockToMinutes,
+  isCalendarLayout,
   isDateKey,
+  isTimedOn,
+  layoutTimedTasks,
+  minutesToClock,
   monthMatrix,
   startOfWeek,
   taskSpan,
@@ -167,5 +172,60 @@ describe("tasks on days", () => {
     ];
     const entries = tasksByDay(tasks, ["2026-10-05"]).get("2026-10-05")!;
     expect(entries.map((e) => e.item.id)).toEqual(["span", "high", "allday", "early", "late"]);
+  });
+});
+
+describe("time grid", () => {
+  it("validates layouts", () => {
+    expect(isCalendarLayout("week")).toBe(true);
+    expect(isCalendarLayout("year")).toBe(false);
+  });
+
+  it("converts clocks and minutes", () => {
+    expect(clockToMinutes("00:00")).toBe(0);
+    expect(clockToMinutes("14:30")).toBe(870);
+    expect(minutesToClock(870)).toBe("14:30");
+    expect(minutesToClock(5)).toBe("00:05");
+    expect(minutesToClock(-10)).toBe("00:00");
+    expect(minutesToClock(2000)).toBe("23:59");
+  });
+
+  it("is timed only on its due day", () => {
+    const task = make("t", { startDate: "2026-10-04", due: "2026-10-05", dueTime: "09:00" });
+    expect(isTimedOn(task, "2026-10-05")).toBe(true);
+    expect(isTimedOn(task, "2026-10-04")).toBe(false);
+    expect(isTimedOn(make("a", { due: "2026-10-05" }), "2026-10-05")).toBe(false);
+  });
+
+  it("sizes blocks by estimate, 30 minutes by default, cut at midnight", () => {
+    const blocks = layoutTimedTasks([
+      make("a", { due: "2026-10-05", dueTime: "09:00", estimate: 90 }),
+      make("b", { due: "2026-10-05", dueTime: "13:00" }),
+      make("c", { due: "2026-10-05", dueTime: "23:45", estimate: 60 }),
+      make("d", { due: "2026-10-05", dueTime: "15:00", estimate: 5 }),
+      make("allday", { due: "2026-10-05" }),
+    ]);
+    const byId = Object.fromEntries(blocks.map((b) => [b.item.id, b]));
+    expect(Object.keys(byId)).toEqual(["a", "b", "d", "c"]);
+    expect(byId.a).toMatchObject({ start: 540, end: 630, column: 0, columns: 1 });
+    expect(byId.b).toMatchObject({ start: 780, end: 810 });
+    expect(byId.c).toMatchObject({ start: 1425, end: 1440 });
+    expect(byId.d.end - byId.d.start).toBe(15);
+  });
+
+  it("puts overlapping tasks side by side and reuses free columns", () => {
+    const blocks = layoutTimedTasks([
+      make("a", { due: "2026-10-05", dueTime: "09:00", estimate: 120 }),
+      make("b", { due: "2026-10-05", dueTime: "09:30" }),
+      make("c", { due: "2026-10-05", dueTime: "10:00" }),
+      make("d", { due: "2026-10-05", dueTime: "12:00" }),
+    ]);
+    const byId = Object.fromEntries(blocks.map((b) => [b.item.id, b]));
+    expect(byId.a).toMatchObject({ column: 0, columns: 2 });
+    expect(byId.b).toMatchObject({ column: 1, columns: 2 });
+    // b ends at 10:00, so c takes its column.
+    expect(byId.c).toMatchObject({ column: 1, columns: 2 });
+    // a ends at 11:00: d starts a new group on its own.
+    expect(byId.d).toMatchObject({ column: 0, columns: 1 });
   });
 });

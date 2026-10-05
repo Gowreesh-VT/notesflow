@@ -62,7 +62,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 ### Phase 4 — Views (days 29–40)
 
 - [x] [BIG] Calendar view, month layout, showing tasks on their due dates
-- [ ] Calendar week layout with due times
+- [x] Calendar week layout with due times
 - [ ] Calendar day and agenda layouts
 - [ ] Drag a task to another day in the calendar to reschedule it
 - [ ] [BIG] Board (Kanban) view for a list, with sections as columns

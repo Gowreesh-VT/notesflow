@@ -7,6 +7,16 @@ import { addDays } from "./utils";
  * helpers in `utils.ts`, so daylight-saving changes never shift a day. Weeks start on Monday.
  */
 
+export type CalendarLayout = "month" | "week";
+
+export const CALENDAR_LAYOUTS: { value: CalendarLayout; label: string }[] = [
+  { value: "month", label: "Month" },
+  { value: "week", label: "Week" },
+];
+
+export const isCalendarLayout = (value: unknown): value is CalendarLayout =>
+  CALENDAR_LAYOUTS.some((l) => l.value === value);
+
 export const isDateKey = (value: unknown): value is string =>
   typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && addDays(value, 0) === value;
 
@@ -113,4 +123,69 @@ export function tasksByDay(tasks: Item[], days: string[]): Map<string, DayEntry[
   }
   for (const entries of result.values()) entries.sort((a, b) => compareDayEntries(a.item, b.item));
   return result;
+}
+
+/** A task sits in a day's time grid only on its due day and only when it has a time; otherwise it is all-day. */
+export const isTimedOn = (item: Pick<Item, "due" | "dueTime">, day: string): boolean =>
+  Boolean(item.dueTime) && item.due === day;
+
+export const MINUTES_PER_DAY = 24 * 60;
+/** Length of a timed task without an estimate. */
+export const DEFAULT_BLOCK_MINUTES = 30;
+/** Shortest block drawn, so very short estimates stay clickable. */
+const MIN_BLOCK_MINUTES = 15;
+
+export function clockToMinutes(time: string): number {
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
+}
+
+export function minutesToClock(minutes: number): string {
+  const clamped = Math.min(Math.max(Math.round(minutes), 0), MINUTES_PER_DAY - 1);
+  return `${String(Math.floor(clamped / 60)).padStart(2, "0")}:${String(clamped % 60).padStart(2, "0")}`;
+}
+
+/** A timed task placed in a day column: minutes from midnight, and its column among overlapping tasks. */
+export type TimedBlock = {
+  item: Item;
+  start: number;
+  end: number;
+  column: number;
+  columns: number;
+};
+
+/**
+ * Lays out a day's timed tasks: each block runs from its due time for its estimate (30 minutes without one), cut
+ * at midnight. Overlapping blocks are put side by side; every block in a group of overlapping tasks gets the same
+ * number of columns so they line up.
+ */
+export function layoutTimedTasks(tasks: Item[]): TimedBlock[] {
+  const blocks = tasks
+    .filter((t) => t.dueTime)
+    .map((item) => {
+      const start = clockToMinutes(item.dueTime!);
+      const length = Math.max(item.estimate || DEFAULT_BLOCK_MINUTES, MIN_BLOCK_MINUTES);
+      return { item, start, end: Math.min(start + length, MINUTES_PER_DAY), column: 0, columns: 1 };
+    })
+    .sort((a, b) => a.start - b.start || b.end - a.end || compareItems(a.item, b.item, "default"));
+
+  let group: TimedBlock[] = [];
+  let columnEnds: number[] = [];
+  let groupEnd = -1;
+  const closeGroup = () => {
+    for (const block of group) block.columns = columnEnds.length;
+    group = [];
+    columnEnds = [];
+  };
+  for (const block of blocks) {
+    if (block.start >= groupEnd) closeGroup();
+    let column = columnEnds.findIndex((end) => end <= block.start);
+    if (column === -1) column = columnEnds.length;
+    columnEnds[column] = block.end;
+    block.column = column;
+    group.push(block);
+    groupEnd = Math.max(groupEnd, block.end);
+  }
+  closeGroup();
+  return blocks;
 }

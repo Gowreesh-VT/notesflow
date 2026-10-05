@@ -22,6 +22,10 @@ export const formatDay = (day: string, options: Intl.DateTimeFormatOptions): str
 export const fullDate = (day: string): string =>
   formatDay(day, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
 
+/** An hour of the day as a short local label, such as "9 AM" or "09". */
+export const formatHour = (hour: number): string =>
+  new Date(2000, 0, 1, hour).toLocaleTimeString(undefined, { hour: "numeric" });
+
 export const PRIORITY_DOT: Record<Priority, string> = {
   none: "bg-stone-400 dark:bg-stone-500",
   low: "bg-sky-500",
@@ -55,6 +59,7 @@ export function TaskChip({
   today,
   first = true,
   last = true,
+  block = false,
   className,
 }: {
   item: Item;
@@ -62,6 +67,8 @@ export function TaskChip({
   today: string;
   first?: boolean;
   last?: boolean;
+  /** Drawn as a block in a time grid: the time above the title, filling its slot. */
+  block?: boolean;
   className?: string;
 }) {
   const selected = useUi((s) => s.selectedItemId === item.id);
@@ -77,7 +84,8 @@ export function TaskChip({
       aria-current={selected ? "true" : undefined}
       title={displayTitle(item)}
       className={clsx(
-        "flex w-full min-w-0 items-center gap-1 px-1.5 py-0.5 text-left text-xs leading-5 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent-500",
+        "flex w-full min-w-0 px-1.5 py-0.5 text-left text-xs leading-5 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent-500",
+        block ? "h-full flex-col items-stretch overflow-hidden" : "items-center gap-1",
         first ? ["rounded-l-md border-l-2", PRIORITY_EDGE[item.priority]] : "rounded-l-none",
         last ? "rounded-r-md" : "rounded-r-none",
         multiDay
