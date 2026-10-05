@@ -99,7 +99,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 - [x] [BIG] Password reset by email (needs an email provider and keys from the owner)
 - [x] Keyboard shortcuts for all common actions, and a vim-style navigation mode
 - [x] Accessibility audit pass: focus order, labels, contrast, reduced motion
-- [ ] Performance pass: virtualise long lists and trim the initial bundle
+- [x] Performance pass: virtualise long lists and trim the initial bundle
 
 ## Ideas (not started — move up to "Next up" to approve)
 

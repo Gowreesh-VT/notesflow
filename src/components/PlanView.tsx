@@ -21,7 +21,9 @@ import { addDays, displayTitle, formatClock, formatDueLabel } from "@/lib/utils"
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
 import { clockLabel, PlanGrid, type PlanDrag } from "./PlanGrid";
-import { DayPlanner } from "./DayPlanner";
+import dynamic from "next/dynamic";
+
+const DayPlanner = dynamic(() => import("./DayPlanner").then((m) => m.DayPlanner));
 import { Suggestions } from "./Suggestions";
 import { PlanQueue } from "./PlanQueue";
 import { ViewHeader } from "./ViewHeader";

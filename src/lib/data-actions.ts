@@ -1,6 +1,4 @@
 import { createBackup, parseBackup } from "./backup";
-import { toCsv, toICalendar, toMarkdown } from "./export";
-import { importTasks } from "./import";
 import { downloadFile, slugify, toDateKey } from "./utils";
 import { INBOX_ID } from "./types";
 import { useWorkspace } from "@/store/workspace";
@@ -21,7 +19,9 @@ export function exportBackup(): string {
 }
 
 /** Exports tasks and notes as a spreadsheet, a Markdown document or calendar events. */
-export function exportAs(format: "csv" | "markdown" | "ical"): string {
+export async function exportAs(format: "csv" | "markdown" | "ical"): Promise<string> {
+  // Loaded on demand: exports and imports are rare, so they stay out of the initial bundle.
+  const { toCsv, toICalendar, toMarkdown } = await import("./export");
   const { items, lists } = useWorkspace.getState();
   const date = toDateKey(new Date());
   if (format === "csv") {
@@ -49,6 +49,7 @@ export async function importTasksFile(file: File): Promise<string> {
   const text = await file.text();
   if (/^\s*\{\s*"app"\s*:\s*"notesflow"/.test(text.replace(/^\uFEFF/, "")))
     return importBackupFile(file);
+  const { importTasks } = await import("./import");
   const { lists, mergeData } = useWorkspace.getState();
   const result = importTasks(file.name, text, lists, toDateKey(new Date()));
   const added = mergeData({ items: result.items, lists: result.lists, folders: [] });

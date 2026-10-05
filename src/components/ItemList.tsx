@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Archive,
   ArchiveRestore,
@@ -56,6 +56,7 @@ import {
 import { getDragItem, isItemDrag, setDragItem } from "@/lib/dnd";
 import { formatDuration } from "@/lib/duration";
 import { planMove, planStep } from "@/lib/ordering";
+import { ROW_PAGE, rowLimit } from "@/lib/paging";
 import { useToday } from "@/lib/hooks";
 import { filterByOutcome, outcomeBreakdown } from "@/lib/outcomes";
 import { todayTally } from "@/lib/progress";
@@ -389,6 +390,34 @@ const SORTS: { value: ItemSort; label: string }[] = [
   { value: "updated", label: "Last edited" },
 ];
 
+/** End-of-page marker for long lists: loads the next rows as it scrolls into view, or on click. */
+function MoreRows({ remaining, onMore }: { remaining: number; onMore: () => void }) {
+  const ref = useRef<HTMLLIElement>(null);
+  const latest = useRef(onMore);
+  useEffect(() => {
+    latest.current = onMore;
+  });
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) latest.current();
+      },
+      { rootMargin: "400px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  return (
+    <li ref={ref} className="px-3 py-2">
+      <button type="button" className="btn btn-ghost w-full text-xs" onClick={onMore}>
+        Show {Math.min(remaining, ROW_PAGE)} more of {remaining.toLocaleString()}
+      </button>
+    </li>
+  );
+}
+
 export function ItemList() {
   const items = useWorkspace((s) => s.items);
   const lists = useWorkspace((s) => s.lists);
@@ -504,6 +533,18 @@ export function ItemList() {
     : {};
   const splitDropClass =
     splitDropOver && paneListId && "rounded-2xl bg-accent-50/60 dark:bg-accent-950/30";
+  // Pages of rows shown per group, reset whenever the view changes.
+  const currentViewKey = viewKey(view);
+  const [pages, setPages] = useState<{ view: string; counts: Record<string, number> }>({
+    view: currentViewKey,
+    counts: {},
+  });
+  const pageCounts = pages.view === currentViewKey ? pages.counts : {};
+  const showMoreRows = (key: string) =>
+    setPages((p) => {
+      const counts = p.view === currentViewKey ? p.counts : {};
+      return { view: currentViewKey, counts: { ...counts, [key]: (counts[key] ?? 0) + 1 } };
+    });
   const groupBy = resolveGroupBy(groupChoices?.[viewKey(view)], {
     hasSections,
     sort,
@@ -606,8 +647,13 @@ export function ItemList() {
     },
   });
 
+  // Long groups render a page at a time (more load as the end scrolls into view), so views with thousands of
+  // items stay fast. The selected item is always rendered.
+  let rowsCall = 0;
   const rows = (group: Item[], showList: boolean, dragGroup?: string) => {
     if (dragGroup) shown[dragGroup] = group;
+    const pageKey = dragGroup ?? `group-${rowsCall++}`;
+    const limit = rowLimit(group, pageCounts[pageKey] ?? 0, selectedItemId);
     const step = (item: Item, index: number) => (delta: -1 | 1) => {
       const changes = planStep(group, item.id, delta);
       if (Object.keys(changes).length === 0) return null;
@@ -616,7 +662,7 @@ export function ItemList() {
     };
     return (
       <ul>
-        {group.map((item, index) => (
+        {group.slice(0, limit).map((item, index) => (
           <ItemRow
             key={item.id}
             item={item}
@@ -639,6 +685,9 @@ export function ItemList() {
             }
           />
         ))}
+        {group.length > limit && (
+          <MoreRows remaining={group.length - limit} onMore={() => showMoreRows(pageKey)} />
+        )}
       </ul>
     );
   };

@@ -10,9 +10,9 @@ export function DataSettings() {
   const [status, setStatus] = useState("");
   const [importStatus, setImportStatus] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
-  const run = (action: () => string) => {
+  const run = async (action: () => string | Promise<string>) => {
     try {
-      setStatus(action());
+      setStatus(await action());
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Something went wrong.");
     }
@@ -55,7 +55,7 @@ export function DataSettings() {
             <li key={e.label}>
               <button
                 type="button"
-                onClick={() => run(e.run)}
+                onClick={() => void run(e.run)}
                 className="flex w-full items-start gap-3 rounded-xl border border-stone-200 px-3 py-2.5 text-left transition-colors hover:border-accent-300 hover:bg-accent-50/50 focus-visible:outline-2 focus-visible:outline-accent-500 dark:border-stone-700 dark:hover:border-accent-700 dark:hover:bg-accent-950/30"
               >
                 <e.icon

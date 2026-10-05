@@ -24,7 +24,12 @@ import {
   type FormatResult,
 } from "@/lib/markdown-format";
 import type { EditorMode } from "@/store/ui";
-import { MarkdownPreview } from "./MarkdownPreview";
+import dynamic from "next/dynamic";
+
+// The Markdown renderer (react-markdown and its plugins) is the largest library in the app; load it on demand.
+const MarkdownPreview = dynamic(() => import("./MarkdownPreview").then((m) => m.MarkdownPreview), {
+  loading: () => <p className="p-4 text-sm text-stone-500 dark:text-stone-400">Loading preview…</p>,
+});
 
 const TOOLS: { kind: FormatKind; label: string; icon: React.ReactNode }[] = [
   { kind: "bold", label: "Bold (Ctrl+B)", icon: <Bold size={16} /> },

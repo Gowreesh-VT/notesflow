@@ -7,8 +7,13 @@ import { runSync, wipeLocalAccountData } from "@/lib/sync-client";
 import { formatRelativeTime } from "@/lib/utils";
 import { disablePush } from "@/lib/push-client";
 import { useSyncStore } from "@/store/sync";
-import { AuthDialog, authErrorMessage } from "./AuthDialog";
-import { ResetPasswordDialog } from "./ResetPasswordDialog";
+import dynamic from "next/dynamic";
+import { authErrorMessage } from "./auth-errors";
+
+const AuthDialog = dynamic(() => import("./AuthDialog").then((m) => m.AuthDialog));
+const ResetPasswordDialog = dynamic(() =>
+  import("./ResetPasswordDialog").then((m) => m.ResetPasswordDialog),
+);
 import { SyncRunner } from "./SyncRunner";
 
 type CloudStatus = {

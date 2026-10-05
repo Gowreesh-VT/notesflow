@@ -2,37 +2,40 @@
 
 import { createElement, useEffect } from "react";
 import clsx from "clsx";
+import dynamic from "next/dynamic";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
 import { isPlannerView } from "@/lib/items-logic";
 import type { PlannerViewKind } from "@/lib/types";
 import { canPin, pinnedList } from "@/lib/split";
-import { CalendarView } from "./CalendarView";
-import { FocusView } from "./FocusView";
-import { HabitsView } from "./HabitsView";
-import { ProgressView } from "./ProgressView";
-import { QuickView } from "./QuickView";
-import { ReviewView } from "./ReviewView";
-import { SettingsView } from "./SettingsView";
 import { ItemList } from "./ItemList";
-import { MatrixView } from "./MatrixView";
-import { PlanView } from "./PlanView";
 import { SplitPane } from "./SplitPane";
-import { TimelineView } from "./TimelineView";
 import { NoteDetail } from "./NoteDetail";
 import { TaskDetail } from "./TaskDetail";
 
-const PLANNER_COMPONENTS: Record<PlannerViewKind, () => React.JSX.Element> = {
-  calendar: CalendarView,
-  matrix: MatrixView,
-  timeline: TimelineView,
-  plan: PlanView,
-  focus: FocusView,
-  habits: HabitsView,
-  review: ReviewView,
-  progress: ProgressView,
-  quick: QuickView,
-  settings: SettingsView,
+function ViewLoading() {
+  return (
+    <p role="status" className="p-6 text-sm text-stone-500 dark:text-stone-400">
+      Loading…
+    </p>
+  );
+}
+
+// Whole-workspace views load on first use, keeping them out of the initial bundle.
+const lazyView = (load: () => Promise<React.ComponentType>) =>
+  dynamic(load, { loading: ViewLoading });
+
+const PLANNER_COMPONENTS: Record<PlannerViewKind, React.ComponentType> = {
+  calendar: lazyView(() => import("./CalendarView").then((m) => m.CalendarView)),
+  matrix: lazyView(() => import("./MatrixView").then((m) => m.MatrixView)),
+  timeline: lazyView(() => import("./TimelineView").then((m) => m.TimelineView)),
+  plan: lazyView(() => import("./PlanView").then((m) => m.PlanView)),
+  focus: lazyView(() => import("./FocusView").then((m) => m.FocusView)),
+  habits: lazyView(() => import("./HabitsView").then((m) => m.HabitsView)),
+  review: lazyView(() => import("./ReviewView").then((m) => m.ReviewView)),
+  progress: lazyView(() => import("./ProgressView").then((m) => m.ProgressView)),
+  quick: lazyView(() => import("./QuickView").then((m) => m.QuickView)),
+  settings: lazyView(() => import("./SettingsView").then((m) => m.SettingsView)),
 };
 
 // The list takes the full width; the detail panel only opens beside it when something is selected.

@@ -61,8 +61,15 @@ Templates are items with `template: true`; every view, count and tag list must k
 Saved filters (`"filter"`), habits (`"habit"`), countdowns (`"countdown"`) and account preferences (`"setting"`, one record with id `preferences`, see `src/lib/preferences.ts`; read with `usePreferences`, change with `setPreferences`) are synced collections too: a new collection must be added
 everywhere `COLLECTIONS` is used (sync, backup, store, SyncRunner). Archived lists (`archivedAt`) and their items stay
 out of smart views, counts, tags and list pickers (use `activeLists`/`isArchived` from `items-logic.ts`).
-Whole-workspace views (calendar, matrix, timeline, plan, focus, habits, review, progress, quick) are
-`PlannerViewKind`s: add one to `PLANNER_VIEWS`, `PLANNER_ICONS` and `PLANNER_COMPONENTS` in `Workspace.tsx`. The
+Whole-workspace views (calendar, matrix, timeline, plan, focus, habits, review, progress, quick, settings) are
+`PlannerViewKind`s: add one to `PLANNER_VIEWS`, `PLANNER_ICONS` and `PLANNER_COMPONENTS` in `Workspace.tsx` (loaded
+lazily with `next/dynamic`; keep heavy, rarely used code such as dialogs, Markdown rendering and import/export out of
+the initial bundle the same way). Long item lists render 150 rows at a time (`src/lib/paging.ts`).
+Keyboard shortcuts are resolved by the pure `resolveShortcut` in `src/lib/shortcuts.ts` (its `SHORTCUT_HELP` table
+feeds the help dialog) and run by `KeyboardShortcuts.tsx`. Dates and times shown to the user go through
+`formatDate`/`formatTime`/`formatDateTime` and week maths through `weekdayPosition` (`src/lib/locale.ts`), which honour
+the week start, date order and clock preferences. Grey text uses `text-stone-500 dark:text-stone-400` (AA contrast);
+modal dialogs use `useModalFocus`. The
 Pomodoro state (`src/store/focus.ts`) is device-local; focused time is saved as `focus: true` time entries on tasks.
 `filterItems`/`countInView` take an optional context with the saved filters and archived list ids; pass it.
 Completing a repeating task goes through `setStatus`, which returns the id of the finished copy; use that id for

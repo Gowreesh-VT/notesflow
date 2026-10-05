@@ -9,7 +9,9 @@ import type { SavedFilter } from "@/lib/types";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
 import { NavItem } from "./NavItem";
-import { FilterEditor } from "./FilterEditor";
+import dynamic from "next/dynamic";
+
+const FilterEditor = dynamic(() => import("./FilterEditor").then((m) => m.FilterEditor));
 
 /** The sidebar's "Filters" section: saved filters with their counts, plus create, edit and delete. */
 export function SidebarFilters() {
