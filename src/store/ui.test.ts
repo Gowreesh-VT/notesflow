@@ -31,3 +31,25 @@ describe("group by", () => {
     expect(stored.state.groupBy).toEqual({ "list:a": "none" });
   });
 });
+
+describe("sidebar sections", () => {
+  it("folds and unfolds a group, remembered on this device", () => {
+    useUi.setState({ foldedSidebarSections: [] });
+    useUi.getState().toggleSidebarSection("views");
+    useUi.getState().toggleSidebarSection("tags");
+    expect(useUi.getState().foldedSidebarSections).toEqual(["views", "tags"]);
+    const stored = JSON.parse(window.localStorage.getItem("notesflow:ui") ?? "{}");
+    expect(stored.state.foldedSidebarSections).toEqual(["views", "tags"]);
+    useUi.getState().toggleSidebarSection("views");
+    expect(useUi.getState().foldedSidebarSections).toEqual(["tags"]);
+  });
+
+  it("ignores a stored value that is not a list of ids", async () => {
+    window.localStorage.setItem(
+      "notesflow:ui",
+      JSON.stringify({ state: { foldedSidebarSections: "views" }, version: 2 }),
+    );
+    await useUi.persist.rehydrate();
+    expect(useUi.getState().foldedSidebarSections).toEqual([]);
+  });
+});

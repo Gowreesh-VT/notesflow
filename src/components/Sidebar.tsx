@@ -54,6 +54,7 @@ import { DragHandle, DropLine, useReorder } from "./Reorder";
 import { SidebarArchivedLists } from "./SidebarArchivedLists";
 import { SidebarCountdowns } from "./SidebarCountdowns";
 import { SidebarFilters } from "./SidebarFilters";
+import { SidebarEmptyAction, SidebarSection } from "./SidebarSection";
 import { useWorkspace } from "@/store/workspace";
 
 const SMART_ICONS: Record<SmartViewId, React.ReactNode> = {
@@ -92,6 +93,7 @@ export function Sidebar() {
   const setView = useUi((s) => s.setView);
   const setSidebarOpen = useUi((s) => s.setSidebarOpen);
   const setPaletteOpen = useUi((s) => s.setPaletteOpen);
+  const toggleSidebarSection = useUi((s) => s.toggleSidebarSection);
   const today = useToday();
 
   const [adding, setAdding] = useState<"list" | "folder" | null>(null);
@@ -169,6 +171,12 @@ export function Sidebar() {
     const changed = renameTag(tag, null);
     setStatus(`Removed #${tag} from ${changed} item${changed === 1 ? "" : "s"}.`);
     if (sameView(view, { kind: "tag", tag })) goTo({ kind: "smart", id: "inbox" });
+  };
+
+  const startAdding = (kind: "list" | "folder") => {
+    if (useUi.getState().foldedSidebarSections.includes("lists")) toggleSidebarSection("lists");
+    setAdding(kind);
+    setAddDraft("");
   };
 
   const submitAdd = (event: React.FormEvent) => {
@@ -273,11 +281,124 @@ export function Sidebar() {
             />
           ))}
 
-          <h2 className="px-2.5 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
-            Views
-          </h2>
-          {PLANNER_VIEWS.filter((v) => v.kind !== "settings" && !hiddenViews.includes(v.kind)).map(
-            (v) => {
+          <SidebarSection
+            id="lists"
+            title="Lists"
+            actions={
+              <>
+                <button
+                  type="button"
+                  className="btn btn-ghost px-1.5 py-0.5"
+                  aria-label="New folder"
+                  title="New folder"
+                  onClick={() => startAdding("folder")}
+                >
+                  <FolderIcon size={14} />
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost px-1.5 py-0.5"
+                  aria-label="New list"
+                  title="New list"
+                  onClick={() => startAdding("list")}
+                >
+                  <Plus size={14} />
+                </button>
+              </>
+            }
+          >
+            {adding && (
+              <form onSubmit={submitAdd} className="px-1 pb-1">
+                <input
+                  autoFocus
+                  value={addDraft}
+                  onChange={(e) => setAddDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") setAdding(null);
+                  }}
+                  onBlur={() => {
+                    if (!addDraft.trim()) setAdding(null);
+                  }}
+                  placeholder={adding === "list" ? "List name" : "Folder name"}
+                  aria-label={adding === "list" ? "New list name" : "New folder name"}
+                  className="field py-1"
+                />
+              </form>
+            )}
+
+            {topLevelLists.map((l, i) => listItem(l, "top", i, topLevelLists))}
+
+            {folders.map((folder) => {
+              const inFolder = listsIn(folder.id);
+              const open = !collapsed.has(folder.id);
+              return (
+                <div key={folder.id}>
+                  <div className="group flex items-center">
+                    <button
+                      type="button"
+                      aria-expanded={open}
+                      onClick={() =>
+                        setCollapsed((prev) => {
+                          const next = new Set(prev);
+                          if (open) next.add(folder.id);
+                          else next.delete(folder.id);
+                          return next;
+                        })
+                      }
+                      className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm text-stone-600 hover:bg-stone-200/70 dark:text-stone-300 dark:hover:bg-stone-800"
+                    >
+                      <ChevronRight
+                        size={14}
+                        aria-hidden
+                        className={clsx("shrink-0", open && "rotate-90")}
+                      />
+                      <FolderIcon size={16} aria-hidden className="shrink-0" />
+                      <span className="truncate">{folder.name}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost px-1 py-0.5 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
+                      aria-label={`Rename folder ${folder.name}`}
+                      onClick={() => {
+                        const name = window.prompt("Rename folder", folder.name);
+                        if (name) renameFolder(folder.id, name);
+                      }}
+                    >
+                      <Pencil size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost px-1 py-0.5 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
+                      aria-label={`Delete folder ${folder.name}`}
+                      onClick={() => {
+                        if (
+                          window.confirm(`Delete the folder “${folder.name}”? Its lists are kept.`)
+                        ) {
+                          deleteFolder(folder.id);
+                        }
+                      }}
+                    >
+                      <X size={13} />
+                    </button>
+                  </div>
+                  {open && inFolder.map((l, i) => listItem(l, folder.id, i, inFolder))}
+                </div>
+              );
+            })}
+
+            <p role="status" aria-live="polite" className="sr-only">
+              {reorder.announcement}
+            </p>
+
+            {lists.length === 0 && folders.length === 0 && !adding && (
+              <SidebarEmptyAction label="New list" onClick={() => startAdding("list")} />
+            )}
+          </SidebarSection>
+
+          <SidebarSection id="views" title="Views">
+            {PLANNER_VIEWS.filter(
+              (v) => v.kind !== "settings" && !hiddenViews.includes(v.kind),
+            ).map((v) => {
               const Icon = PLANNER_ICONS[v.kind];
               return (
                 <NavItem
@@ -288,139 +409,15 @@ export function Sidebar() {
                   onClick={() => goTo({ kind: v.kind })}
                 />
               );
-            },
-          )}
-
-          <div className="flex items-center justify-between px-2.5 pb-1 pt-4">
-            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
-              Lists
-            </h2>
-            <span className="flex">
-              <button
-                type="button"
-                className="btn btn-ghost px-1.5 py-0.5"
-                aria-label="New folder"
-                title="New folder"
-                onClick={() => {
-                  setAdding("folder");
-                  setAddDraft("");
-                }}
-              >
-                <FolderIcon size={14} />
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost px-1.5 py-0.5"
-                aria-label="New list"
-                title="New list"
-                onClick={() => {
-                  setAdding("list");
-                  setAddDraft("");
-                }}
-              >
-                <Plus size={14} />
-              </button>
-            </span>
-          </div>
-
-          {adding && (
-            <form onSubmit={submitAdd} className="px-1 pb-1">
-              <input
-                autoFocus
-                value={addDraft}
-                onChange={(e) => setAddDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Escape") setAdding(null);
-                }}
-                onBlur={() => {
-                  if (!addDraft.trim()) setAdding(null);
-                }}
-                placeholder={adding === "list" ? "List name" : "Folder name"}
-                aria-label={adding === "list" ? "New list name" : "New folder name"}
-                className="field py-1"
-              />
-            </form>
-          )}
-
-          {topLevelLists.map((l, i) => listItem(l, "top", i, topLevelLists))}
-
-          {folders.map((folder) => {
-            const inFolder = listsIn(folder.id);
-            const open = !collapsed.has(folder.id);
-            return (
-              <div key={folder.id}>
-                <div className="group flex items-center">
-                  <button
-                    type="button"
-                    aria-expanded={open}
-                    onClick={() =>
-                      setCollapsed((prev) => {
-                        const next = new Set(prev);
-                        if (open) next.add(folder.id);
-                        else next.delete(folder.id);
-                        return next;
-                      })
-                    }
-                    className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm text-stone-600 hover:bg-stone-200/70 dark:text-stone-300 dark:hover:bg-stone-800"
-                  >
-                    <ChevronRight
-                      size={14}
-                      aria-hidden
-                      className={clsx("shrink-0", open && "rotate-90")}
-                    />
-                    <FolderIcon size={16} aria-hidden className="shrink-0" />
-                    <span className="truncate">{folder.name}</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-ghost px-1 py-0.5 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
-                    aria-label={`Rename folder ${folder.name}`}
-                    onClick={() => {
-                      const name = window.prompt("Rename folder", folder.name);
-                      if (name) renameFolder(folder.id, name);
-                    }}
-                  >
-                    <Pencil size={13} />
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-ghost px-1 py-0.5 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
-                    aria-label={`Delete folder ${folder.name}`}
-                    onClick={() => {
-                      if (
-                        window.confirm(`Delete the folder “${folder.name}”? Its lists are kept.`)
-                      ) {
-                        deleteFolder(folder.id);
-                      }
-                    }}
-                  >
-                    <X size={13} />
-                  </button>
-                </div>
-                {open && inFolder.map((l, i) => listItem(l, folder.id, i, inFolder))}
-              </div>
-            );
-          })}
-
-          <p role="status" aria-live="polite" className="sr-only">
-            {reorder.announcement}
-          </p>
-
-          {lists.length === 0 && folders.length === 0 && !adding && (
-            <p className="px-2.5 py-1 text-xs text-stone-500 dark:text-stone-400">
-              Create lists to organise tasks and notes.
-            </p>
-          )}
+            })}
+          </SidebarSection>
 
           <SidebarFilters />
 
           <SidebarCountdowns />
 
           {tags.length > 0 && (
-            <>
-              <h2 className="px-2.5 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
-                Tags
-              </h2>
+            <SidebarSection id="tags" title="Tags">
               {tags.map(({ tag, count }) => (
                 <div key={tag} className="group flex items-center">
                   <div className="min-w-0 flex-1">
@@ -452,7 +449,7 @@ export function Sidebar() {
                   </button>
                 </div>
               ))}
-            </>
+            </SidebarSection>
           )}
 
           <div className="mx-2.5 my-3 border-t border-stone-200 dark:border-stone-800" />
