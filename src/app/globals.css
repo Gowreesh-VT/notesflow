@@ -48,6 +48,16 @@ html {
   color-scheme: light;
 }
 
+/* Bottom sheets (phone menus and the add sheet) slide up from the bottom edge. */
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
 html.dark {
   color-scheme: dark;
 }

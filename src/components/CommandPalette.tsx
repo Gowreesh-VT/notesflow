@@ -54,6 +54,8 @@ function PaletteDialog({ onClose }: { onClose: () => void }) {
           if (ui.view.kind === "smart" && ["trash", "completed", "wontdo"].includes(ui.view.id)) {
             ui.setView({ kind: "smart", id: "inbox" });
           }
+          // Phones add tasks in a bottom sheet instead of the inline quick-add bar.
+          if (window.matchMedia("(max-width: 47.99rem)").matches) ui.setAddSheetOpen(true);
           window.setTimeout(() => document.getElementById("quick-add")?.focus(), 0);
         },
       },
