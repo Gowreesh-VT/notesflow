@@ -1,13 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import {
   Archive,
   ArchiveRestore,
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  Ban,
   Bell,
+  CalendarDays,
+  Check,
   ChevronRight,
   Columns2,
   Columns3,
@@ -51,12 +55,15 @@ import {
   itemTags,
   parseQuickAdd,
   quickAddDefaults,
+  resolveQuickAdd,
+  type QuickAddPicks,
   subtaskProgress,
   viewKey,
   viewTitle,
   type GroupBy,
 } from "@/lib/items-logic";
 import { getDragItem, isItemDrag, setDragItem } from "@/lib/dnd";
+import { isSideways, swipeAction, swipeOffset } from "@/lib/gestures";
 import { formatDuration } from "@/lib/duration";
 import { planMove, planStep } from "@/lib/ordering";
 import { ROW_PAGE, rowLimit } from "@/lib/paging";
@@ -70,7 +77,8 @@ import { CopyToListForm } from "./CopyToList";
 import { BatchToolbar, SelectCheckbox, SelectToggle, useRowSelection } from "./BatchSelect";
 import { EnergyIcon } from "./EnergyField";
 import { ListSelect } from "./ListSelect";
-import { Popover } from "./Popover";
+import { Popover, SHEET_CLASSES } from "./Popover";
+import { QuickAddPickers } from "./QuickAddPickers";
 import { DragHandle, DropLine, useReorder } from "./Reorder";
 import { TaskCheckbox } from "./TaskCheckbox";
 import { Suggestions } from "./Suggestions";
@@ -78,7 +86,8 @@ import { TemplatesMenu } from "./TemplatesMenu";
 import { shownTitle } from "@/lib/tags";
 import { runningEntry } from "@/lib/time-tracking";
 import { INBOX_ID, type Item, type ItemKind, type ItemSort } from "@/lib/types";
-import { displayTitle, formatDueRange, formatDueWithTime, getSnippet } from "@/lib/utils";
+import { addDays, displayTitle, formatDueRange, formatDueWithTime, getSnippet } from "@/lib/utils";
+import { useSelection } from "@/store/selection";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
 
@@ -107,6 +116,14 @@ function ItemRow({
   const updateItem = useWorkspace((s) => s.updateItem);
   const selectItem = useUi((s) => s.selectItem);
   const [menuOpen, setMenuOpen] = useState(false);
+  const toggleDone = useWorkspace((s) => s.toggleDone);
+  const setStatus = useWorkspace((s) => s.setStatus);
+  const trashItem = useWorkspace((s) => s.trashItem);
+  const promptOutcome = useUi((s) => s.promptOutcome);
+  // Touch swipes: right completes a task, left opens the row's actions (see src/lib/gestures.ts).
+  const [swipe, setSwipe] = useState<{ dx: number; active: boolean }>({ dx: 0, active: false });
+  const touch = useRef<{ x: number; y: number; dx: number; sideways: boolean } | null>(null);
+  const suppressClick = useRef(false);
   const { selecting, checked, handleClick } = useRowSelection(item.id);
 
   const isTask = item.kind === "task";
@@ -119,6 +136,54 @@ function ItemRow({
   const trashed = item.deletedAt !== null;
   // With a list pinned beside the view, rows can be dragged onto it to move them there.
   const splitOpen = useUi((s) => pinnedList(lists, s.splitListId, s.view) !== null) && !trashed;
+  const canSwipe = !trashed && !selecting && !reorder?.dragging;
+  const today1 = addDays(today, 1);
+
+  const swipeHandlers: React.HTMLAttributes<HTMLDivElement> = canSwipe
+    ? {
+        onTouchStart: (e) => {
+          const t = e.touches[0];
+          touch.current = { x: t.clientX, y: t.clientY, dx: 0, sideways: false };
+        },
+        onTouchMove: (e) => {
+          const start = touch.current;
+          if (!start) return;
+          const t = e.touches[0];
+          const dx = t.clientX - start.x;
+          const dy = t.clientY - start.y;
+          if (!start.sideways) {
+            if (isSideways(dx, dy)) start.sideways = true;
+            else if (Math.abs(dy) > 10) touch.current = null;
+            if (!start.sideways) return;
+          }
+          // Only tasks can be completed, so notes only swipe left.
+          start.dx = isTask ? dx : Math.min(0, dx);
+          setSwipe({ dx: swipeOffset(start.dx), active: true });
+        },
+        onTouchEnd: () => {
+          const start = touch.current;
+          touch.current = null;
+          if (!start?.sideways) return;
+          suppressClick.current = true;
+          setSwipe({ dx: 0, active: false });
+          const action = swipeAction(start.dx);
+          if (action === "complete") {
+            const finishedId = toggleDone(item.id);
+            if (finishedId) promptOutcome(finishedId);
+          } else if (action === "actions") setMenuOpen(true);
+        },
+        onTouchCancel: () => {
+          touch.current = null;
+          setSwipe({ dx: 0, active: false });
+        },
+        onClickCapture: (e) => {
+          if (!suppressClick.current) return;
+          suppressClick.current = false;
+          e.preventDefault();
+          e.stopPropagation();
+        },
+      }
+    : {};
 
   return (
     <li
@@ -131,134 +196,157 @@ function ItemRow({
       draggable={splitOpen || undefined}
       onDragStart={splitOpen ? (e) => setDragItem(e, item.id) : undefined}
       {...reorder?.row}
-      className={clsx(
-        "group relative flex min-h-11 items-center gap-3 rounded-lg px-3 py-1.5 transition-colors compact:min-h-8 compact:py-0.5",
-        selected || checked
-          ? "bg-accent-50 dark:bg-accent-950/50"
-          : "hover:bg-stone-100 dark:hover:bg-stone-800/60",
-        reorder?.dragging && "opacity-50",
-      )}
+      className={clsx("group relative rounded-lg", reorder?.dragging && "opacity-50")}
     >
-      {selecting && <SelectCheckbox item={item} checked={checked} onClick={handleClick} />}
-      {reorder && <DragHandle label="Drag to reorder" {...reorder.handle} />}
-      {reorder?.line && <DropLine at={reorder.line} />}
-      {isTask ? (
-        <TaskCheckbox item={item} disabled={trashed} />
-      ) : (
-        <FileText size={18} aria-hidden className="shrink-0 text-stone-500 dark:text-stone-400" />
-      )}
-
-      <button
-        type="button"
-        onClick={(e) => {
-          if (!handleClick(e)) selectItem(item.id);
-        }}
-        aria-current={selected ? "true" : undefined}
-        className="flex min-w-0 flex-1 items-center gap-3 self-stretch text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
-      >
-        <span className="min-w-0 flex-1">
-          <span
-            className={clsx(
-              "block truncate text-[15px]",
-              closed
-                ? "text-stone-500 line-through dark:text-stone-400"
-                : "text-stone-800 dark:text-stone-100",
-            )}
-          >
-            {shownTitle(item, displayTitle(item))}
-          </span>
-          {!isTask && item.body && (
-            <span className="block truncate text-xs text-stone-500 dark:text-stone-400">
-              {getSnippet(item.body)}
-            </span>
-          )}
-        </span>
-        <span className="flex shrink-0 items-center gap-2 text-xs text-stone-500 dark:text-stone-400">
-          {isTask && item.repeat ? (
-            <Repeat size={12} aria-label={describeRepeat(item.repeat)} className="shrink-0" />
-          ) : null}
-          {isTask && item.due && item.reminders?.length ? (
-            <Bell size={12} aria-label="Has reminders" className="shrink-0" />
-          ) : null}
-          {isTask && item.energy && (
-            <span className="hidden items-center gap-1 @lg:inline-flex">
-              <EnergyIcon energy={item.energy} />
-              {ENERGY_OPTIONS.find((o) => o.value === item.energy)?.label}
-            </span>
-          )}
-          {isTask && runningEntry(item) && (
-            <span className="inline-flex items-center gap-1 font-medium text-accent-600 dark:text-accent-400">
-              <span className="size-1.5 animate-pulse rounded-full bg-accent-500" aria-hidden />
-              Timing
-            </span>
-          )}
-          {isTask && item.estimate && (
-            <span className="hidden items-center gap-1 @xl:inline-flex" title="Estimated time">
-              <Hourglass size={12} aria-hidden />
-              <span className="sr-only">Estimate </span>
-              {formatDuration(item.estimate)}
-            </span>
-          )}
-          {progress.total > 0 && (
-            <span className="hidden items-center gap-1 @md:inline-flex">
-              <ListChecks size={13} aria-hidden />
-              {progress.done}/{progress.total}
-            </span>
-          )}
-          {item.pinned && <Pin size={13} aria-label="Pinned" className="text-accent-500" />}
-          {tags.slice(0, 2).map((tag, index) => (
-            <span
-              key={tag}
-              className={clsx(
-                "max-w-24 truncate rounded-md bg-stone-100 px-1.5 py-0.5 text-stone-600 dark:bg-stone-800 dark:text-stone-300",
-                index > 0 && "hidden @md:inline",
-              )}
-            >
-              #{tag}
-            </span>
-          ))}
-          {item.outcome && (
-            <span className="hidden max-w-32 truncate italic @md:inline">{item.outcome.label}</span>
-          )}
-          {listName && <span className="hidden max-w-28 truncate @xl:inline">{listName}</span>}
-          {isTask && item.due && (
-            <span
-              className={clsx(
-                "tabular-nums",
-                bucket === "overdue" && !closed
-                  ? "font-medium text-red-600 dark:text-red-400"
-                  : bucket === "today" && !closed
-                    ? "font-medium text-accent-600 dark:text-accent-400"
-                    : "",
-              )}
-            >
-              {formatDueRange(item.due, item.dueTime, item.startDate, today)}
-            </span>
-          )}
-        </span>
-      </button>
-      {!trashed && (
-        <button
-          type="button"
-          aria-label={`More actions for “${displayTitle(item)}”`}
-          aria-haspopup="menu"
-          aria-expanded={menuOpen}
-          onClick={() => setMenuOpen(!menuOpen)}
+      {swipe.dx !== 0 && (
+        <div
+          aria-hidden
           className={clsx(
-            "-mr-1.5 shrink-0 rounded-md p-1 text-stone-500 hover:bg-stone-200 hover:text-stone-700 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-accent-500 dark:hover:bg-stone-700 dark:hover:text-stone-200 dark:text-stone-400",
-            menuOpen ? "opacity-100" : "md:opacity-0 md:group-hover:opacity-100",
+            "absolute inset-0 flex items-center rounded-lg px-5 text-white",
+            swipe.dx > 0
+              ? "justify-start bg-accent-600"
+              : "justify-end bg-stone-500 dark:bg-stone-600",
           )}
         >
-          <MoreHorizontal size={16} aria-hidden />
-        </button>
+          {swipe.dx > 0 ? <Check size={20} /> : <MoreHorizontal size={20} />}
+        </div>
       )}
+      <div
+        {...swipeHandlers}
+        style={swipe.dx ? { transform: `translateX(${swipe.dx}px)` } : undefined}
+        className={clsx(
+          "relative flex min-h-11 touch-pan-y items-center gap-3 rounded-lg px-3 py-1.5 compact:min-h-8 compact:py-0.5 max-md:min-h-12",
+          swipe.active ? "" : "transition-[transform,background-color] duration-150",
+          selected || checked
+            ? "bg-accent-50 dark:bg-accent-950"
+            : swipe.dx !== 0
+              ? "bg-white dark:bg-stone-900"
+              : "hover:bg-stone-100 dark:hover:bg-stone-800/60",
+        )}
+      >
+        {selecting && <SelectCheckbox item={item} checked={checked} onClick={handleClick} />}
+        {reorder && <DragHandle label="Drag to reorder" {...reorder.handle} />}
+        {reorder?.line && <DropLine at={reorder.line} />}
+        {isTask ? (
+          <TaskCheckbox item={item} disabled={trashed} />
+        ) : (
+          <FileText size={18} aria-hidden className="shrink-0 text-stone-500 dark:text-stone-400" />
+        )}
+
+        <button
+          type="button"
+          onClick={(e) => {
+            if (!handleClick(e)) selectItem(item.id);
+          }}
+          aria-current={selected ? "true" : undefined}
+          className="flex min-w-0 flex-1 items-center gap-3 self-stretch text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
+        >
+          <span className="min-w-0 flex-1">
+            <span
+              className={clsx(
+                "block truncate text-[15px]",
+                closed
+                  ? "text-stone-500 line-through dark:text-stone-400"
+                  : "text-stone-800 dark:text-stone-100",
+              )}
+            >
+              {shownTitle(item, displayTitle(item))}
+            </span>
+            {!isTask && item.body && (
+              <span className="block truncate text-xs text-stone-500 dark:text-stone-400">
+                {getSnippet(item.body)}
+              </span>
+            )}
+          </span>
+          <span className="flex shrink-0 items-center gap-2 text-xs text-stone-500 dark:text-stone-400">
+            {isTask && item.repeat ? (
+              <Repeat size={12} aria-label={describeRepeat(item.repeat)} className="shrink-0" />
+            ) : null}
+            {isTask && item.due && item.reminders?.length ? (
+              <Bell size={12} aria-label="Has reminders" className="shrink-0" />
+            ) : null}
+            {isTask && item.energy && (
+              <span className="hidden items-center gap-1 @lg:inline-flex">
+                <EnergyIcon energy={item.energy} />
+                {ENERGY_OPTIONS.find((o) => o.value === item.energy)?.label}
+              </span>
+            )}
+            {isTask && runningEntry(item) && (
+              <span className="inline-flex items-center gap-1 font-medium text-accent-600 dark:text-accent-400">
+                <span className="size-1.5 animate-pulse rounded-full bg-accent-500" aria-hidden />
+                Timing
+              </span>
+            )}
+            {isTask && item.estimate && (
+              <span className="hidden items-center gap-1 @xl:inline-flex" title="Estimated time">
+                <Hourglass size={12} aria-hidden />
+                <span className="sr-only">Estimate </span>
+                {formatDuration(item.estimate)}
+              </span>
+            )}
+            {progress.total > 0 && (
+              <span className="hidden items-center gap-1 @md:inline-flex">
+                <ListChecks size={13} aria-hidden />
+                {progress.done}/{progress.total}
+              </span>
+            )}
+            {item.pinned && <Pin size={13} aria-label="Pinned" className="text-accent-500" />}
+            {tags.slice(0, 2).map((tag, index) => (
+              <span
+                key={tag}
+                className={clsx(
+                  "max-w-24 truncate rounded-md bg-stone-100 px-1.5 py-0.5 text-stone-600 dark:bg-stone-800 dark:text-stone-300",
+                  index > 0 && "hidden @md:inline",
+                )}
+              >
+                #{tag}
+              </span>
+            ))}
+            {item.outcome && (
+              <span className="hidden max-w-32 truncate italic @md:inline">
+                {item.outcome.label}
+              </span>
+            )}
+            {listName && <span className="hidden max-w-28 truncate @xl:inline">{listName}</span>}
+            {isTask && item.due && (
+              <span
+                className={clsx(
+                  "tabular-nums",
+                  bucket === "overdue" && !closed
+                    ? "font-medium text-red-600 dark:text-red-400"
+                    : bucket === "today" && !closed
+                      ? "font-medium text-accent-600 dark:text-accent-400"
+                      : "",
+                )}
+              >
+                {formatDueRange(item.due, item.dueTime, item.startDate, today)}
+              </span>
+            )}
+          </span>
+        </button>
+        {!trashed && (
+          <button
+            type="button"
+            aria-label={`More actions for “${displayTitle(item)}”`}
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen(!menuOpen)}
+            className={clsx(
+              "-mr-1.5 shrink-0 rounded-md p-1 text-stone-500 hover:bg-stone-200 hover:text-stone-700 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-accent-500 dark:hover:bg-stone-700 dark:hover:text-stone-200 dark:text-stone-400",
+              menuOpen ? "opacity-100" : "md:opacity-0 md:group-hover:opacity-100",
+            )}
+          >
+            <MoreHorizontal size={16} aria-hidden />
+          </button>
+        )}
+      </div>
       {menuOpen && (
         <>
           <button
             type="button"
             aria-label="Close item actions"
             tabIndex={-1}
-            className="fixed inset-0 z-10 cursor-default"
+            className="fixed inset-0 z-10 cursor-default max-md:z-40 max-md:bg-black/30"
             onClick={() => setMenuOpen(false)}
           />
           <div
@@ -267,8 +355,45 @@ function ItemRow({
             onKeyDown={(e) => {
               if (e.key === "Escape") setMenuOpen(false);
             }}
-            className="absolute right-2 top-full z-20 mt-1 w-72 max-w-[calc(100vw-2rem)] space-y-2 rounded-xl border border-stone-200 bg-white p-2.5 text-sm shadow-lift dark:border-stone-700 dark:bg-stone-900"
+            className={clsx(
+              "absolute right-2 top-full z-20 mt-1 w-72 max-w-[calc(100vw-2rem)] space-y-2 rounded-xl max-md:z-50 max-md:space-y-3 border border-stone-200 bg-white p-2.5 text-sm shadow-lift dark:border-stone-700 dark:bg-stone-900",
+              SHEET_CLASSES,
+            )}
           >
+            <div
+              aria-hidden
+              className="mx-auto -mt-1 mb-1 h-1 w-10 rounded-full bg-stone-300 md:hidden dark:bg-stone-700"
+            />
+            <p className="truncate px-0.5 font-medium text-stone-800 md:hidden dark:text-stone-100">
+              {shownTitle(item, displayTitle(item))}
+            </p>
+            {isTask && item.status === "open" && (
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { label: "Today", due: today },
+                  { label: "Tomorrow", due: today1 },
+                  { label: "Next week", due: addDays(today, 7) },
+                ].map((d) => (
+                  <button
+                    key={d.label}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      updateItem(item.id, { due: d.due });
+                      setMenuOpen(false);
+                    }}
+                    className={clsx(
+                      "btn flex-1 px-2 py-1.5 text-xs",
+                      item.due === d.due
+                        ? "bg-accent-100 text-accent-800 dark:bg-accent-950 dark:text-accent-200"
+                        : "bg-stone-100 text-stone-700 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700",
+                    )}
+                  >
+                    <CalendarDays size={13} aria-hidden /> {d.label}
+                  </button>
+                ))}
+              </div>
+            )}
             <label className="flex items-center gap-2 text-stone-700 dark:text-stone-200">
               <FolderInput size={15} aria-hidden className="shrink-0" />
               <span className="w-16 shrink-0">Move to</span>
@@ -292,6 +417,32 @@ function ItemRow({
                   selectItem(copyId);
                 }}
               />
+            </div>
+            <div className="flex gap-1.5 border-t border-stone-200 pt-2 dark:border-stone-700">
+              {isTask && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="btn btn-ghost flex-1"
+                  onClick={() => {
+                    setStatus(item.id, item.status === "wontdo" ? "open" : "wontdo");
+                    setMenuOpen(false);
+                  }}
+                >
+                  <Ban size={15} aria-hidden /> {item.status === "wontdo" ? "Reopen" : "Won’t do"}
+                </button>
+              )}
+              <button
+                type="button"
+                role="menuitem"
+                className="btn btn-danger flex-1"
+                onClick={() => {
+                  setMenuOpen(false);
+                  trashItem(item.id);
+                }}
+              >
+                <Trash2 size={15} aria-hidden /> Delete
+              </button>
             </div>
           </div>
         </>
@@ -495,6 +646,11 @@ export function ItemList() {
 
   const [draft, setDraft] = useState("");
   const [kind, setKind] = useState<ItemKind>("task");
+  const [picks, setPicks] = useState<QuickAddPicks>({});
+  const [picker, setPicker] = useState<"date" | "priority" | "list" | null>(null);
+  const addSheetOpen = useUi((s) => s.addSheetOpen);
+  const selecting = useSelection((s) => s.active);
+  const setAddSheetOpen = useUi((s) => s.setAddSheetOpen);
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set(["finished"]));
   const [menuOpen, setMenuOpen] = useState(false);
   const splitListId = useUi((s) => s.splitListId);
@@ -611,6 +767,15 @@ export function ItemList() {
     due: defaultDue,
   } = quickAddDefaults(view, today, filters);
 
+  const parsedDraft = kind === "task" ? parseQuickAdd(draft, today, activeLists(lists)) : null;
+  const resolved = parsedDraft
+    ? resolveQuickAdd(parsedDraft, picks, {
+        listId,
+        priority: defaultPriority,
+        due: defaultDue,
+      })
+    : null;
+
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
     if (!draft.trim()) return;
@@ -618,23 +783,21 @@ export function ItemList() {
 
     if (kind === "note") {
       selectItem(addItem({ kind, title: `${draft.trim()}${tagSuffix}`, listId }));
-    } else {
-      const parsed = parseQuickAdd(draft, today, activeLists(lists));
+      setAddSheetOpen(false);
+    } else if (parsedDraft && resolved) {
       addItem({
         kind,
-        title: `${parsed.title}${tagSuffix}`,
-        priority: parsed.priority !== "none" ? parsed.priority : defaultPriority,
-        due: parsed.due ?? defaultDue,
-        dueTime: parsed.dueTime ?? null,
-        estimate: parsed.estimate ?? null,
-        listId: parsed.listId ?? listId,
+        title: `${parsedDraft.title}${tagSuffix}`,
+        ...resolved,
+        estimate: parsedDraft.estimate ?? null,
       });
     }
     setDraft("");
+    setPicks({});
+    setPicker(null);
   };
 
-  const preview =
-    kind === "task" && draft.trim() ? parseQuickAdd(draft, today, activeLists(lists)) : null;
+  const preview = draft.trim() ? parsedDraft : null;
   const previewParts = preview
     ? [
         preview.due ? formatDueWithTime(preview.due, preview.dueTime, today) : "",
@@ -646,6 +809,17 @@ export function ItemList() {
         preview.estimate ? formatDuration(preview.estimate) : "",
       ].filter(Boolean)
     : [];
+
+  // Phones: the floating + button opens the add form as a bottom sheet. It is opened synchronously so the input
+  // can take focus inside the tap, which is what makes mobile browsers show the keyboard.
+  const openAddSheet = () => {
+    flushSync(() => setAddSheetOpen(true));
+    document.getElementById("quick-add")?.focus();
+  };
+  const closeAddSheet = () => {
+    setAddSheetOpen(false);
+    setPicker(null);
+  };
 
   const energyLabel = ENERGY_OPTIONS.find((o) => o.value === energyFilter)?.label;
   const optionsActive = Boolean(energyFilter) || outcomeFilter !== null;
@@ -670,7 +844,7 @@ export function ItemList() {
                 ? "Nothing due. Enjoy the calm."
                 : view.kind === "filter"
                   ? "Nothing matches this filter."
-                  : "Nothing here yet. Add a task or note above.";
+                  : "Nothing here yet. Add a task or a note to get started.";
 
   // Manual order can be changed by dragging (or Alt+Arrow keys) in a list or the Inbox, when nothing is hidden by a
   // search or filter. Elsewhere the order is still shown, just not editable.
@@ -1230,10 +1404,37 @@ export function ItemList() {
 
       {view.kind === "smart" && view.id === "today" && <Suggestions />}
 
+      {!isReadOnlyView && addSheetOpen && (
+        <button
+          type="button"
+          aria-label="Close add sheet"
+          tabIndex={-1}
+          className="fixed inset-0 z-40 cursor-default bg-black/30 md:hidden"
+          onClick={closeAddSheet}
+        />
+      )}
       {!isReadOnlyView && (
-        <form onSubmit={submit} className="px-4 sm:px-6">
-          <div className="flex items-center gap-2 rounded-xl border border-stone-200 bg-stone-50 px-3 transition-colors focus-within:border-accent-400 focus-within:bg-white dark:border-stone-700 dark:bg-stone-800/60 dark:focus-within:border-accent-600 dark:focus-within:bg-stone-900">
-            <Plus size={17} aria-hidden className="shrink-0 text-accent-600 dark:text-accent-400" />
+        <form
+          onSubmit={submit}
+          aria-label={kind === "task" ? "Add a task" : "Add a note"}
+          onKeyDown={(e) => {
+            if (e.key === "Escape" && addSheetOpen) {
+              e.stopPropagation();
+              closeAddSheet();
+            }
+          }}
+          className={clsx(
+            "px-4 sm:px-6",
+            "max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-50 max-md:rounded-t-2xl max-md:border-t max-md:border-stone-200 max-md:bg-white max-md:pb-[calc(0.75rem+env(safe-area-inset-bottom))] max-md:pt-4 max-md:shadow-lift dark:max-md:border-stone-700 dark:max-md:bg-stone-900 motion-safe:max-md:animate-[sheet-in_180ms_ease-out]",
+            !addSheetOpen && "max-md:hidden",
+          )}
+        >
+          <div className="flex items-center gap-2 rounded-xl border border-stone-200 bg-stone-50 px-3 transition-colors focus-within:border-accent-400 focus-within:bg-white max-md:border-transparent max-md:bg-transparent max-md:px-0 max-md:focus-within:border-transparent max-md:focus-within:bg-transparent dark:border-stone-700 dark:bg-stone-800/60 dark:focus-within:border-accent-600 dark:focus-within:bg-stone-900 dark:max-md:border-transparent dark:max-md:bg-transparent dark:max-md:focus-within:border-transparent dark:max-md:focus-within:bg-transparent">
+            <Plus
+              size={17}
+              aria-hidden
+              className="shrink-0 text-accent-600 max-md:hidden dark:text-accent-400"
+            />
             <span className="relative min-w-0 flex-1">
               <input
                 id="quick-add"
@@ -1241,14 +1442,15 @@ export function ItemList() {
                 onChange={(e) => setDraft(e.target.value)}
                 aria-label={kind === "task" ? "New task" : "New note"}
                 aria-describedby="quick-add-hint"
-                className="w-full bg-transparent py-2.5 text-sm outline-none"
+                enterKeyHint="done"
+                className="w-full bg-transparent py-2.5 text-sm outline-none max-md:text-base"
               />
               {/* A placeholder that fits the width: the full example only where there is room for it. */}
               <span
                 id="quick-add-hint"
                 aria-hidden={draft ? true : undefined}
                 className={clsx(
-                  "pointer-events-none absolute inset-y-0 left-0 right-0 flex items-center truncate text-sm text-stone-500 dark:text-stone-400",
+                  "pointer-events-none absolute inset-y-0 left-0 right-0 flex items-center truncate text-sm text-stone-500 max-md:text-base dark:text-stone-400",
                   draft && "invisible",
                 )}
               >
@@ -1292,8 +1494,32 @@ export function ItemList() {
               Add
             </button>
           </div>
+          {kind === "task" && resolved && (
+            <QuickAddPickers
+              resolved={resolved}
+              picker={picker}
+              onPicker={setPicker}
+              onPick={(next) => {
+                setPicks({ ...picks, ...next });
+                setPicker(null);
+                document.getElementById("quick-add")?.focus();
+              }}
+              today={today}
+              canSubmit={Boolean(draft.trim())}
+            />
+          )}
+          {kind === "note" && (
+            <div className="mt-2 flex justify-end md:hidden">
+              <button type="submit" className="btn btn-primary" disabled={!draft.trim()}>
+                Add note
+              </button>
+            </div>
+          )}
           {previewParts.length > 0 && (
-            <p className="mt-1.5 flex flex-wrap gap-1.5 px-1 text-xs" aria-live="polite">
+            <p
+              className="mt-1.5 flex flex-wrap gap-1.5 px-1 text-xs max-md:hidden"
+              aria-live="polite"
+            >
               {previewParts.map((part) => (
                 <span
                   key={part}
@@ -1349,6 +1575,16 @@ export function ItemList() {
             </section>
           )}
         </div>
+      )}
+      {!isReadOnlyView && !addSheetOpen && !selecting && (
+        <button
+          type="button"
+          aria-label={kind === "task" ? "Add a task" : "Add a note"}
+          onClick={openAddSheet}
+          className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 z-30 flex size-14 items-center justify-center rounded-full bg-accent-600 text-white shadow-lift transition-transform hover:bg-accent-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500 active:scale-95 md:hidden"
+        >
+          <Plus size={26} aria-hidden />
+        </button>
       )}
       <BatchToolbar items={visible} />
     </div>

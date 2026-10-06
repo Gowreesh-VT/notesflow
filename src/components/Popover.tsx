@@ -3,6 +3,10 @@
 import { useEffect, useId, useRef, useState } from "react";
 import clsx from "clsx";
 
+/** On phones the panel becomes a bottom sheet: full width, anchored to the bottom, with larger touch targets. */
+export const SHEET_CLASSES =
+  "max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:top-auto max-md:left-0 max-md:right-0 max-md:m-0 max-md:max-h-[80dvh] max-md:w-auto max-md:max-w-none max-md:overflow-y-auto max-md:rounded-b-none max-md:rounded-t-2xl max-md:border-x-0 max-md:border-b-0 max-md:p-4 max-md:pb-[calc(1rem+env(safe-area-inset-bottom))] max-md:text-base motion-safe:max-md:animate-[sheet-in_180ms_ease-out]";
+
 /**
  * A trigger button with a small floating panel, closed by Escape (focus returns to the trigger) or a click outside.
  * `children` may be a function that receives `close`, for panels whose choices should dismiss them.
@@ -71,7 +75,7 @@ export function Popover({
             type="button"
             aria-label={`Close ${label.toLowerCase()}`}
             tabIndex={-1}
-            className="fixed inset-0 z-20 cursor-default"
+            className="fixed inset-0 z-20 cursor-default max-md:bg-black/30"
             onClick={() => close(false)}
           />
           <div
@@ -89,8 +93,13 @@ export function Popover({
               align === "right" ? "right-0" : "left-0",
               side === "above" ? "bottom-full mb-1.5" : "top-full mt-1.5",
               panelClassName,
+              SHEET_CLASSES,
             )}
           >
+            <div
+              aria-hidden
+              className="mx-auto -mt-1 mb-3 h-1 w-10 rounded-full bg-stone-300 md:hidden dark:bg-stone-700"
+            />
             {typeof children === "function" ? children(() => close()) : children}
           </div>
         </>
