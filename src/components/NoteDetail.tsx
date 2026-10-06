@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   ArrowLeft,
   Copy,
+  CopyPlus,
   Download,
   ListChecks,
   Pin,
@@ -20,9 +21,11 @@ import { displayTitle, readingMinutes, wordCount } from "@/lib/utils";
 import { setPreferences, usePreferences } from "@/store/preferences";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
-import { CopyToList } from "./CopyToList";
+import { CopyToListForm } from "./CopyToList";
 import { ListSelect } from "./ListSelect";
 import { MarkdownEditor, ModeSwitch } from "./MarkdownEditor";
+import { Popover } from "./Popover";
+import { TitleField } from "./TitleField";
 
 export function NoteDetail({ item }: { item: Item }) {
   const { editorMode } = usePreferences();
@@ -83,26 +86,34 @@ export function NoteDetail({ item }: { item: Item }) {
         </div>
       )}
 
-      <div className="flex items-center gap-2 px-3 py-2">
+      <div className="flex items-start gap-2 px-4 pb-1 pt-4">
         <button
           type="button"
-          className="btn btn-ghost px-2"
+          className="btn btn-ghost -ml-1 mt-0.5 px-2"
           aria-label="Close details"
           onClick={() => selectItem(null)}
         >
           <ArrowLeft size={18} className="md:hidden" />
           <X size={18} className="hidden md:block" />
         </button>
-        <input
+        <TitleField
           value={item.title}
-          onChange={(e) => updateItem(item.id, { title: e.target.value })}
+          label="Note title"
           placeholder="Untitled note"
-          aria-label="Note title"
           readOnly={trashed}
-          className="heading-display min-w-0 flex-1 bg-transparent text-2xl font-semibold outline-none placeholder:text-stone-500"
+          onChange={(title) => updateItem(item.id, { title })}
         />
-        {!trashed && (
-          <div className="flex shrink-0 items-center">
+      </div>
+
+      {!trashed && (
+        <div className="flex flex-wrap items-center gap-1 px-4 pb-2 text-sm">
+          <ListSelect
+            label="List"
+            value={item.listId}
+            onChange={(listId) => updateItem(item.id, { listId })}
+            className="field w-auto max-w-44 py-1"
+          />
+          <div className="ml-auto flex items-center">
             {iconButton(
               item.pinned ? "Unpin note" : "Pin note",
               item.pinned ? <PinOff size={17} /> : <Pin size={17} />,
@@ -127,6 +138,25 @@ export function NoteDetail({ item }: { item: Item }) {
             {iconButton("Export as Markdown", <Download size={17} />, () =>
               exportNoteMarkdown(item, displayTitle(item)),
             )}
+            <Popover
+              label="Copy to list"
+              iconOnly
+              align="right"
+              triggerClassName="btn btn-ghost px-2"
+              trigger={<CopyPlus size={17} aria-hidden />}
+              panelClassName="w-72"
+            >
+              {(close) => (
+                <CopyToListForm
+                  item={item}
+                  onCancel={close}
+                  onCopied={(_, listName) => {
+                    close();
+                    setNotice(`Copied to ${listName}.`);
+                  }}
+                />
+              )}
+            </Popover>
             {iconButton(
               "Move to trash",
               <Trash2 size={17} />,
@@ -137,22 +167,10 @@ export function NoteDetail({ item }: { item: Item }) {
               true,
             )}
           </div>
-        )}
-      </div>
-
-      {!trashed && (
-        <div className="flex flex-wrap items-center gap-2 px-3 pb-2 text-sm text-stone-500 dark:text-stone-400">
-          <span>List</span>
-          <ListSelect
-            value={item.listId}
-            onChange={(listId) => updateItem(item.id, { listId })}
-            className="field w-auto py-1"
-          />
-          <CopyToList item={item} onCopied={(listName) => setNotice(`Copied to ${listName}.`)} />
           <p
             role="status"
             aria-live="polite"
-            className="text-xs text-accent-700 empty:hidden dark:text-accent-300"
+            className="w-full text-xs text-accent-700 empty:hidden dark:text-accent-300"
           >
             {notice}
           </p>
