@@ -26,6 +26,8 @@ type UiState = {
   sidebarOpen: boolean;
   /** Desktop only: hides the lists sidebar to give the task list more room. */
   sidebarCollapsed: boolean;
+  /** Sidebar groups (views, lists, filters, …) folded away on this device. */
+  foldedSidebarSections: string[];
   /** Task that was just completed and is waiting for an optional outcome. */
   outcomePromptId: string | null;
   /** Shows only tasks with this energy tag, in every view. */
@@ -51,6 +53,7 @@ type UiState = {
   setHelpOpen: (open: boolean) => void;
   setSidebarOpen: (open: boolean) => void;
   toggleSidebarCollapsed: () => void;
+  toggleSidebarSection: (id: string) => void;
   promptOutcome: (id: string | null) => void;
   setEnergyFilter: (energy: Energy | null) => void;
   setDefaultReminderTime: (time: string) => void;
@@ -75,6 +78,7 @@ export const useUi = create<UiState>()(
       helpOpen: false,
       sidebarOpen: false,
       sidebarCollapsed: false,
+      foldedSidebarSections: [],
       outcomePromptId: null,
       energyFilter: null,
       defaultReminderTime: DEFAULT_REMINDER_TIME,
@@ -97,6 +101,12 @@ export const useUi = create<UiState>()(
       setHelpOpen: (helpOpen) => set({ helpOpen }),
       setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
       toggleSidebarCollapsed: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
+      toggleSidebarSection: (id) =>
+        set((s) => ({
+          foldedSidebarSections: s.foldedSidebarSections.includes(id)
+            ? s.foldedSidebarSections.filter((x) => x !== id)
+            : [...s.foldedSidebarSections, id],
+        })),
       promptOutcome: (outcomePromptId) => set({ outcomePromptId }),
       setEnergyFilter: (energyFilter) => set({ energyFilter }),
       setDefaultReminderTime: (time) => {
@@ -124,6 +134,7 @@ export const useUi = create<UiState>()(
         listLayout: s.listLayout,
         splitListId: s.splitListId,
         sidebarCollapsed: s.sidebarCollapsed,
+        foldedSidebarSections: s.foldedSidebarSections,
         defaultReminderTime: s.defaultReminderTime,
         quietHours: s.quietHours,
         calendarLayout: s.calendarLayout,
@@ -131,6 +142,17 @@ export const useUi = create<UiState>()(
       }),
       // v1 stored a different sort field; nothing else carries over.
       migrate: () => ({ sort: "default" }),
+      // Stored state is read back as-is, so a value that is not a list of ids falls back to nothing folded.
+      merge: (persisted, current) => {
+        const stored = (persisted ?? {}) as Partial<UiState>;
+        const folded = stored.foldedSidebarSections;
+        return {
+          ...current,
+          ...stored,
+          foldedSidebarSections:
+            Array.isArray(folded) && folded.every((id) => typeof id === "string") ? folded : [],
+        };
+      },
     },
   ),
 );

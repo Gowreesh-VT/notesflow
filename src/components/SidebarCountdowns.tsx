@@ -7,6 +7,8 @@ import { countdownLabel, visibleCountdowns } from "@/lib/countdowns";
 import { useToday } from "@/lib/hooks";
 import { useWorkspace } from "@/store/workspace";
 import { formatDate } from "@/lib/locale";
+import { useUi } from "@/store/ui";
+import { SidebarEmptyAction, SidebarSection } from "./SidebarSection";
 
 /** Countdowns to important dates, with a small form to add one. */
 export function SidebarCountdowns() {
@@ -16,24 +18,30 @@ export function SidebarCountdowns() {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [date, setDate] = useState("");
+  const startAdding = () => {
+    if (useUi.getState().foldedSidebarSections.includes("countdowns")) {
+      useUi.getState().toggleSidebarSection("countdowns");
+    }
+    setAdding(!adding);
+  };
   const shown = useMemo(() => visibleCountdowns(countdowns, today), [countdowns, today]);
 
   return (
-    <section aria-label="Countdowns">
-      <div className="flex items-center justify-between px-2.5 pb-1 pt-4">
-        <h2 className="text-[11px] font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
-          Countdowns
-        </h2>
+    <SidebarSection
+      id="countdowns"
+      title="Countdowns"
+      actions={
         <button
           type="button"
           className="btn btn-ghost px-1.5 py-0.5"
           aria-label="New countdown"
           title="New countdown"
-          onClick={() => setAdding(!adding)}
+          onClick={startAdding}
         >
           <Plus size={14} />
         </button>
-      </div>
+      }
+    >
       {adding && (
         <form
           className="space-y-1 px-1 pb-2"
@@ -120,10 +128,8 @@ export function SidebarCountdowns() {
         );
       })}
       {shown.length === 0 && !adding && (
-        <p className="px-2.5 py-1 text-xs text-stone-500 dark:text-stone-400">
-          Count down to birthdays, trips or deadlines.
-        </p>
+        <SidebarEmptyAction label="New countdown" onClick={startAdding} />
       )}
-    </section>
+    </SidebarSection>
   );
 }
