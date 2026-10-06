@@ -20,6 +20,7 @@ import {
   type CardDirection,
   type CardMove,
 } from "@/lib/board";
+import { shownTitle } from "@/lib/tags";
 import { getDragItem, isItemDrag, setDragItem } from "@/lib/dnd";
 import { dueBucket, itemTags, subtaskProgress } from "@/lib/items-logic";
 import type { Item, TaskList } from "@/lib/types";
@@ -141,7 +142,7 @@ function BoardCard({
               : "text-stone-800 dark:text-stone-100",
           )}
         >
-          {displayTitle(item)}
+          {shownTitle(item, displayTitle(item))}
         </span>
         {!isTask && item.body && (
           <span className="mt-0.5 line-clamp-2 text-xs text-stone-500 dark:text-stone-400">

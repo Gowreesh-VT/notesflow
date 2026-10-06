@@ -27,3 +27,20 @@ export function renameTagInText(text: string, from: string, to: string | null): 
     )
     .join("");
 }
+
+/**
+ * A title without the `#tags` at its end, for list rows that show tags as chips: "Pay rent #bills" → "Pay rent".
+ * Tags inside the sentence stay, since removing them would change its meaning. A title that is only tags is kept.
+ */
+export function titleWithoutTrailingTags(title: string): string {
+  const stripped = title.replace(/(?:\s+#[a-zA-Z][\w-]*)+\s*$/, "").trimEnd();
+  return stripped.trim() && !/^#[a-zA-Z][\w-]*$/.test(stripped.trim()) ? stripped : title;
+}
+
+/** What a task row or card shows as its title: tasks drop trailing `#tags` (shown as chips), notes are unchanged. */
+export function shownTitle(
+  item: { kind: string; title: string; body: string },
+  title: string,
+): string {
+  return item.kind === "task" ? titleWithoutTrailingTags(title) : title;
+}

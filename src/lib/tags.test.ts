@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cleanTagName, renameTagInText } from "./tags";
+import { cleanTagName, renameTagInText, shownTitle, titleWithoutTrailingTags } from "./tags";
 import { extractTags } from "./utils";
 
 describe("cleanTagName", () => {
@@ -43,5 +43,31 @@ describe("renameTagInText", () => {
   it("treats the old name literally", () => {
     expect(renameTagInText("#a-b #axb", "a-b", "c")).toBe("#c #axb");
     expect(renameTagInText("no tags here", "a", "b")).toBe("no tags here");
+  });
+});
+
+describe("titleWithoutTrailingTags", () => {
+  it("drops the tags at the end of a title", () => {
+    expect(titleWithoutTrailingTags("Pay rent #bills")).toBe("Pay rent");
+    expect(titleWithoutTrailingTags("Review PRs #work #deep-focus ")).toBe("Review PRs");
+  });
+
+  it("keeps tags inside the sentence and titles that are only tags", () => {
+    expect(titleWithoutTrailingTags("Fix #parser crash")).toBe("Fix #parser crash");
+    expect(titleWithoutTrailingTags("Ask about #work at #home")).toBe("Ask about #work at");
+    expect(titleWithoutTrailingTags("#idea")).toBe("#idea");
+    expect(titleWithoutTrailingTags("#idea #later")).toBe("#idea #later");
+    expect(titleWithoutTrailingTags("Issue #42")).toBe("Issue #42");
+  });
+});
+
+describe("shownTitle", () => {
+  it("drops trailing tags from tasks only", () => {
+    expect(
+      shownTitle({ kind: "task", title: "Pay rent #bills", body: "" }, "Pay rent #bills"),
+    ).toBe("Pay rent");
+    expect(shownTitle({ kind: "note", title: "Ideas #work", body: "" }, "Ideas #work")).toBe(
+      "Ideas #work",
+    );
   });
 });

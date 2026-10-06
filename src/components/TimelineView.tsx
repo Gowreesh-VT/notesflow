@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import { ChevronRight } from "lucide-react";
+import { shownTitle } from "@/lib/tags";
 import { archivedListIds } from "@/lib/items-logic";
 import { useToday } from "@/lib/hooks";
 import {
@@ -484,7 +485,9 @@ export function TimelineView() {
                                     : "text-stone-700 hover:bg-stone-100 dark:text-stone-200 dark:hover:bg-stone-800/60",
                                 )}
                               >
-                                <span className="truncate">{displayTitle(task)}</span>
+                                <span className="truncate">
+                                  {shownTitle(task, displayTitle(task))}
+                                </span>
                               </button>
                             </div>
                             <div className="relative shrink-0" style={trackStyle}>
