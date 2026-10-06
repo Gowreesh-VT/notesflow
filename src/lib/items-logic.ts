@@ -583,3 +583,26 @@ export function groupByTag(items: Item[]): ItemGroup[] {
     .map((tag) => ({ id: `#${tag}`, label: `#${tag}`, items: byTag.get(tag)! }));
   return untagged.length ? [...groups, { id: "none", label: "No tag", items: untagged }] : groups;
 }
+
+/** Choices made with the add sheet's buttons; `undefined` means "not picked", `null` due means "no date". */
+export type QuickAddPicks = { due?: string | null; priority?: Priority; listId?: string };
+
+/**
+ * The fields a quick-added task gets: a button pick wins over the typed words (the newer, more explicit choice),
+ * and the typed words win over the view's defaults. A typed time is kept unless the picked date is cleared.
+ */
+export function resolveQuickAdd(
+  parsed: QuickAdd,
+  picks: QuickAddPicks,
+  defaults: { listId: string; priority: Priority; due: string | null },
+): { due: string | null; dueTime: string | null; priority: Priority; listId: string } {
+  const due = picks.due !== undefined ? picks.due : (parsed.due ?? defaults.due);
+  const priority =
+    picks.priority ?? (parsed.priority !== "none" ? parsed.priority : defaults.priority);
+  return {
+    due,
+    dueTime: due ? (parsed.dueTime ?? null) : null,
+    priority,
+    listId: picks.listId ?? parsed.listId ?? defaults.listId,
+  };
+}

@@ -53,3 +53,14 @@ describe("sidebar sections", () => {
     expect(useUi.getState().foldedSidebarSections).toEqual([]);
   });
 });
+
+describe("last task view", () => {
+  it("remembers the last list-like view while planner views are open", () => {
+    useUi.getState().setView({ kind: "list", id: "work" });
+    useUi.getState().setView({ kind: "calendar" });
+    useUi.getState().setView({ kind: "habits" });
+    expect(useUi.getState().lastTaskView).toEqual({ kind: "list", id: "work" });
+    useUi.getState().setView({ kind: "smart", id: "today" });
+    expect(useUi.getState().lastTaskView).toEqual({ kind: "smart", id: "today" });
+  });
+});

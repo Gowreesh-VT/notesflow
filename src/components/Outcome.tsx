@@ -142,7 +142,7 @@ export function OutcomePrompt() {
       onKeyDown={(e) => {
         if (e.key === "Escape") close();
       }}
-      className="fixed inset-x-3 bottom-3 z-40 mx-auto max-w-md rounded-2xl border border-stone-200 bg-white p-4 shadow-lift sm:inset-x-auto sm:right-5 sm:bottom-5 dark:border-stone-700 dark:bg-stone-900"
+      className="fixed inset-x-3 bottom-3 z-40 max-md:bottom-[4.75rem] mx-auto max-w-md rounded-2xl border border-stone-200 bg-white p-4 shadow-lift sm:inset-x-auto sm:right-5 sm:bottom-5 dark:border-stone-700 dark:bg-stone-900"
     >
       <div className="mb-2 flex items-start gap-2">
         <div className="min-w-0 flex-1">

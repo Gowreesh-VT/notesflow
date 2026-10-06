@@ -15,6 +15,7 @@ import { ReminderSettings } from "./ReminderSettings";
 import { SyncBanner } from "./SyncBanner";
 import { CommandPalette } from "./CommandPalette";
 import { KeyboardShortcuts } from "./KeyboardShortcuts";
+import { MobileTabBar } from "./MobileTabBar";
 import { ShortcutHelp } from "./ShortcutHelp";
 import { Sidebar } from "./Sidebar";
 import { Workspace } from "./Workspace";
@@ -74,6 +75,7 @@ export function AppShell() {
             <Workspace key={localeKey} />
           )}
         </main>
+        {ready && <MobileTabBar />}
       </div>
       {ready && <CommandPalette />}
       {ready && <ShortcutHelp />}

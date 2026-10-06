@@ -18,6 +18,7 @@ import {
   moveSectionBy,
   parseClock,
   parseQuickAdd,
+  resolveQuickAdd,
   sameView,
   subtaskProgress,
   viewTitle,
@@ -445,5 +446,36 @@ describe("planner views", () => {
     expect(sameView(calendar, { kind: "plan" })).toBe(false);
     expect(viewTitle({ kind: "plan" }, [])).toBe("Plan my day");
     expect(filterItems([make("x", { due: today })], calendar, "", today)).toEqual([]);
+  });
+});
+
+describe("resolveQuickAdd", () => {
+  const defaults = { listId: "inbox", priority: "none" as const, due: "2026-10-06" };
+
+  it("uses typed words over the view's defaults", () => {
+    const parsed = parseQuickAdd("Call Sam tomorrow 5pm !high", "2026-10-06");
+    expect(resolveQuickAdd(parsed, {}, defaults)).toEqual({
+      due: "2026-10-07",
+      dueTime: "17:00",
+      priority: "high",
+      listId: "inbox",
+    });
+    expect(resolveQuickAdd(parseQuickAdd("Call Sam", "2026-10-06"), {}, defaults)).toEqual({
+      due: "2026-10-06",
+      dueTime: null,
+      priority: "none",
+      listId: "inbox",
+    });
+  });
+
+  it("lets button picks win, including clearing the date", () => {
+    const parsed = parseQuickAdd("Call Sam tomorrow 5pm !high", "2026-10-06");
+    expect(
+      resolveQuickAdd(parsed, { due: "2026-10-09", priority: "low", listId: "work" }, defaults),
+    ).toEqual({ due: "2026-10-09", dueTime: "17:00", priority: "low", listId: "work" });
+    expect(resolveQuickAdd(parsed, { due: null }, defaults)).toMatchObject({
+      due: null,
+      dueTime: null,
+    });
   });
 });

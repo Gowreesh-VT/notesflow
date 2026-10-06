@@ -51,7 +51,7 @@ export function FocusBar() {
     <div
       role="region"
       aria-label="Focus timer"
-      className="fixed bottom-3 left-1/2 z-30 flex max-w-[calc(100vw-1.5rem)] -translate-x-1/2 items-center gap-2 rounded-full border border-stone-200 bg-white py-1.5 pl-3 pr-1.5 text-sm shadow-lift dark:border-stone-700 dark:bg-stone-900"
+      className="fixed bottom-3 left-1/2 max-md:bottom-[4.75rem] z-30 flex max-w-[calc(100vw-1.5rem)] -translate-x-1/2 items-center gap-2 rounded-full border border-stone-200 bg-white py-1.5 pl-3 pr-1.5 text-sm shadow-lift dark:border-stone-700 dark:bg-stone-900"
     >
       <button
         type="button"
