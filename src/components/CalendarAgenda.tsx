@@ -3,6 +3,7 @@
 import clsx from "clsx";
 import { Check } from "lucide-react";
 import { useMemo } from "react";
+import { shownTitle } from "@/lib/tags";
 import { AGENDA_DAYS, agendaGroups } from "@/lib/calendar";
 import { INBOX_ID, type Item, type Priority } from "@/lib/types";
 import { addDays, displayTitle, formatClock, formatDueRange } from "@/lib/utils";
@@ -88,7 +89,7 @@ function AgendaRow({ item, today, overdue }: { item: Item; today: string; overdu
             done && "text-stone-500 line-through dark:text-stone-400",
           )}
         >
-          {displayTitle(item)}
+          {shownTitle(item, displayTitle(item))}
         </span>
         {listName && (
           <span className="hidden shrink-0 text-xs text-stone-500 sm:inline dark:text-stone-400">

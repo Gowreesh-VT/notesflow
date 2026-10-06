@@ -2,6 +2,7 @@
 
 import clsx from "clsx";
 import { useEffect, useRef, useState } from "react";
+import { shownTitle } from "@/lib/tags";
 import { reschedulePatch } from "@/lib/calendar";
 import { getDragItem, isItemDrag, setDragItem } from "@/lib/dnd";
 import { activeLists, parseQuickAdd } from "@/lib/items-logic";
@@ -200,7 +201,7 @@ export function TaskChip({
             {formatClock(item.dueTime)}
           </span>
         )}
-        <span className="truncate">{displayTitle(item)}</span>
+        <span className="truncate">{shownTitle(item, displayTitle(item))}</span>
       </button>
     </div>
   );

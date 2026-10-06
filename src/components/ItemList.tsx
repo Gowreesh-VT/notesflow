@@ -25,7 +25,10 @@ import {
   Plus,
   Repeat,
   Search,
+  SlidersHorizontal,
+  Sparkles,
   Trash2,
+  X,
   Zap,
 } from "lucide-react";
 import clsx from "clsx";
@@ -67,10 +70,12 @@ import { CopyToListForm } from "./CopyToList";
 import { BatchToolbar, SelectCheckbox, SelectToggle, useRowSelection } from "./BatchSelect";
 import { EnergyIcon } from "./EnergyField";
 import { ListSelect } from "./ListSelect";
+import { Popover } from "./Popover";
 import { DragHandle, DropLine, useReorder } from "./Reorder";
 import { TaskCheckbox } from "./TaskCheckbox";
 import { Suggestions } from "./Suggestions";
 import { TemplatesMenu } from "./TemplatesMenu";
+import { shownTitle } from "@/lib/tags";
 import { runningEntry } from "@/lib/time-tracking";
 import { INBOX_ID, type Item, type ItemKind, type ItemSort } from "@/lib/types";
 import { displayTitle, formatDueRange, formatDueWithTime, getSnippet } from "@/lib/utils";
@@ -160,7 +165,7 @@ function ItemRow({
                 : "text-stone-800 dark:text-stone-100",
             )}
           >
-            {displayTitle(item)}
+            {shownTitle(item, displayTitle(item))}
           </span>
           {!isTask && item.body && (
             <span className="block truncate text-xs text-stone-500 dark:text-stone-400">
@@ -201,12 +206,15 @@ function ItemRow({
             </span>
           )}
           {item.pinned && <Pin size={13} aria-label="Pinned" className="text-accent-500" />}
-          {tags.slice(0, 2).map((tag) => (
+          {tags.slice(0, 2).map((tag, index) => (
             <span
               key={tag}
-              className="hidden rounded-md bg-stone-100 px-1.5 py-0.5 text-stone-600 @2xl:inline dark:bg-stone-800 dark:text-stone-300"
+              className={clsx(
+                "max-w-24 truncate rounded-md bg-stone-100 px-1.5 py-0.5 text-stone-600 dark:bg-stone-800 dark:text-stone-300",
+                index > 0 && "hidden @md:inline",
+              )}
             >
-              {tag}
+              #{tag}
             </span>
           ))}
           {item.outcome && (
@@ -381,6 +389,43 @@ function MenuItem({
   );
 }
 
+function OptionRow({
+  icon,
+  label,
+  children,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="grid grid-cols-[5.5rem_1fr] items-center gap-2">
+      <span className="flex items-center gap-1.5 text-stone-600 dark:text-stone-300">
+        {icon}
+        {label}
+      </span>
+      {children}
+    </div>
+  );
+}
+
+/** An active filter shown under the header, so a hidden filter never explains an emptier list silently. */
+function FilterChip({ label, onClear }: { label: string; onClear: () => void }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-md bg-accent-50 py-0.5 pl-2 pr-0.5 font-medium text-accent-800 dark:bg-accent-950 dark:text-accent-200">
+      {label}
+      <button
+        type="button"
+        aria-label={`Clear ${label}`}
+        onClick={onClear}
+        className="rounded p-0.5 hover:bg-accent-100 focus-visible:outline-2 focus-visible:outline-accent-500 dark:hover:bg-accent-900"
+      >
+        <X size={12} aria-hidden />
+      </button>
+    </span>
+  );
+}
+
 const SORTS: { value: ItemSort; label: string }[] = [
   { value: "default", label: "Smart order" },
   { value: "manual", label: "Manual order" },
@@ -460,6 +505,7 @@ export function ItemList() {
   const energyFilter = useUi((s) => s.energyFilter);
   const setEnergyFilter = useUi((s) => s.setEnergyFilter);
   const [outcomeFilter, setOutcomeFilter] = useState<string | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
   const isCompletedView = view.kind === "smart" && view.id === "completed";
   const visible = useMemo(
     () =>
@@ -602,6 +648,7 @@ export function ItemList() {
     : [];
 
   const energyLabel = ENERGY_OPTIONS.find((o) => o.value === energyFilter)?.label;
+  const optionsActive = Boolean(energyFilter) || outcomeFilter !== null;
   const finishedToday = useMemo(
     () => (view.kind === "smart" && view.id === "today" ? todayTally(items, today).finished : 0),
     [items, today, view],
@@ -859,7 +906,6 @@ export function ItemList() {
               })}
             </div>
           )}
-          <SelectToggle />
           <div className="relative hidden @xl:block">
             <Search
               size={15}
@@ -876,97 +922,129 @@ export function ItemList() {
               className="field w-40 border-transparent bg-stone-100 pl-8 transition-[width] focus:w-56 dark:border-transparent dark:bg-stone-800"
             />
           </div>
-          {isCompletedView && completedOutcomes.length > 0 && (
-            <select
-              aria-label="Outcome filter"
-              value={outcomeFilter ?? "__all"}
-              onChange={(e) => setOutcomeFilter(e.target.value === "__all" ? null : e.target.value)}
-              className={clsx(
-                "cursor-pointer rounded-xl py-1.5 pl-2 pr-1 text-sm focus-visible:outline-2 focus-visible:outline-accent-500",
-                outcomeFilter !== null
-                  ? "bg-accent-50 font-medium text-accent-800 dark:bg-accent-950 dark:text-accent-200"
-                  : "bg-transparent text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800",
-              )}
-            >
-              <option value="__all">Any outcome</option>
-              {completedOutcomes.map((o) => (
-                <option key={o.label || "none"} value={o.label}>
-                  {o.label || "No outcome"} ({o.count})
-                </option>
-              ))}
-            </select>
-          )}
-          <label className="relative">
-            <span className="sr-only">Energy filter</span>
-            <Zap
-              size={15}
-              aria-hidden
-              className={clsx(
-                "pointer-events-none absolute left-2.5 top-2.5",
-                energyFilter
-                  ? "text-accent-600 dark:text-accent-400"
-                  : "text-stone-500 dark:text-stone-400",
-              )}
-            />
-            <select
-              aria-label="Energy filter"
-              value={energyFilter ?? ""}
-              onChange={(e) => setEnergyFilter(isEnergy(e.target.value) ? e.target.value : null)}
-              className={clsx(
-                "cursor-pointer appearance-none rounded-xl py-1.5 pl-8 pr-2 text-sm focus-visible:outline-2 focus-visible:outline-accent-500",
-                energyFilter
-                  ? "bg-accent-50 font-medium text-accent-800 dark:bg-accent-950 dark:text-accent-200"
-                  : "bg-transparent text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800",
-              )}
-            >
-              <option value="">Any energy</option>
-              {ENERGY_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className={clsx("relative", board && "hidden")}>
-            <span className="sr-only">Group by</span>
-            <GroupIcon
-              size={15}
-              aria-hidden
-              className="pointer-events-none absolute left-2.5 top-2.5 text-stone-500 dark:text-stone-400"
-            />
-            <select
-              aria-label="Group by"
-              value={groupBy}
-              onChange={(e) => setGroupBy(viewKey(view), e.target.value as GroupBy)}
-              className="cursor-pointer appearance-none rounded-xl bg-transparent py-1.5 pl-8 pr-2 text-sm text-stone-600 hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-accent-500 dark:text-stone-300 dark:hover:bg-stone-800"
-            >
-              {GROUP_BY_OPTIONS.filter((o) => o.value !== "section" || hasSections).map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className={clsx("relative", board && "hidden")}>
-            <span className="sr-only">Sort by</span>
-            <ArrowUpDown
-              size={15}
-              aria-hidden
-              className="pointer-events-none absolute left-2.5 top-2.5 text-stone-500 dark:text-stone-400"
-            />
-            <select
-              aria-label="Sort by"
-              value={sort}
-              onChange={(e) => setSort(e.target.value as ItemSort)}
-              className="cursor-pointer appearance-none rounded-xl bg-transparent py-1.5 pl-8 pr-2 text-sm text-stone-600 hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-accent-500 dark:text-stone-300 dark:hover:bg-stone-800"
-            >
-              {SORTS.filter((s) => s.value !== "manual" || isContainer).map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <button
+            type="button"
+            className={clsx(
+              "btn px-2 @xl:hidden",
+              searchOpen || query
+                ? "bg-accent-50 text-accent-800 dark:bg-accent-950 dark:text-accent-200"
+                : "btn-ghost",
+            )}
+            aria-label="Search this view"
+            aria-expanded={searchOpen || Boolean(query)}
+            aria-controls="list-search-narrow"
+            onClick={() => {
+              if (searchOpen || query) {
+                setQuery("");
+                setSearchOpen(false);
+              } else setSearchOpen(true);
+            }}
+          >
+            <Search size={17} aria-hidden />
+          </button>
+          <SelectToggle />
+          <Popover
+            label="View options"
+            iconOnly
+            align="right"
+            triggerClassName={clsx(
+              "btn relative px-2",
+              optionsActive
+                ? "bg-accent-50 text-accent-800 dark:bg-accent-950 dark:text-accent-200"
+                : "btn-ghost",
+            )}
+            trigger={
+              <>
+                <SlidersHorizontal size={17} aria-hidden />
+                {optionsActive && (
+                  <span
+                    aria-hidden
+                    className="absolute right-1 top-1 size-1.5 rounded-full bg-accent-500"
+                  />
+                )}
+              </>
+            }
+            panelClassName="w-64 space-y-2.5 p-3"
+          >
+            {!board && (
+              <OptionRow icon={<GroupIcon size={15} aria-hidden />} label="Group by">
+                <select
+                  aria-label="Group by"
+                  value={groupBy}
+                  onChange={(e) => setGroupBy(viewKey(view), e.target.value as GroupBy)}
+                  className="field py-1"
+                >
+                  {GROUP_BY_OPTIONS.filter((o) => o.value !== "section" || hasSections).map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </OptionRow>
+            )}
+            {!board && (
+              <OptionRow icon={<ArrowUpDown size={15} aria-hidden />} label="Sort by">
+                <select
+                  aria-label="Sort by"
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value as ItemSort)}
+                  className="field py-1"
+                >
+                  {SORTS.filter((s) => s.value !== "manual" || isContainer).map((s) => (
+                    <option key={s.value} value={s.value}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
+              </OptionRow>
+            )}
+            <OptionRow icon={<Zap size={15} aria-hidden />} label="Energy">
+              <select
+                aria-label="Energy filter"
+                value={energyFilter ?? ""}
+                onChange={(e) => setEnergyFilter(isEnergy(e.target.value) ? e.target.value : null)}
+                className="field py-1"
+              >
+                <option value="">Any energy</option>
+                {ENERGY_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </OptionRow>
+            {isCompletedView && completedOutcomes.length > 0 && (
+              <OptionRow icon={<Sparkles size={15} aria-hidden />} label="Outcome">
+                <select
+                  aria-label="Outcome filter"
+                  value={outcomeFilter ?? "__all"}
+                  onChange={(e) =>
+                    setOutcomeFilter(e.target.value === "__all" ? null : e.target.value)
+                  }
+                  className="field py-1"
+                >
+                  <option value="__all">Any outcome</option>
+                  {completedOutcomes.map((o) => (
+                    <option key={o.label || "none"} value={o.label}>
+                      {o.label || "No outcome"} ({o.count})
+                    </option>
+                  ))}
+                </select>
+              </OptionRow>
+            )}
+            {(energyFilter || outcomeFilter !== null) && (
+              <button
+                type="button"
+                className="btn btn-ghost w-full py-1 text-xs"
+                onClick={() => {
+                  setEnergyFilter(null);
+                  setOutcomeFilter(null);
+                }}
+              >
+                <X size={12} aria-hidden /> Clear filters
+              </button>
+            )}
+          </Popover>
           {view.kind === "smart" && view.id === "trash" && (
             <button
               type="button"
@@ -1110,24 +1188,82 @@ export function ItemList() {
         </div>
       </header>
 
+      {(searchOpen || query) && (
+        <div className="relative mx-4 mb-3 @xl:hidden sm:mx-6">
+          <Search
+            size={15}
+            aria-hidden
+            className="pointer-events-none absolute left-2.5 top-2.5 text-stone-500 dark:text-stone-400"
+          />
+          <input
+            id="list-search-narrow"
+            type="search"
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                setQuery("");
+                setSearchOpen(false);
+              }
+            }}
+            placeholder="Search this view"
+            aria-label="Search this view"
+            className="field border-transparent bg-stone-100 pl-8 dark:border-transparent dark:bg-stone-800"
+          />
+        </div>
+      )}
+
+      {(energyLabel || outcomeFilter !== null) && (
+        <p className="-mt-1 mb-2 flex flex-wrap gap-1.5 px-4 text-xs sm:px-6">
+          {energyLabel && (
+            <FilterChip label={`Energy: ${energyLabel}`} onClear={() => setEnergyFilter(null)} />
+          )}
+          {outcomeFilter !== null && (
+            <FilterChip
+              label={`Outcome: ${outcomeFilter || "No outcome"}`}
+              onClear={() => setOutcomeFilter(null)}
+            />
+          )}
+        </p>
+      )}
+
       {view.kind === "smart" && view.id === "today" && <Suggestions />}
 
       {!isReadOnlyView && (
         <form onSubmit={submit} className="px-4 sm:px-6">
           <div className="flex items-center gap-2 rounded-xl border border-stone-200 bg-stone-50 px-3 transition-colors focus-within:border-accent-400 focus-within:bg-white dark:border-stone-700 dark:bg-stone-800/60 dark:focus-within:border-accent-600 dark:focus-within:bg-stone-900">
             <Plus size={17} aria-hidden className="shrink-0 text-accent-600 dark:text-accent-400" />
-            <input
-              id="quick-add"
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              placeholder={
-                kind === "task"
-                  ? "Add a task, e.g. “Call Sam friday 5pm @work !high ~30m”"
-                  : "Add a note title, then press Enter"
-              }
-              aria-label={kind === "task" ? "New task" : "New note"}
-              className="min-w-0 flex-1 bg-transparent py-2.5 text-sm outline-none placeholder:text-stone-500"
-            />
+            <span className="relative min-w-0 flex-1">
+              <input
+                id="quick-add"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                aria-label={kind === "task" ? "New task" : "New note"}
+                aria-describedby="quick-add-hint"
+                className="w-full bg-transparent py-2.5 text-sm outline-none"
+              />
+              {/* A placeholder that fits the width: the full example only where there is room for it. */}
+              <span
+                id="quick-add-hint"
+                aria-hidden={draft ? true : undefined}
+                className={clsx(
+                  "pointer-events-none absolute inset-y-0 left-0 right-0 flex items-center truncate text-sm text-stone-500 dark:text-stone-400",
+                  draft && "invisible",
+                )}
+              >
+                {kind === "task" ? (
+                  <>
+                    <span className="truncate @2xl:hidden">Add a task</span>
+                    <span className="hidden truncate @2xl:inline">
+                      Add a task, e.g. “Call Sam friday 5pm @work !high ~30m”
+                    </span>
+                  </>
+                ) : (
+                  <span className="truncate">Add a note title, then press Enter</span>
+                )}
+              </span>
+            </span>
             <TemplatesMenu listId={listId} due={defaultDue} />
             <div
               role="radiogroup"
