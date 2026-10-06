@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { isCalendarLayout, isDateKey, type CalendarLayout } from "@/lib/calendar";
-import { isGroupBy, type GroupBy } from "@/lib/items-logic";
+import { isGroupBy, isPlannerView, type GroupBy } from "@/lib/items-logic";
 import { DEFAULT_REMINDER_TIME, isClock, type QuietHours } from "@/lib/reminders";
 import type { Energy, ItemSort, View } from "@/lib/types";
 
@@ -19,9 +19,13 @@ type UiState = {
   /** A list pinned beside the current view (split view), or null. */
   splitListId: string | null;
   view: View;
+  /** The last list-like view (smart view, list, tag or filter), where the mobile Tasks tab returns to. */
+  lastTaskView: View;
   query: string;
   selectedItemId: string | null;
   paletteOpen: boolean;
+  /** Phones: the add sheet opened from the floating + button. */
+  addSheetOpen: boolean;
   helpOpen: boolean;
   sidebarOpen: boolean;
   /** Desktop only: hides the lists sidebar to give the task list more room. */
@@ -50,6 +54,7 @@ type UiState = {
   setQuery: (query: string) => void;
   selectItem: (id: string | null) => void;
   setPaletteOpen: (open: boolean) => void;
+  setAddSheetOpen: (open: boolean) => void;
   setHelpOpen: (open: boolean) => void;
   setSidebarOpen: (open: boolean) => void;
   toggleSidebarCollapsed: () => void;
@@ -72,9 +77,11 @@ export const useUi = create<UiState>()(
       listLayout: {},
       splitListId: null,
       view: INBOX_VIEW,
+      lastTaskView: INBOX_VIEW,
       query: "",
       selectedItemId: null,
       paletteOpen: false,
+      addSheetOpen: false,
       helpOpen: false,
       sidebarOpen: false,
       sidebarCollapsed: false,
@@ -94,10 +101,18 @@ export const useUi = create<UiState>()(
       setGroupBy: (viewKey, groupBy) => {
         if (isGroupBy(groupBy)) set((s) => ({ groupBy: { ...s.groupBy, [viewKey]: groupBy } }));
       },
-      setView: (view) => set({ view, query: "", selectedItemId: null, sidebarOpen: false }),
+      setView: (view) =>
+        set((s) => ({
+          view,
+          lastTaskView: isPlannerView(view) ? s.lastTaskView : view,
+          query: "",
+          selectedItemId: null,
+          sidebarOpen: false,
+        })),
       setQuery: (query) => set({ query }),
       selectItem: (selectedItemId) => set({ selectedItemId }),
       setPaletteOpen: (paletteOpen) => set({ paletteOpen }),
+      setAddSheetOpen: (addSheetOpen) => set({ addSheetOpen }),
       setHelpOpen: (helpOpen) => set({ helpOpen }),
       setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
       toggleSidebarCollapsed: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
