@@ -8,26 +8,15 @@ import {
   Clock3,
   CircleHelp,
   Inbox,
-  Monitor,
-  Moon,
   PanelLeftClose,
   PanelLeftOpen,
   Search,
   Settings,
-  Sun,
 } from "lucide-react";
 import clsx from "clsx";
 import { sameView } from "@/lib/items-logic";
-import type { Theme } from "@/lib/types";
-import { setPreferences, usePreferences } from "@/store/preferences";
 import { useUi } from "@/store/ui";
 import { LogoMark } from "./Logo";
-
-const NEXT_THEME: Record<Theme, { next: Theme; icon: React.ReactNode; label: string }> = {
-  system: { next: "light", icon: <Monitor size={19} />, label: "Theme: system" },
-  light: { next: "dark", icon: <Sun size={19} />, label: "Theme: light" },
-  dark: { next: "system", icon: <Moon size={19} />, label: "Theme: dark" },
-};
 
 function RailButton({
   label,
@@ -60,14 +49,12 @@ function RailButton({
   );
 }
 
-/** Slim desktop rail: brand, the two main views, search, sidebar toggle, help and theme. */
+/** Slim desktop rail: brand, the main views, search, sidebar toggle, settings and help. */
 export function NavRail() {
   const view = useUi((s) => s.view);
-  const { theme } = usePreferences();
   const collapsed = useUi((s) => s.sidebarCollapsed);
   const { setView, setPaletteOpen, setHelpOpen, setSettingsOpen, toggleSidebarCollapsed } =
     useUi.getState();
-  const themeInfo = NEXT_THEME[theme];
 
   return (
     <nav
@@ -128,12 +115,6 @@ export function NavRail() {
         </RailButton>
         <RailButton label="Keyboard shortcuts (?)" onClick={() => setHelpOpen(true)}>
           <CircleHelp size={19} />
-        </RailButton>
-        <RailButton
-          label={themeInfo.label}
-          onClick={() => setPreferences({ theme: themeInfo.next })}
-        >
-          {themeInfo.icon}
         </RailButton>
       </div>
     </nav>

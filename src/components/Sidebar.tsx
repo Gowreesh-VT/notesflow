@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Ban,
   Settings,
@@ -10,21 +10,15 @@ import {
   CalendarRange,
   CheckCheck,
   ChevronRight,
-  Download,
-  FileText,
   Folder as FolderIcon,
   Hash,
   Inbox,
   Layers,
   ListTodo,
-  Monitor,
-  Moon,
   Pencil,
   Plus,
   Search,
-  Sun,
   Trash2,
-  Upload,
   X,
 } from "lucide-react";
 import clsx from "clsx";
@@ -37,16 +31,13 @@ import {
   SMART_VIEWS,
   PLANNER_VIEWS,
 } from "@/lib/items-logic";
-import { exportBackup, importBackupFile, importMarkdownFiles } from "@/lib/data-actions";
 import { useToday } from "@/lib/hooks";
 import { planMove, planStep, sortByOrder } from "@/lib/ordering";
 import { cleanTagName } from "@/lib/tags";
-import { INBOX_ID, type SmartViewId, type TaskList, type View } from "@/lib/types";
-import type { Theme } from "@/lib/types";
-import { setPreferences, usePreferences } from "@/store/preferences";
+import { type SmartViewId, type TaskList, type View } from "@/lib/types";
+import { usePreferences } from "@/store/preferences";
 import { useUi } from "@/store/ui";
 import { AccountMenu } from "./AccountMenu";
-import { InstallButton } from "./InstallButton";
 import { LogoMark } from "./Logo";
 import { NavItem } from "./NavItem";
 import { PLANNER_ICONS } from "./viewIcons";
@@ -72,12 +63,6 @@ const COUNTED: SmartViewId[] = ["inbox", "today", "tomorrow", "week", "all"];
 /** Archive-like views sit at the bottom of the sidebar, as in TickTick. */
 const ARCHIVE_VIEWS: SmartViewId[] = ["completed", "wontdo", "trash"];
 
-const THEMES: { value: Theme; label: string; icon: React.ReactNode }[] = [
-  { value: "light", label: "Light", icon: <Sun size={16} /> },
-  { value: "system", label: "System", icon: <Monitor size={16} /> },
-  { value: "dark", label: "Dark", icon: <Moon size={16} /> },
-];
-
 export function Sidebar() {
   const items = useWorkspace((s) => s.items);
   const allLists = useWorkspace((s) => s.lists);
@@ -89,7 +74,7 @@ export function Sidebar() {
   const renameTag = useWorkspace((s) => s.renameTag);
   const reorderLists = useWorkspace((s) => s.reorderLists);
   const { view, sidebarOpen, sidebarCollapsed } = useUi();
-  const { theme, hiddenViews } = usePreferences();
+  const { hiddenViews } = usePreferences();
   const setView = useUi((s) => s.setView);
   const setSidebarOpen = useUi((s) => s.setSidebarOpen);
   const setPaletteOpen = useUi((s) => s.setPaletteOpen);
@@ -100,8 +85,6 @@ export function Sidebar() {
   const [addDraft, setAddDraft] = useState("");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [status, setStatus] = useState("");
-  const backupInput = useRef<HTMLInputElement>(null);
-  const markdownInput = useRef<HTMLInputElement>(null);
 
   // Archived lists live in their own section; their items stay out of smart views, counts and tags.
   const lists = useMemo(() => activeLists(allLists), [allLists]);
@@ -133,14 +116,6 @@ export function Sidebar() {
       if (moved) reorderLists(planMove(listsIn(target.group), moved, target.index));
     },
   });
-
-  const run = async (action: () => Promise<string> | string) => {
-    try {
-      setStatus(await action());
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Something went wrong.");
-    }
-  };
 
   const goTo = (target: View) => setView(target);
 
@@ -466,58 +441,6 @@ export function Sidebar() {
         </nav>
 
         <div className="space-y-2 border-t border-stone-200 p-3 dark:border-stone-800">
-          <div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-1 md:hidden">
-            {THEMES.map((t) => (
-              <button
-                key={t.value}
-                type="button"
-                role="radio"
-                aria-checked={theme === t.value}
-                aria-label={t.label}
-                title={t.label}
-                onClick={() => setPreferences({ theme: t.value })}
-                className={clsx(
-                  "btn justify-center",
-                  theme === t.value ? "bg-white shadow-sm dark:bg-stone-800" : "btn-ghost",
-                )}
-              >
-                {t.icon}
-              </button>
-            ))}
-          </div>
-          <details className="group">
-            <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-stone-500 hover:bg-stone-200/70 dark:text-stone-400 dark:hover:bg-stone-800 [&::-webkit-details-marker]:hidden">
-              <ChevronRight
-                size={13}
-                aria-hidden
-                className="transition-transform group-open:rotate-90"
-              />
-              Backup &amp; import
-            </summary>
-            <div className="grid grid-cols-3 gap-1 pt-1">
-              <button
-                type="button"
-                className="btn btn-ghost px-1 text-xs"
-                onClick={() => run(exportBackup)}
-              >
-                <Download size={14} aria-hidden /> Backup
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost px-1 text-xs"
-                onClick={() => backupInput.current?.click()}
-              >
-                <Upload size={14} aria-hidden /> Restore
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost px-1 text-xs"
-                onClick={() => markdownInput.current?.click()}
-              >
-                <FileText size={14} aria-hidden /> Import .md
-              </button>
-            </div>
-          </details>
           <button
             type="button"
             className="btn btn-ghost w-full justify-start text-xs md:hidden"
@@ -526,37 +449,10 @@ export function Sidebar() {
             <Settings size={14} aria-hidden /> Settings
           </button>
           <AccountMenu />
-          <InstallButton />
-          <input
-            ref={backupInput}
-            type="file"
-            accept="application/json,.json"
-            className="hidden"
-            aria-label="Restore backup file"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              e.target.value = "";
-              if (file) void run(() => importBackupFile(file));
-            }}
-          />
-          <input
-            ref={markdownInput}
-            type="file"
-            accept=".md,.markdown,.txt,text/markdown,text/plain"
-            multiple
-            className="hidden"
-            aria-label="Import markdown files"
-            onChange={(e) => {
-              const files = [...(e.target.files ?? [])];
-              e.target.value = "";
-              const listId = view.kind === "list" ? view.id : INBOX_ID;
-              if (files.length) void run(() => importMarkdownFiles(files, listId));
-            }}
-          />
           <p
             role="status"
             aria-live="polite"
-            className="min-h-4 text-xs text-stone-500 dark:text-stone-400"
+            className="text-xs text-stone-500 empty:hidden dark:text-stone-400"
           >
             {status}
           </p>
