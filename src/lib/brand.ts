@@ -2,7 +2,7 @@
 export const BRAND_COLOR = "#4259e2";
 export const BRAND_PAPER = "#f8fafc";
 /** The dark theme's page colour, used for the browser bar in dark mode. */
-export const BRAND_INK = "#0e1117";
+export const BRAND_INK = "#000000";
 
 /** A tick whose long stroke flows out like a pen line: done, and moving on. Drawn in a 24x24 box. */
 export const LOGO_TICK = "M4.5 13.2C7.2 13 8.7 14.8 9.7 17.6C11.2 12.2 14.6 8.2 19.8 6.6";
