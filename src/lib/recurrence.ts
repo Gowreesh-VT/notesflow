@@ -1,3 +1,4 @@
+import { formatDate } from "./locale";
 import type { Repeat, RepeatUnit } from "./types";
 import { addDays } from "./utils";
 
@@ -58,13 +59,27 @@ export function nextOccurrence(from: string, rule: Repeat): string {
 
 /**
  * The due date after finishing an occurrence. "After completion" counts from the day it was finished; otherwise the
- * schedule continues from the due date, skipping occurrences that are already in the past.
+ * schedule continues from the due date, skipping occurrences that are already in the past. Null when the next date
+ * would fall after the rule's end date: the series is over.
  */
-export function nextDueDate(due: string | null, rule: Repeat, today: string): string {
-  if (rule.afterCompletion || !due) return nextOccurrence(today, rule);
-  let next = nextOccurrence(due, rule);
-  for (let i = 0; next <= today && i < 1000; i++) next = nextOccurrence(next, rule);
-  return next;
+export function nextDueDate(due: string | null, rule: Repeat, today: string): string | null {
+  let next: string;
+  if (rule.afterCompletion || !due) next = nextOccurrence(today, rule);
+  else {
+    next = nextOccurrence(due, rule);
+    for (let i = 0; next <= today && i < 1000; i++) next = nextOccurrence(next, rule);
+  }
+  return rule.until && next > rule.until ? null : next;
+}
+
+/** A real calendar day as YYYY-MM-DD (the same check as `isDateKey` in calendar.ts, which imports more). */
+const isDateKey = (value: unknown): value is string =>
+  typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && addDays(value, 0) === value;
+
+/** "Oct 31, 2026" for a rule's end date, in the user's date order. */
+export function formatUntil(until: string): string {
+  const [y, m, d] = parts(until);
+  return formatDate(new Date(y, m - 1, d), { month: "short", day: "numeric", year: "numeric" });
 }
 
 const UNIT_WORDS: Record<RepeatUnit, [string, string]> = {
@@ -74,7 +89,7 @@ const UNIT_WORDS: Record<RepeatUnit, [string, string]> = {
   year: ["Yearly", "years"],
 };
 
-/** "Daily", "Every 2 weeks on Mon, Wed", "Monthly, after completion". */
+/** "Daily", "Every 2 weeks on Mon, Wed", "Monthly, after completion", "Daily, until Oct 31, 2026". */
 export function describeRepeat(rule: Repeat): string {
   const [single, plural] = UNIT_WORDS[rule.unit];
   let text = rule.every === 1 ? single : `Every ${rule.every} ${plural}`;
@@ -86,7 +101,8 @@ export function describeRepeat(rule: Repeat): string {
         ? "Every weekday"
         : `${text} on ${days.map((d) => WEEKDAY_NAMES[d]).join(", ")}`;
   }
-  return rule.afterCompletion ? `${text}, after completion` : text;
+  if (rule.afterCompletion) text = `${text}, after completion`;
+  return rule.until ? `${text}, until ${formatUntil(rule.until)}` : text;
 }
 
 export function parseRepeat(raw: unknown): Repeat | null {
@@ -101,5 +117,6 @@ export function parseRepeat(raw: unknown): Repeat | null {
     if (days.length) rule.weekdays = days as number[];
   }
   if (r.afterCompletion === true) rule.afterCompletion = true;
+  if (isDateKey(r.until)) rule.until = r.until;
   return rule;
 }

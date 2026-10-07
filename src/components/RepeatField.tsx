@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import clsx from "clsx";
 import { describeRepeat, MAX_REPEAT_EVERY, REPEAT_UNITS } from "@/lib/recurrence";
 import type { Repeat, RepeatUnit } from "@/lib/types";
@@ -33,16 +34,24 @@ const WEEKDAY_LONG = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "F
 export function RepeatField({
   value,
   onChange,
+  due = null,
   disabled = false,
 }: {
   value: Repeat | null | undefined;
   onChange: (rule: Repeat | null) => void;
+  /** The task's due date: the end date cannot be before it. */
+  due?: string | null;
   disabled?: boolean;
 }) {
+  const untilId = useId();
   const preset = PRESETS.find((p) => sameRule(value, p.rule))?.id ?? "custom";
   const after = Boolean(value?.afterCompletion);
+  const until = value?.until;
+  // Switching presets keeps the "after completion" choice and the end date.
   const withAfter = (rule: Repeat | null): Repeat | null =>
-    rule ? { ...rule, ...(after ? { afterCompletion: true } : {}) } : null;
+    rule
+      ? { ...rule, ...(after ? { afterCompletion: true } : {}), ...(until ? { until } : {}) }
+      : null;
 
   return (
     <div className="space-y-2">
@@ -154,9 +163,44 @@ export function RepeatField({
             />
             Count the next date from when I complete it
           </label>
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <label htmlFor={untilId}>Ends</label>
+            <input
+              id={untilId}
+              type="date"
+              aria-label="Repeat ends on"
+              value={until ?? ""}
+              min={due ?? undefined}
+              disabled={disabled}
+              onChange={(e) => {
+                const next: Repeat = { ...value };
+                if (e.target.value) next.until = e.target.value;
+                else delete next.until;
+                onChange(next);
+              }}
+              className="field w-auto py-1"
+            />
+            {until ? (
+              <button
+                type="button"
+                className="btn btn-ghost px-2 py-1 text-xs"
+                disabled={disabled}
+                onClick={() => {
+                  const next: Repeat = { ...value };
+                  delete next.until;
+                  onChange(next);
+                }}
+              >
+                Never
+              </button>
+            ) : (
+              <span className="text-xs text-stone-500 dark:text-stone-400">Never</span>
+            )}
+          </div>
           <p className="text-xs text-stone-500 dark:text-stone-400">
             {describeRepeat(value)}. Completing it logs a finished copy and moves this task to the
-            next date.
+            next date
+            {until ? "; after the end date it simply completes." : "."}
           </p>
         </>
       )}

@@ -760,6 +760,24 @@ describe("recurring tasks", () => {
     expect(state().items.find((i) => i.id === id)!.due).toBe(addDays(today, 4));
   });
 
+  it("finishes the last occurrence for good when the series has an end date", () => {
+    const today = toDateKey(new Date());
+    const id = state().addItem({ kind: "task", title: "Lecture", due: today });
+    state().updateItem(id, { repeat: { unit: "day", every: 1, until: addDays(today, 1) } });
+
+    const firstId = state().toggleDone(id)!;
+    expect(firstId).not.toBe(id);
+    expect(state().items.find((i) => i.id === id)).toMatchObject({
+      status: "open",
+      due: addDays(today, 1),
+    });
+
+    // The next date would be after the end date, so the task itself completes and no copy is made.
+    expect(state().toggleDone(id)).toBe(id);
+    expect(state().items).toHaveLength(2);
+    expect(state().items.find((i) => i.id === id)).toMatchObject({ status: "done" });
+  });
+
   it("finishes normally once the repeat is removed", () => {
     const id = state().addItem({ kind: "task", title: "Once" });
     state().updateItem(id, { repeat: { unit: "week", every: 1 } });

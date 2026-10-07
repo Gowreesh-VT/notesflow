@@ -427,6 +427,7 @@ export function TaskDetail({ item }: { item: Item }) {
           <dd>
             <RepeatField
               value={item.repeat}
+              due={item.due}
               disabled={trashed}
               onChange={(repeat) => updateItem(item.id, { repeat })}
             />

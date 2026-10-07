@@ -424,8 +424,13 @@ export const useWorkspace = create<WorkspaceState>()(
       setStatus: (id, status) => {
         const item = get().items.find((i) => i.id === id);
         if (!item) return null;
-        if (status !== "open" && item.status === "open" && item.repeat && item.kind === "task") {
-          const now = Date.now();
+        const now = Date.now();
+        // The last occurrence of a series with an end date finishes like a task that does not repeat.
+        const nextDue =
+          status !== "open" && item.status === "open" && item.repeat && item.kind === "task"
+            ? nextDueDate(item.due, item.repeat, toDateKey(new Date(now)))
+            : null;
+        if (nextDue) {
           const copy: Item = dropEmptyOptionals({
             ...item,
             ...stopTimerPatch(item, true),
@@ -440,7 +445,6 @@ export const useWorkspace = create<WorkspaceState>()(
             snoozedUntil: null,
             outcome: null,
           });
-          const nextDue = nextDueDate(item.due, item.repeat, toDateKey(new Date(now)));
           // A multi-day task keeps its length: the start date moves by as many days as the due date.
           const startDate =
             item.startDate && item.due
@@ -460,7 +464,7 @@ export const useWorkspace = create<WorkspaceState>()(
           return copy.id;
         }
         set((s) => ({
-          items: mapItem(s.items, id, (current) => statusPatch(current, status, Date.now())),
+          items: mapItem(s.items, id, (current) => statusPatch(current, status, now)),
         }));
         return status === "open" ? null : id;
       },

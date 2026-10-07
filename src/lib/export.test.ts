@@ -107,6 +107,21 @@ describe("iCal export", () => {
     expect(lines).toContain("DTSTAMP:20261005T120000Z");
   });
 
+  it("ends a repeating event on its end date", () => {
+    const ics = toICalendar(
+      [
+        item({
+          title: "Lecture",
+          due: "2026-10-09",
+          repeat: { unit: "day", every: 1, until: "2026-12-18" },
+        }),
+      ],
+      lists,
+      Date.UTC(2026, 9, 5, 12),
+    );
+    expect(ics.split("\r\n")).toContain("RRULE:FREQ=DAILY;INTERVAL=1;UNTIL=20261218");
+  });
+
   it("folds long lines", () => {
     const ics = toICalendar([item({ title: "x".repeat(200), due: "2026-10-09" })], [], 0);
     for (const line of ics.split("\r\n")) expect(line.length).toBeLessThanOrEqual(75);
