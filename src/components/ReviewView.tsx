@@ -246,9 +246,6 @@ export function ReviewView() {
                 );
               })}
             </ul>
-            <p className="text-xs text-stone-500 dark:text-stone-400">
-              Click an outcome to see only those tasks below.
-            </p>
           </section>
         )}
 

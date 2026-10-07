@@ -243,7 +243,7 @@ export function MatrixView() {
   return (
     <div className="flex h-full flex-col">
       <ViewHeader title="Matrix" />
-      <p className="px-4 pb-2 text-xs text-stone-500 sm:px-6 dark:text-stone-400">
+      <p className="sr-only">
         Important means high or medium priority; urgent means overdue or {urgentLabel}. Drag a task
         to another quadrant, or press Alt and an arrow key on it, to change its priority and due
         date to fit.

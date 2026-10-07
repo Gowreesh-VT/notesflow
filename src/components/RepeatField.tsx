@@ -197,11 +197,7 @@ export function RepeatField({
               <span className="text-xs text-stone-500 dark:text-stone-400">Never</span>
             )}
           </div>
-          <p className="text-xs text-stone-500 dark:text-stone-400">
-            {describeRepeat(value)}. Completing it logs a finished copy and moves this task to the
-            next date
-            {until ? "; after the end date it simply completes." : "."}
-          </p>
+          <p className="text-xs text-stone-500 dark:text-stone-400">{describeRepeat(value)}</p>
         </>
       )}
     </div>

@@ -179,9 +179,6 @@ export function FocusView() {
               </>
             )}
           </div>
-          <p className="max-w-sm text-center text-xs text-stone-500 dark:text-stone-400">
-            Focused time is added to the task’s tracked time. Pick a task first to record it.
-          </p>
         </section>
 
         <FocusSounds />

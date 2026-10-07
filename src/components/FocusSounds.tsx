@@ -70,10 +70,6 @@ export function FocusSounds() {
           {Math.round(volume * 100)}%
         </span>
       </label>
-      <p className="text-xs text-stone-500 dark:text-stone-400">
-        {NOISE_KINDS.map((n) => `${n.label}: ${n.hint.toLowerCase()}`).join(" · ")}. The sound keeps
-        playing while you use other pages.
-      </p>
     </section>
   );
 }

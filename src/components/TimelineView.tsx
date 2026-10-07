@@ -328,7 +328,7 @@ export function TimelineView() {
           Today
         </button>
       </ViewHeader>
-      <p id={HELP_ID} className="px-4 pb-2 text-xs text-stone-500 sm:px-6 dark:text-stone-400">
+      <p id={HELP_ID} className="sr-only">
         Drag a bar to move it, or its ends to change the start or due date. On a focused bar,
         Alt+Left/Right moves it by a day and Alt+Shift+Left/Right changes its due date.
       </p>

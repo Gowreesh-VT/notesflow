@@ -266,7 +266,6 @@ export function TaskDetail({ item }: { item: Item }) {
                       id={`start-date-${item.id}`}
                       type="date"
                       aria-label="Start date"
-                      aria-describedby={`start-hint-${item.id}`}
                       value={item.startDate ?? ""}
                       max={item.due}
                       onChange={(e) => updateItem(item.id, { startDate: e.target.value || null })}
@@ -283,12 +282,6 @@ export function TaskDetail({ item }: { item: Item }) {
                     ) : null}
                   </span>
                 </div>
-                <p
-                  id={`start-hint-${item.id}`}
-                  className="-mt-1 pl-[4rem] text-xs text-stone-500 dark:text-stone-400"
-                >
-                  Optional, for tasks that span several days.
-                </p>
                 <button
                   type="button"
                   className="btn btn-ghost w-full justify-center py-1 text-xs"
