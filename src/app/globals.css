@@ -69,8 +69,23 @@ html {
   }
 }
 
+/*
+ * Dark mode is black with neutral greys: the cool slate tones above suit the light theme, but read as blue on dark
+ * surfaces. Only the dark theme swaps the scale, so every dark: utility picks these up.
+ */
 html.dark {
   color-scheme: dark;
+  --color-stone-50: #fafafa;
+  --color-stone-100: #f2f2f2;
+  --color-stone-200: #e4e4e4;
+  --color-stone-300: #c8c8c8;
+  --color-stone-400: #a3a3a3;
+  --color-stone-500: #8a8a8a;
+  --color-stone-600: #5c5c5c;
+  --color-stone-700: #383838;
+  --color-stone-800: #232323;
+  --color-stone-900: #121212;
+  --color-stone-950: #000000;
 }
 
 /* Text size and font preferences (set as attributes on <html> by ThemeSync). Spacing is in rem, so it scales too. */
