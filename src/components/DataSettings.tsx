@@ -2,13 +2,15 @@
 
 import { useRef, useState } from "react";
 import { CalendarDays, FileJson, FileSpreadsheet, FileText, Upload } from "lucide-react";
-import { exportAs, exportBackup, importTasksFile } from "@/lib/data-actions";
+import { exportAs, exportBackup, importMarkdownFiles, importTasksFile } from "@/lib/data-actions";
 import { SettingsSection } from "./SettingsView";
 
 /** Export of the whole workspace, and import from backups and other apps. */
 export function DataSettings() {
   const [status, setStatus] = useState("");
   const [importStatus, setImportStatus] = useState("");
+  const [notesStatus, setNotesStatus] = useState("");
+  const markdownInput = useRef<HTMLInputElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const run = async (action: () => string | Promise<string>) => {
     try {
@@ -116,6 +118,45 @@ export function DataSettings() {
           className="min-h-4 text-xs text-stone-500 dark:text-stone-400"
         >
           {importStatus}
+        </p>
+      </SettingsSection>
+      <SettingsSection
+        title="Import notes"
+        description="Add Markdown or plain-text files as notes in the Inbox, one note per file, named after the file."
+      >
+        <button
+          type="button"
+          className="btn btn-ghost border border-stone-200 dark:border-stone-700"
+          onClick={() => markdownInput.current?.click()}
+        >
+          <FileText size={15} aria-hidden /> Choose .md or .txt files
+        </button>
+        <input
+          ref={markdownInput}
+          type="file"
+          accept=".md,.markdown,.txt,text/markdown,text/plain"
+          multiple
+          className="hidden"
+          aria-label="Markdown files to import"
+          onChange={async (e) => {
+            const files = [...(e.target.files ?? [])];
+            e.target.value = "";
+            if (!files.length) return;
+            try {
+              setNotesStatus(await importMarkdownFiles(files));
+            } catch (error) {
+              setNotesStatus(
+                error instanceof Error ? error.message : "Those files could not be imported.",
+              );
+            }
+          }}
+        />
+        <p
+          role="status"
+          aria-live="polite"
+          className="min-h-4 text-xs text-stone-500 dark:text-stone-400"
+        >
+          {notesStatus}
         </p>
       </SettingsSection>
     </>
