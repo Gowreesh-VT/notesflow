@@ -243,13 +243,13 @@ describe("reminder and repeat fields in backups", () => {
       reminders: [{ id: "r", before: 30 }],
       constantReminder: true,
       snoozedUntil: 99,
-      repeat: { unit: "month", every: 1 },
+      repeat: { unit: "month", every: 1, until: "2026-12-31" },
     });
     expect(parsed).toMatchObject({
       reminders: [{ id: "r", before: 30 }],
       constantReminder: true,
       snoozedUntil: 99,
-      repeat: { unit: "month", every: 1 },
+      repeat: { unit: "month", every: 1, until: "2026-12-31" },
     });
     const junk = parse({
       reminders: "x",

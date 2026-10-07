@@ -31,6 +31,11 @@ describe("repeat rules", () => {
       weekdays: [1, 4],
     });
     expect(repeatFromRRule("FREQ=HOURLY")).toBeNull();
+    expect(repeatFromRRule("RRULE:FREQ=DAILY;UNTIL=20261031T235959Z")).toEqual({
+      unit: "day",
+      every: 1,
+      until: "2026-10-31",
+    });
     expect(repeatFromText("every 3 days")).toEqual({ unit: "day", every: 3 });
     expect(repeatFromText("every monday")).toEqual({ unit: "week", every: 1, weekdays: [1] });
     expect(repeatFromText("Monthly")).toEqual({ unit: "month", every: 1 });

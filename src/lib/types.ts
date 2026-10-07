@@ -72,6 +72,8 @@ export type Repeat = {
   weekdays?: number[];
   /** Count the next date from the day it was completed instead of from the due date. */
   afterCompletion?: boolean;
+  /** Last day (YYYY-MM-DD) an occurrence may fall on; completing the last one finishes the task for good. */
+  until?: string;
 };
 
 /** A reminder `before` minutes ahead of the task's due moment (0 = at the due time). */

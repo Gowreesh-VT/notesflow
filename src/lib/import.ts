@@ -82,7 +82,7 @@ const timestamp = (value: string | undefined, fallback: number): number => {
 const RRULE_DAYS = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
 const UNITS = { DAILY: "day", WEEKLY: "week", MONTHLY: "month", YEARLY: "year" } as const;
 
-/** "RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,TH" (TickTick) → a repeat rule. */
+/** "RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,TH;UNTIL=20261031" (TickTick) → a repeat rule. */
 export function repeatFromRRule(value: string): Repeat | null {
   const parts = Object.fromEntries(
     value
@@ -97,7 +97,14 @@ export function repeatFromRRule(value: string): Repeat | null {
     .split(",")
     .map((d: string) => RRULE_DAYS.indexOf(d.replace(/^[+-]?\d+/, "")))
     .filter((d: number) => d >= 0);
-  return { unit, every, ...(unit === "week" && weekdays.length ? { weekdays } : {}) };
+  // UNTIL is a date (20261031) or a UTC date-time (20261031T235959Z); the day is what counts here.
+  const until = /^(\d{4})(\d{2})(\d{2})/.exec(parts.UNTIL ?? "");
+  return {
+    unit,
+    every,
+    ...(unit === "week" && weekdays.length ? { weekdays } : {}),
+    ...(until ? { until: `${until[1]}-${until[2]}-${until[3]}` } : {}),
+  };
 }
 
 const WEEKDAY_NAMES = [

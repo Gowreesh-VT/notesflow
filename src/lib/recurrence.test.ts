@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { describeRepeat, nextDueDate, nextOccurrence, parseRepeat } from "./recurrence";
+import {
+  describeRepeat,
+  formatUntil,
+  nextDueDate,
+  nextOccurrence,
+  parseRepeat,
+} from "./recurrence";
 
 describe("nextOccurrence", () => {
   it("steps by days, weeks, months and years", () => {
@@ -35,6 +41,36 @@ describe("nextDueDate", () => {
     const weekly = { unit: "week" as const, every: 1, afterCompletion: true };
     expect(nextDueDate("2026-05-01", weekly, "2026-05-10")).toBe("2026-05-17");
     expect(nextDueDate(null, daily, "2026-05-10")).toBe("2026-05-11");
+  });
+});
+
+describe("end dates", () => {
+  const daily = { unit: "day" as const, every: 1, until: "2026-05-12" };
+  it("stops the series after the end date", () => {
+    expect(nextDueDate("2026-05-10", daily, "2026-05-10")).toBe("2026-05-11");
+    expect(nextDueDate("2026-05-11", daily, "2026-05-11")).toBe("2026-05-12");
+    expect(nextDueDate("2026-05-12", daily, "2026-05-12")).toBeNull();
+    // Missed occurrences are skipped, so a late finish can end the series early.
+    expect(nextDueDate("2026-05-10", daily, "2026-05-14")).toBeNull();
+    const weekly = { unit: "week" as const, every: 1, weekdays: [1, 3], until: "2026-05-13" };
+    expect(nextDueDate("2026-05-11", weekly, "2026-05-11")).toBe("2026-05-13");
+    expect(nextDueDate("2026-05-13", weekly, "2026-05-13")).toBeNull();
+    const after = { unit: "day" as const, every: 3, afterCompletion: true, until: "2026-05-12" };
+    expect(nextDueDate(null, after, "2026-05-10")).toBeNull();
+  });
+
+  it("are described, kept and validated", () => {
+    expect(describeRepeat(daily)).toBe(`Daily, until ${formatUntil("2026-05-12")}`);
+    expect(formatUntil("2026-05-12")).toContain("2026");
+    expect(parseRepeat(daily)).toEqual(daily);
+    expect(parseRepeat({ unit: "day", every: 1, until: "2026-02-30" })).toEqual({
+      unit: "day",
+      every: 1,
+    });
+    expect(parseRepeat({ unit: "day", every: 1, until: 20260512 })).toEqual({
+      unit: "day",
+      every: 1,
+    });
   });
 });
 

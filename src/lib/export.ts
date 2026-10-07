@@ -149,7 +149,8 @@ function rrule(repeat: Repeat): string | null {
           .map((d) => RRULE_DAYS[d])
           .join(",")}`
       : "";
-  return `RRULE:FREQ=${freq};INTERVAL=${repeat.every}${days}`;
+  const until = repeat.until ? `;UNTIL=${repeat.until.replace(/-/g, "")}` : "";
+  return `RRULE:FREQ=${freq};INTERVAL=${repeat.every}${days}${until}`;
 }
 
 /**
