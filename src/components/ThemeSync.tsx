@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { accentVariables } from "@/lib/accent";
+import { BRAND_INK, BRAND_PAPER } from "@/lib/brand";
 import { usePreferences } from "@/store/preferences";
 
 /** Key read by the inline script in the root layout, so the saved look applies before first paint. */
@@ -33,6 +34,10 @@ export function ThemeSync() {
     const apply = () => {
       const dark = theme === "dark" || (theme === "system" && media.matches);
       document.documentElement.classList.toggle("dark", dark);
+      // The browser bar follows the app's theme, not the phone's.
+      for (const meta of document.querySelectorAll('meta[name="theme-color"]')) {
+        meta.setAttribute("content", dark ? BRAND_INK : BRAND_PAPER);
+      }
     };
     apply();
     if (theme !== "system") return;
