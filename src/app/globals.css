@@ -45,11 +45,18 @@
 }
 
 /*
- * "only light" stops browsers from force-darkening the page (Chrome's auto dark mode for websites, Samsung
- * Internet's dark mode) when the phone is dark but the app is set to light.
+ * Browsers with a dark mode for websites force-darken pages that look light-only. "only light" opts out in Chrome;
+ * Samsung Internet instead skips sites that declare dark support (the color-scheme meta tag in layout.tsx) and react
+ * to prefers-color-scheme, which the rule below does. Either way the app's own theme choice wins.
  */
 html {
   color-scheme: only light;
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not(.dark) {
+    color-scheme: only light;
+  }
 }
 
 /* Bottom sheets (phone menus and the add sheet) slide up from the bottom edge. */
