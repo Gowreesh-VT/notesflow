@@ -44,8 +44,12 @@
   --shadow-lift: 0 2px 4px rgb(15 23 42 / 0.06), 0 12px 32px rgb(15 23 42 / 0.12);
 }
 
+/*
+ * "only light" stops browsers from force-darkening the page (Chrome's auto dark mode for websites, Samsung
+ * Internet's dark mode) when the phone is dark but the app is set to light.
+ */
 html {
-  color-scheme: light;
+  color-scheme: only light;
 }
 
 /* Bottom sheets (phone menus and the add sheet) slide up from the bottom edge. */

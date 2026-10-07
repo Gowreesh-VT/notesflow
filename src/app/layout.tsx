@@ -1,6 +1,7 @@
 import { SerwistProvider } from "@serwist/turbopack/react";
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Geist, Geist_Mono } from "next/font/google";
+import { BRAND_INK, BRAND_PAPER } from "@/lib/brand";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,8 +31,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f8fafc" },
-    { media: "(prefers-color-scheme: dark)", color: "#0e1117" },
+    { media: "(prefers-color-scheme: light)", color: BRAND_PAPER },
+    { media: "(prefers-color-scheme: dark)", color: BRAND_INK },
   ],
 };
 
