@@ -1,5 +1,7 @@
 "use client";
 
+import { askConfirm, askText } from "@/store/dialog";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import {
@@ -947,8 +949,12 @@ export function ItemList() {
                 </SectionButton>
                 <SectionButton
                   label={`Rename section ${section.name}`}
-                  onClick={() => {
-                    const name = window.prompt("Rename section", section.name);
+                  onClick={async () => {
+                    const name = await askText({
+                      title: "Rename section",
+                      label: "Section name",
+                      initial: section.name,
+                    });
                     if (name) renameSection(currentList.id, section.id, name);
                   }}
                 >
@@ -956,14 +962,14 @@ export function ItemList() {
                 </SectionButton>
                 <SectionButton
                   label={`Delete section ${section.name}`}
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        `Delete the section “${section.name}”? Its items stay in the list.`,
-                      )
-                    ) {
-                      deleteSection(currentList.id, section.id);
-                    }
+                  onClick={async () => {
+                    const ok = await askConfirm({
+                      title: `Delete the section “${section.name}”?`,
+                      message: "Its items stay in the list.",
+                      confirmLabel: "Delete",
+                      danger: true,
+                    });
+                    if (ok) deleteSection(currentList.id, section.id);
                   }}
                 >
                   <Trash2 size={14} aria-hidden />
@@ -1224,11 +1230,15 @@ export function ItemList() {
               type="button"
               className="btn btn-danger"
               disabled={visible.length === 0}
-              onClick={() => {
-                if (window.confirm("Permanently delete everything in the trash?")) {
-                  selectItem(null);
-                  emptyTrash();
-                }
+              onClick={async () => {
+                const ok = await askConfirm({
+                  title: "Permanently delete everything in the trash?",
+                  confirmLabel: "Empty trash",
+                  danger: true,
+                });
+                if (!ok) return;
+                selectItem(null);
+                emptyTrash();
               }}
             >
               Empty trash
@@ -1263,18 +1273,26 @@ export function ItemList() {
                     className="absolute right-0 top-full z-20 mt-1 w-56 rounded-xl border border-stone-200 bg-white p-1 shadow-lift dark:border-stone-700 dark:bg-stone-900"
                   >
                     <MenuItem
-                      onClick={() => {
+                      onClick={async () => {
                         setMenuOpen(false);
-                        const name = window.prompt("New section name");
+                        const name = await askText({
+                          title: "New section",
+                          label: "Section name",
+                          confirmLabel: "Add",
+                        });
                         if (name) addSection(currentList.id, name);
                       }}
                     >
                       <Plus size={15} aria-hidden /> Add section
                     </MenuItem>
                     <MenuItem
-                      onClick={() => {
+                      onClick={async () => {
                         setMenuOpen(false);
-                        const name = window.prompt("Rename list", currentList.name);
+                        const name = await askText({
+                          title: "Rename list",
+                          label: "List name",
+                          initial: currentList.name,
+                        });
                         if (name) renameList(currentList.id, name);
                       }}
                     >
@@ -1340,16 +1358,17 @@ export function ItemList() {
                     <div className="my-1 border-t border-stone-200 dark:border-stone-700" />
                     <MenuItem
                       danger
-                      onClick={() => {
+                      onClick={async () => {
                         setMenuOpen(false);
-                        if (
-                          window.confirm(
-                            `Delete the list “${currentList.name}”? Its items move to the Inbox.`,
-                          )
-                        ) {
-                          deleteList(currentList.id);
-                          setView({ kind: "smart", id: "inbox" });
-                        }
+                        const ok = await askConfirm({
+                          title: `Delete the list “${currentList.name}”?`,
+                          message: "Its items move to the Inbox.",
+                          confirmLabel: "Delete",
+                          danger: true,
+                        });
+                        if (!ok) return;
+                        deleteList(currentList.id);
+                        setView({ kind: "smart", id: "inbox" });
                       }}
                     >
                       <Trash2 size={15} aria-hidden /> Delete list
