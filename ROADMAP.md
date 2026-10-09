@@ -101,6 +101,28 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 - [x] Accessibility audit pass: focus order, labels, contrast, reduced motion
 - [x] Performance pass: virtualise long lists and trim the initial bundle
 
+### Phase 7 — Launch readiness: everyday polish
+
+- [ ] Renaming and deleting lists, sections, folders and tags uses in-app dialogs instead of browser pop-ups
+- [ ] Undo after completing, deleting, swiping or batch-editing tasks, offered in a short message at the bottom
+- [ ] [BIG] One calendar sheet for picking a date, time, repeat and end date, used in task details, the add sheet and batch edit
+- [ ] On phones, the add sheet and other bottom sheets stay above the keyboard, and the layout clears the notch and home bar
+- [ ] Swiping a task row never triggers the browser's back gesture or pull-to-refresh
+- [ ] Placeholder rows while the workspace loads, instead of a "Loading" message
+- [ ] The sync bar only appears while changes are waiting, when syncing fails, or when the device is offline
+
+### Phase 8 — Launch readiness: first run and trust
+
+- [ ] [BIG] First run: a few example tasks that teach quick add and swipes, with advanced views hidden until turned on in Settings
+- [ ] A gentle prompt to sign in and sync after a new user has added a few tasks
+- [ ] When the first reminder is added, offer to turn on reminders that arrive while the app is closed, with steps for the user's phone
+- [ ] Push reminders re-register this device on every start, so closed-app reminders recover on their own
+- [ ] A "Send feedback" item in the menu and a short "What's new" note after an update
+- [ ] A help page with short answers about sync, reminders, installing the app and privacy
+- [ ] [BIG] One shared set of dialogs, menus, bottom sheets and messages, so every pop-up looks and behaves the same, including keyboard focus
+- [ ] Accessibility check with VoiceOver and TalkBack on phones, fixing what it finds
+- [ ] Consistent text sizes, icon sizes and 44px tap targets across every view, in light and dark mode
+
 ## Ideas (not started — move up to "Next up" to approve)
 
 - Email verification for new accounts
@@ -111,6 +133,9 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 - Local encryption of notes with a passphrase, and an app lock
 - Sticky notes
 - Print-friendly export
+- Error tracking and privacy-friendly usage statistics (needs a provider choice from the owner)
+- Privacy policy and terms pages (needs text from the owner)
+- End-to-end tests and screenshot comparisons for the main flows on phone and desktop
 
 ## Not wanted
 
