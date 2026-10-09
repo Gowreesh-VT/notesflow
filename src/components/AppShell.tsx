@@ -13,6 +13,7 @@ import { FocusBar } from "./FocusBar";
 import { ReminderRunner } from "./ReminderRunner";
 import { ReminderSettings } from "./ReminderSettings";
 import { SyncBanner } from "./SyncBanner";
+import { DialogHost } from "./DialogHost";
 import { CommandPalette } from "./CommandPalette";
 import { KeyboardShortcuts } from "./KeyboardShortcuts";
 import { MobileTabBar } from "./MobileTabBar";
@@ -84,6 +85,7 @@ export function AppShell() {
       {ready && <ReminderRunner />}
       {ready && <FocusBar />}
       {ready && <ReminderSettings />}
+      <DialogHost />
     </div>
   );
 }

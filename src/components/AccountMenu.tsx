@@ -1,5 +1,7 @@
 "use client";
 
+import { askConfirm } from "@/store/dialog";
+
 import { useEffect, useState } from "react";
 import { SessionProvider, signOut, useSession } from "next-auth/react";
 import { Cloud, CloudOff, LogIn, LogOut, RefreshCw } from "lucide-react";
@@ -121,21 +123,22 @@ function AccountPanel({ google, emailReset }: { google: boolean; emailReset: boo
           type="button"
           className="btn btn-ghost px-2 py-1 text-xs"
           onClick={async () => {
-            if (
-              !window.confirm(
-                "Sign out? Your data stays in your account, but it will be removed from this device.",
-              )
-            ) {
-              return;
-            }
+            const confirmed = await askConfirm({
+              title: "Sign out?",
+              message: "Your data stays in your account, but it will be removed from this device.",
+              confirmLabel: "Sign out",
+              danger: true,
+            });
+            if (!confirmed) return;
             await runSync();
             if (useSyncStore.getState().status === "error") {
-              if (
-                !window.confirm(
-                  "The last sync failed, so recent changes may be lost. Sign out anyway?",
-                )
-              )
-                return;
+              const anyway = await askConfirm({
+                title: "Sign out anyway?",
+                message: "The last sync failed, so recent changes may be lost.",
+                confirmLabel: "Sign out anyway",
+                danger: true,
+              });
+              if (!anyway) return;
             }
             // This device must stop receiving this account's reminders.
             await disablePush();
