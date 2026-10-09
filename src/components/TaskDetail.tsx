@@ -1,5 +1,7 @@
 "use client";
 
+import { askConfirm } from "@/store/dialog";
+
 import { useState } from "react";
 import {
   ArrowLeft,
@@ -116,11 +118,15 @@ export function TaskDetail({ item }: { item: Item }) {
             <button
               type="button"
               className="btn btn-danger"
-              onClick={() => {
-                if (window.confirm(`Permanently delete “${item.title}”?`)) {
-                  selectItem(null);
-                  deleteForever(item.id);
-                }
+              onClick={async () => {
+                const ok = await askConfirm({
+                  title: `Permanently delete “${item.title}”?`,
+                  confirmLabel: "Delete forever",
+                  danger: true,
+                });
+                if (!ok) return;
+                selectItem(null);
+                deleteForever(item.id);
               }}
             >
               Delete forever

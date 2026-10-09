@@ -1,5 +1,7 @@
 "use client";
 
+import { askConfirm } from "@/store/dialog";
+
 import { useMemo, useState } from "react";
 import { LayoutTemplate, X } from "lucide-react";
 import { formatDuration } from "@/lib/duration";
@@ -92,9 +94,13 @@ export function TemplatesMenu({ listId, due }: { listId: string; due: string | n
                       type="button"
                       className="mr-1 rounded-md p-1 text-stone-500 opacity-0 hover:bg-stone-200 hover:text-stone-700 focus-visible:opacity-100 group-hover:opacity-100 dark:hover:bg-stone-700 dark:hover:text-stone-200 dark:text-stone-400"
                       aria-label={`Delete template ${displayTitle(t)}`}
-                      onClick={() => {
-                        if (window.confirm(`Delete the template “${displayTitle(t)}”?`))
-                          deleteTemplate(t.id);
+                      onClick={async () => {
+                        const ok = await askConfirm({
+                          title: `Delete the template “${displayTitle(t)}”?`,
+                          confirmLabel: "Delete",
+                          danger: true,
+                        });
+                        if (ok) deleteTemplate(t.id);
                       }}
                     >
                       <X size={14} />
