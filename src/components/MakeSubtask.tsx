@@ -1,5 +1,7 @@
 "use client";
 
+import { askConfirm } from "@/store/dialog";
+
 import { useMemo, useState } from "react";
 import { CornerDownRight } from "lucide-react";
 import { flattenSubtasks, findSubtask, MAX_SUBTASK_DEPTH, subtreeHeight } from "@/lib/subtasks";
@@ -58,14 +60,16 @@ export function MakeSubtask({ item }: { item: Item }) {
   return (
     <form
       className="flex w-full flex-wrap items-center gap-2 rounded-xl bg-stone-100 p-2 text-sm dark:bg-stone-900"
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
         if (!targetId) return;
-        if (
-          item.body.trim() &&
-          !window.confirm("The task’s description will not be kept. Continue?")
-        ) {
-          return;
+        if (item.body.trim()) {
+          const ok = await askConfirm({
+            title: "Move under another task?",
+            message: "The task’s description will not be kept.",
+            confirmLabel: "Continue",
+          });
+          if (!ok) return;
         }
         if (taskToSubtask(item.id, targetId, parentId || null)) {
           selectItem(targetId);

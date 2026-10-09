@@ -1,5 +1,7 @@
 "use client";
 
+import { askConfirm, askText } from "@/store/dialog";
+
 import { useMemo, useState } from "react";
 import {
   Archive,
@@ -154,8 +156,12 @@ function HabitRow({ habit, days, today }: { habit: Habit; days: string[]; today:
             type="button"
             className="btn btn-ghost px-1.5 py-1"
             aria-label={`Rename ${habit.name}`}
-            onClick={() => {
-              const name = window.prompt("Rename habit", habit.name);
+            onClick={async () => {
+              const name = await askText({
+                title: "Rename habit",
+                label: "Habit name",
+                initial: habit.name,
+              });
               if (name) updateHabit(habit.id, { name });
             }}
           >
@@ -173,10 +179,14 @@ function HabitRow({ habit, days, today }: { habit: Habit; days: string[]; today:
             type="button"
             className="btn btn-ghost px-1.5 py-1 text-red-600 dark:text-red-400"
             aria-label={`Delete ${habit.name}`}
-            onClick={() => {
-              if (window.confirm(`Delete the habit “${habit.name}” and all its check-ins?`)) {
-                deleteHabit(habit.id);
-              }
+            onClick={async () => {
+              const ok = await askConfirm({
+                title: `Delete the habit “${habit.name}”?`,
+                message: "All its check-ins are deleted too.",
+                confirmLabel: "Delete",
+                danger: true,
+              });
+              if (ok) deleteHabit(habit.id);
             }}
           >
             <Trash2 size={14} />
