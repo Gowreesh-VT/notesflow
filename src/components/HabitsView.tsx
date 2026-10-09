@@ -1,7 +1,5 @@
 "use client";
 
-import { askConfirm, askText } from "@/store/dialog";
-
 import { useMemo, useState } from "react";
 import {
   Archive,
@@ -18,6 +16,7 @@ import { habitStreaks, isDoneOn, lastDays, periodProgress } from "@/lib/habits";
 import { useToday } from "@/lib/hooks";
 import type { Habit } from "@/lib/types";
 import { useWorkspace } from "@/store/workspace";
+import { askConfirm, askText } from "@/store/dialog";
 import { HabitHeatmap } from "./HabitHeatmap";
 import { ViewHeader } from "./ViewHeader";
 import { formatDate } from "@/lib/locale";

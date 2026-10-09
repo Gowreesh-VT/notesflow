@@ -1,7 +1,5 @@
 "use client";
 
-import { askConfirm } from "@/store/dialog";
-
 import { useEffect, useRef, useState } from "react";
 import {
   Ban,
@@ -25,6 +23,7 @@ import { addDays, displayTitle } from "@/lib/utils";
 import { useSelection } from "@/store/selection";
 import { useUi } from "@/store/ui";
 import { useWorkspace, type BatchPatch } from "@/store/workspace";
+import { askConfirm } from "@/store/dialog";
 import { EnergyIcon } from "./EnergyField";
 import { ListSelect } from "./ListSelect";
 

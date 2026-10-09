@@ -1,7 +1,5 @@
 "use client";
 
-import { askConfirm } from "@/store/dialog";
-
 import { useState } from "react";
 import {
   ArrowLeft,
@@ -26,6 +24,7 @@ import type { Item, Priority } from "@/lib/types";
 import { addDays, formatDueLabel, formatDueRange } from "@/lib/utils";
 import { useUi, type EditorMode } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
+import { askConfirm } from "@/store/dialog";
 import { CopyToList } from "./CopyToList";
 import { ListSelect } from "./ListSelect";
 import { MarkdownEditor, ModeSwitch } from "./MarkdownEditor";

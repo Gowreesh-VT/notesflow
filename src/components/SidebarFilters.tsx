@@ -1,7 +1,5 @@
 "use client";
 
-import { askConfirm } from "@/store/dialog";
-
 import { useMemo, useState } from "react";
 import { Funnel, Pencil, Plus, X } from "lucide-react";
 import { sortFilters } from "@/lib/filters";
@@ -10,6 +8,7 @@ import { useToday } from "@/lib/hooks";
 import type { SavedFilter } from "@/lib/types";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
+import { askConfirm } from "@/store/dialog";
 import { NavItem } from "./NavItem";
 import { SidebarEmptyAction, SidebarSection } from "./SidebarSection";
 import dynamic from "next/dynamic";

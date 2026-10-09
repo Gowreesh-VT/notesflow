@@ -1,13 +1,12 @@
 "use client";
 
-import { askConfirm } from "@/store/dialog";
-
 import { useState } from "react";
 import { Archive, ArchiveRestore, ChevronRight, Trash2 } from "lucide-react";
 import clsx from "clsx";
 import { archivedLists, sameView } from "@/lib/items-logic";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
+import { askConfirm } from "@/store/dialog";
 
 /** Collapsible "Archived lists" section at the bottom of the sidebar, with open, restore and delete. */
 export function SidebarArchivedLists() {

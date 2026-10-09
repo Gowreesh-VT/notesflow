@@ -1,7 +1,5 @@
 "use client";
 
-import { askConfirm } from "@/store/dialog";
-
 import { useMemo, useState } from "react";
 import { CornerDownRight } from "lucide-react";
 import { flattenSubtasks, findSubtask, MAX_SUBTASK_DEPTH, subtreeHeight } from "@/lib/subtasks";
@@ -9,6 +7,7 @@ import type { Item } from "@/lib/types";
 import { displayTitle } from "@/lib/utils";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
+import { askConfirm } from "@/store/dialog";
 
 /** Footer action that turns a task into a subtask of another task (optionally under one of its subtasks). */
 export function MakeSubtask({ item }: { item: Item }) {

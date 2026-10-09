@@ -1,7 +1,5 @@
 "use client";
 
-import { askText } from "@/store/dialog";
-
 import { useMemo, useState } from "react";
 import { Hourglass, Plus, X } from "lucide-react";
 import clsx from "clsx";
@@ -10,6 +8,7 @@ import { useToday } from "@/lib/hooks";
 import { useWorkspace } from "@/store/workspace";
 import { formatDate } from "@/lib/locale";
 import { useUi } from "@/store/ui";
+import { askText } from "@/store/dialog";
 import { SidebarEmptyAction, SidebarSection } from "./SidebarSection";
 
 /** Countdowns to important dates, with a small form to add one. */

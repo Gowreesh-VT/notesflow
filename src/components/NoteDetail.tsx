@@ -1,7 +1,5 @@
 "use client";
 
-import { askConfirm } from "@/store/dialog";
-
 import { useState } from "react";
 import {
   ArrowLeft,
@@ -23,6 +21,7 @@ import { displayTitle, readingMinutes, wordCount } from "@/lib/utils";
 import { setPreferences, usePreferences } from "@/store/preferences";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
+import { askConfirm } from "@/store/dialog";
 import { CopyToListForm } from "./CopyToList";
 import { ListSelect } from "./ListSelect";
 import { MarkdownEditor, ModeSwitch } from "./MarkdownEditor";

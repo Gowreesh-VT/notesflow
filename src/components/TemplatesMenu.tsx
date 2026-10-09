@@ -1,7 +1,5 @@
 "use client";
 
-import { askConfirm } from "@/store/dialog";
-
 import { useMemo, useState } from "react";
 import { LayoutTemplate, X } from "lucide-react";
 import { formatDuration } from "@/lib/duration";
@@ -10,6 +8,7 @@ import { countSubtasks } from "@/lib/subtasks";
 import { displayTitle } from "@/lib/utils";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
+import { askConfirm } from "@/store/dialog";
 
 /** Quick-add menu for creating a task from a saved template, and for removing templates. */
 export function TemplatesMenu({ listId, due }: { listId: string; due: string | null }) {
