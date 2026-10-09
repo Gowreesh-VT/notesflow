@@ -1,7 +1,5 @@
 "use client";
 
-import { askConfirm } from "@/store/dialog";
-
 import { useEffect, useState } from "react";
 import { SessionProvider, signOut, useSession } from "next-auth/react";
 import { Cloud, CloudOff, LogIn, LogOut, RefreshCw } from "lucide-react";
@@ -10,6 +8,7 @@ import { formatRelativeTime } from "@/lib/utils";
 import { disablePush } from "@/lib/push-client";
 import { useSyncStore } from "@/store/sync";
 import dynamic from "next/dynamic";
+import { askConfirm } from "@/store/dialog";
 import { authErrorMessage } from "./auth-errors";
 
 const AuthDialog = dynamic(() => import("./AuthDialog").then((m) => m.AuthDialog));

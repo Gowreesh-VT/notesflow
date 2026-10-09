@@ -1,7 +1,5 @@
 "use client";
 
-import { askConfirm, askText } from "@/store/dialog";
-
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
@@ -39,6 +37,7 @@ import { cleanTagName } from "@/lib/tags";
 import { type SmartViewId, type TaskList, type View } from "@/lib/types";
 import { usePreferences } from "@/store/preferences";
 import { useUi } from "@/store/ui";
+import { askConfirm, askText } from "@/store/dialog";
 import { AccountMenu } from "./AccountMenu";
 import { LogoMark } from "./Logo";
 import { NavItem } from "./NavItem";
