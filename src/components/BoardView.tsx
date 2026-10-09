@@ -1,5 +1,7 @@
 "use client";
 
+import { askConfirm, askText } from "@/store/dialog";
+
 import { useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
@@ -363,8 +365,12 @@ function Column({
             </IconButton>
             <IconButton
               label={`Rename section ${name}`}
-              onClick={() => {
-                const next = window.prompt("Rename section", name);
+              onClick={async () => {
+                const next = await askText({
+                  title: "Rename section",
+                  label: "Section name",
+                  initial: name,
+                });
                 if (next) renameSection(list.id, section.id, next);
               }}
             >
@@ -372,10 +378,14 @@ function Column({
             </IconButton>
             <IconButton
               label={`Delete section ${name}`}
-              onClick={() => {
-                if (window.confirm(`Delete the section “${name}”? Its items stay in the list.`)) {
-                  deleteSection(list.id, section.id);
-                }
+              onClick={async () => {
+                const ok = await askConfirm({
+                  title: `Delete the section “${name}”?`,
+                  message: "Its items stay in the list.",
+                  confirmLabel: "Delete",
+                  danger: true,
+                });
+                if (ok) deleteSection(list.id, section.id);
               }}
             >
               <Trash2 size={14} aria-hidden />
@@ -596,8 +606,12 @@ export function BoardView({
       ))}
       <button
         type="button"
-        onClick={() => {
-          const name = window.prompt("New section name");
+        onClick={async () => {
+          const name = await askText({
+            title: "New section",
+            label: "Section name",
+            confirmLabel: "Add",
+          });
           if (name) addSection(list.id, name);
         }}
         className="flex w-[17rem] min-w-64 shrink-0 items-center gap-2 rounded-2xl border border-dashed border-stone-300 px-3 py-2.5 text-sm text-stone-500 hover:border-accent-400 hover:text-accent-700 focus-visible:outline-2 focus-visible:outline-accent-500 dark:border-stone-700 dark:text-stone-400 dark:hover:border-accent-600 dark:hover:text-accent-300"

@@ -1,5 +1,7 @@
 "use client";
 
+import { askConfirm } from "@/store/dialog";
+
 import { useEffect, useRef, useState } from "react";
 import {
   Ban,
@@ -529,8 +531,13 @@ function Toolbar({ items, view }: { items: Item[]; view: View }) {
           label="Delete"
           danger
           disabled={none}
-          onClick={() => {
-            if (!window.confirm(`Move ${plural(selected.length, "item")} to the trash?`)) return;
+          onClick={async () => {
+            const ok = await askConfirm({
+              title: `Move ${plural(selected.length, "item")} to the trash?`,
+              confirmLabel: "Move to trash",
+              danger: true,
+            });
+            if (!ok) return;
             const open = useUi.getState().selectedItemId;
             if (open && selectedIds.includes(open)) useUi.getState().selectItem(null);
             store.trashItems(selectedIds);
