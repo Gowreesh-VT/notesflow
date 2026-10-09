@@ -1,5 +1,7 @@
 "use client";
 
+import { askConfirm, askText } from "@/store/dialog";
+
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
@@ -119,14 +121,17 @@ export function Sidebar() {
 
   const goTo = (target: View) => setView(target);
 
-  const promptRenameTag = (tag: string) => {
-    const input = window.prompt(`Rename #${tag} (an existing tag name merges them)`, tag);
+  const promptRenameTag = async (tag: string) => {
+    const input = await askText({
+      title: `Rename #${tag}`,
+      label: "Tag name (an existing tag name merges them)",
+      initial: tag,
+      error: (value) =>
+        cleanTagName(value) ? null : "A tag starts with a letter and uses letters, digits, - or _.",
+    });
     if (input === null) return;
     const name = cleanTagName(input);
-    if (!name) {
-      setStatus("A tag starts with a letter and uses letters, digits, - or _.");
-      return;
-    }
+    if (!name) return;
     const merged = tags.some((t) => t.tag === name.toLowerCase() && t.tag !== tag);
     const changed = renameTag(tag, name);
     setStatus(
@@ -135,14 +140,14 @@ export function Sidebar() {
     if (sameView(view, { kind: "tag", tag })) goTo({ kind: "tag", tag: name.toLowerCase() });
   };
 
-  const removeTag = (tag: string, count: number) => {
-    if (
-      !window.confirm(
-        `Remove #${tag} from ${count} item${count === 1 ? "" : "s"}? The word stays, without the #.`,
-      )
-    ) {
-      return;
-    }
+  const removeTag = async (tag: string, count: number) => {
+    const ok = await askConfirm({
+      title: `Remove #${tag} from ${count} item${count === 1 ? "" : "s"}?`,
+      message: "The word stays, without the #.",
+      confirmLabel: "Remove",
+      danger: true,
+    });
+    if (!ok) return;
     const changed = renameTag(tag, null);
     setStatus(`Removed #${tag} from ${changed} item${changed === 1 ? "" : "s"}.`);
     if (sameView(view, { kind: "tag", tag })) goTo({ kind: "smart", id: "inbox" });
@@ -334,8 +339,12 @@ export function Sidebar() {
                       type="button"
                       className="btn btn-ghost px-1 py-0.5 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
                       aria-label={`Rename folder ${folder.name}`}
-                      onClick={() => {
-                        const name = window.prompt("Rename folder", folder.name);
+                      onClick={async () => {
+                        const name = await askText({
+                          title: "Rename folder",
+                          label: "Folder name",
+                          initial: folder.name,
+                        });
                         if (name) renameFolder(folder.id, name);
                       }}
                     >
@@ -345,12 +354,14 @@ export function Sidebar() {
                       type="button"
                       className="btn btn-ghost px-1 py-0.5 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
                       aria-label={`Delete folder ${folder.name}`}
-                      onClick={() => {
-                        if (
-                          window.confirm(`Delete the folder “${folder.name}”? Its lists are kept.`)
-                        ) {
-                          deleteFolder(folder.id);
-                        }
+                      onClick={async () => {
+                        const ok = await askConfirm({
+                          title: `Delete the folder “${folder.name}”?`,
+                          message: "Its lists are kept.",
+                          confirmLabel: "Delete",
+                          danger: true,
+                        });
+                        if (ok) deleteFolder(folder.id);
                       }}
                     >
                       <X size={13} />

@@ -1,5 +1,7 @@
 "use client";
 
+import { askConfirm } from "@/store/dialog";
+
 import { useState } from "react";
 import { Archive, ArchiveRestore, ChevronRight, Trash2 } from "lucide-react";
 import clsx from "clsx";
@@ -74,13 +76,16 @@ export function SidebarArchivedLists() {
                 className="btn btn-ghost px-1 py-0.5 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
                 aria-label={`Delete list ${list.name}`}
                 title="Delete"
-                onClick={() => {
-                  if (
-                    window.confirm(`Delete the list “${list.name}”? Its items move to the Inbox.`)
-                  ) {
-                    deleteList(list.id);
-                    if (active) setView({ kind: "smart", id: "inbox" });
-                  }
+                onClick={async () => {
+                  const ok = await askConfirm({
+                    title: `Delete the list “${list.name}”?`,
+                    message: "Its items move to the Inbox.",
+                    confirmLabel: "Delete",
+                    danger: true,
+                  });
+                  if (!ok) return;
+                  deleteList(list.id);
+                  if (active) setView({ kind: "smart", id: "inbox" });
                 }}
               >
                 <Trash2 size={13} />

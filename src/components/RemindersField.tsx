@@ -12,10 +12,18 @@ import {
 } from "@/lib/reminders";
 import type { Item } from "@/lib/types";
 import { formatClock } from "@/lib/utils";
+import { askText } from "@/store/dialog";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
 import { NotificationPermission } from "./NotificationPermission";
 import { formatDateTime } from "@/lib/locale";
+
+/** Minutes for text such as "45m", "3h" or "2d", or null when invalid or longer than a week. */
+function customReminderMinutes(text: string): number | null {
+  const days = /^\s*(\d+)\s*d(ays?)?\s*$/i.exec(text);
+  const minutes = days ? Number(days[1]) * 1440 : parseDuration(text);
+  return minutes && minutes <= MAX_REMINDER_LEAD ? minutes : null;
+}
 
 const formatWhen = (ms: number) =>
   formatDateTime(new Date(ms), {
@@ -73,15 +81,20 @@ export function RemindersField({ item, readOnly }: { item: Item; readOnly: boole
         <select
           aria-label="Add a reminder"
           value=""
-          onChange={(e) => {
+          onChange={async (e) => {
             const value = e.target.value;
             if (value === "custom") {
-              const text = window.prompt("Remind me how long before? For example 45m, 3h or 2d");
-              if (!text) return;
-              const days = /^\s*(\d+)\s*d(ays?)?\s*$/i.exec(text);
-              const minutes = days ? Number(days[1]) * 1440 : parseDuration(text);
-              if (minutes && minutes <= MAX_REMINDER_LEAD) addReminder(item.id, minutes);
-              else window.alert("Try something like 45m, 3h or 2d (up to a week).");
+              const text = await askText({
+                title: "Custom reminder",
+                label: "How long before? For example 45m, 3h or 2d",
+                confirmLabel: "Add",
+                error: (v) =>
+                  customReminderMinutes(v)
+                    ? null
+                    : "Try something like 45m, 3h or 2d (up to a week).",
+              });
+              const minutes = text ? customReminderMinutes(text) : null;
+              if (minutes) addReminder(item.id, minutes);
             } else if (value) {
               addReminder(item.id, Number(value));
             }
