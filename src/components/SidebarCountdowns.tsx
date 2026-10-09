@@ -1,5 +1,7 @@
 "use client";
 
+import { askText } from "@/store/dialog";
+
 import { useMemo, useState } from "react";
 import { Hourglass, Plus, X } from "lucide-react";
 import clsx from "clsx";
@@ -99,8 +101,12 @@ export function SidebarCountdowns() {
                 past ? "text-stone-500 dark:text-stone-400" : "text-stone-600 dark:text-stone-300",
               )}
               title={`${c.name}: ${formatDate(new Date(`${c.date}T00:00`), { dateStyle: "long" })}. Click to rename.`}
-              onClick={() => {
-                const renamed = window.prompt("Rename countdown", c.name);
+              onClick={async () => {
+                const renamed = await askText({
+                  title: "Rename countdown",
+                  label: "Countdown name",
+                  initial: c.name,
+                });
                 if (renamed) updateCountdown(c.id, { name: renamed });
               }}
             >

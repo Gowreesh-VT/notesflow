@@ -1,5 +1,7 @@
 "use client";
 
+import { askConfirm } from "@/store/dialog";
+
 import { useMemo, useState } from "react";
 import { Funnel, Pencil, Plus, X } from "lucide-react";
 import { sortFilters } from "@/lib/filters";
@@ -75,11 +77,16 @@ export function SidebarFilters() {
                 type="button"
                 className="btn btn-ghost px-1 py-0.5 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
                 aria-label={`Delete filter ${filter.name}`}
-                onClick={() => {
-                  if (window.confirm(`Delete the filter “${filter.name}”? No tasks are deleted.`)) {
-                    deleteFilter(filter.id);
-                    if (active) setView({ kind: "smart", id: "inbox" });
-                  }
+                onClick={async () => {
+                  const ok = await askConfirm({
+                    title: `Delete the filter “${filter.name}”?`,
+                    message: "No tasks are deleted.",
+                    confirmLabel: "Delete",
+                    danger: true,
+                  });
+                  if (!ok) return;
+                  deleteFilter(filter.id);
+                  if (active) setView({ kind: "smart", id: "inbox" });
                 }}
               >
                 <X size={13} />
