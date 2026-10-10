@@ -24,6 +24,7 @@ import { useSelection } from "@/store/selection";
 import { useUi } from "@/store/ui";
 import { useWorkspace, type BatchPatch } from "@/store/workspace";
 import { askConfirm } from "@/store/dialog";
+import { withUndo } from "@/store/undo";
 import { EnergyIcon } from "./EnergyField";
 import { ListSelect } from "./ListSelect";
 
@@ -261,7 +262,12 @@ function Toolbar({ items, view }: { items: Item[]; view: View }) {
   };
   // Finished tasks drop out of the selection, so the next action does not reach them by surprise.
   const finish = (status: "done" | "wontdo") => {
-    const count = store.setStatusMany(taskIds, status).length;
+    const count = withUndo(
+      status === "done"
+        ? `Completed ${plural(taskIds.length, "task")}`
+        : `Marked ${plural(taskIds.length, "task")} as won’t do`,
+      () => store.setStatusMany(taskIds, status).length,
+    );
     setIds(ids.filter((id) => !taskIds.includes(id)));
     done(
       status === "done"
@@ -270,7 +276,7 @@ function Toolbar({ items, view }: { items: Item[]; view: View }) {
     );
   };
   const patchTasks = (patch: BatchPatch, message: string) => {
-    store.updateItems(taskIds, patch);
+    withUndo(message.replace(/\.$/, ""), () => store.updateItems(taskIds, patch));
     done(message);
   };
   const tagName = normalizeTag(tagDraft);
@@ -380,7 +386,9 @@ function Toolbar({ items, view }: { items: Item[]; view: View }) {
             className="flex items-center gap-2 p-1"
             onSubmit={(e) => {
               e.preventDefault();
-              store.updateItems(selectedIds, { listId: targetList });
+              withUndo(`Moved ${plural(selected.length, "item")}`, () =>
+                store.updateItems(selectedIds, { listId: targetList }),
+              );
               done(`Moved ${plural(selected.length, "item")}.`);
             }}
           >
@@ -403,7 +411,9 @@ function Toolbar({ items, view }: { items: Item[]; view: View }) {
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!tagName) return;
-                store.addTagToItems(selectedIds, tagName);
+                withUndo(`Added #${tagName} to ${plural(selected.length, "item")}`, () =>
+                  store.addTagToItems(selectedIds, tagName),
+                );
                 setTagDraft("");
                 done(`Added #${tagName} to ${plural(selected.length, "item")}.`);
               }}
@@ -428,7 +438,9 @@ function Toolbar({ items, view }: { items: Item[]; view: View }) {
                 disabled={!tagName}
                 onClick={() => {
                   if (!tagName) return;
-                  store.removeTagFromItems(selectedIds, tagName);
+                  withUndo(`Removed #${tagName} from ${plural(selected.length, "item")}`, () =>
+                    store.removeTagFromItems(selectedIds, tagName),
+                  );
                   setTagDraft("");
                   done(`Removed #${tagName} from ${plural(selected.length, "item")}.`);
                 }}
@@ -444,7 +456,9 @@ function Toolbar({ items, view }: { items: Item[]; view: View }) {
                     type="button"
                     aria-label={`Remove #${tag} from the selected items`}
                     onClick={() => {
-                      store.removeTagFromItems(selectedIds, tag);
+                      withUndo(`Removed #${tag} from ${plural(selected.length, "item")}`, () =>
+                        store.removeTagFromItems(selectedIds, tag),
+                      );
                       done(`Removed #${tag} from ${plural(selected.length, "item")}.`);
                     }}
                     className="inline-flex items-center gap-1 rounded-md bg-stone-100 px-1.5 py-0.5 text-xs text-stone-600 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
@@ -539,7 +553,9 @@ function Toolbar({ items, view }: { items: Item[]; view: View }) {
             if (!ok) return;
             const open = useUi.getState().selectedItemId;
             if (open && selectedIds.includes(open)) useUi.getState().selectItem(null);
-            store.trashItems(selectedIds);
+            withUndo(`Moved ${plural(selected.length, "item")} to the trash`, () =>
+              store.trashItems(selectedIds),
+            );
             exit();
           }}
         >

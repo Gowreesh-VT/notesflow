@@ -90,6 +90,7 @@ import { INBOX_ID, type Item, type ItemKind, type ItemSort } from "@/lib/types";
 import { addDays, displayTitle, formatDueRange, formatDueWithTime, getSnippet } from "@/lib/utils";
 import { useSelection } from "@/store/selection";
 import { useUi } from "@/store/ui";
+import { toggleDoneWithUndo, trashWithUndo } from "@/store/undo";
 import { useWorkspace } from "@/store/workspace";
 
 /** Drag-and-drop wiring for a row in manual order. */
@@ -117,9 +118,7 @@ function ItemRow({
   const updateItem = useWorkspace((s) => s.updateItem);
   const selectItem = useUi((s) => s.selectItem);
   const [menuOpen, setMenuOpen] = useState(false);
-  const toggleDone = useWorkspace((s) => s.toggleDone);
   const setStatus = useWorkspace((s) => s.setStatus);
-  const trashItem = useWorkspace((s) => s.trashItem);
   const promptOutcome = useUi((s) => s.promptOutcome);
   // Touch swipes: right completes a task, left opens the row's actions (see src/lib/gestures.ts).
   const [swipe, setSwipe] = useState<{ dx: number; active: boolean }>({ dx: 0, active: false });
@@ -169,7 +168,7 @@ function ItemRow({
           setSwipe({ dx: 0, active: false });
           const action = swipeAction(start.dx);
           if (action === "complete") {
-            const finishedId = toggleDone(item.id);
+            const finishedId = toggleDoneWithUndo(item.id);
             if (finishedId) promptOutcome(finishedId);
           } else if (action === "actions") setMenuOpen(true);
         },
@@ -439,7 +438,7 @@ function ItemRow({
                 className="btn btn-danger flex-1"
                 onClick={() => {
                   setMenuOpen(false);
-                  trashItem(item.id);
+                  trashWithUndo(item.id);
                 }}
               >
                 <Trash2 size={15} aria-hidden /> Delete

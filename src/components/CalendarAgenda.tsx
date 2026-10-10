@@ -8,6 +8,7 @@ import { AGENDA_DAYS, agendaGroups } from "@/lib/calendar";
 import { INBOX_ID, type Item, type Priority } from "@/lib/types";
 import { addDays, displayTitle, formatClock, formatDueRange } from "@/lib/utils";
 import { useUi } from "@/store/ui";
+import { toggleDoneWithUndo } from "@/store/undo";
 import { useWorkspace } from "@/store/workspace";
 import { formatDay, fullDate, handleMoveKey, taskLabel } from "./CalendarParts";
 
@@ -28,7 +29,6 @@ function groupTitle(day: string, today: string): string {
 
 function AgendaRow({ item, today, overdue }: { item: Item; today: string; overdue: boolean }) {
   const lists = useWorkspace((s) => s.lists);
-  const toggleDone = useWorkspace((s) => s.toggleDone);
   const selected = useUi((s) => s.selectedItemId === item.id);
   const selectItem = useUi((s) => s.selectItem);
   const promptOutcome = useUi((s) => s.promptOutcome);
@@ -57,7 +57,7 @@ function AgendaRow({ item, today, overdue }: { item: Item; today: string; overdu
         aria-checked={item.status === "done"}
         aria-label={`Mark “${displayTitle(item)}” as ${done ? "not done" : "done"}`}
         onClick={() => {
-          const finishedId = toggleDone(item.id);
+          const finishedId = toggleDoneWithUndo(item.id);
           if (finishedId) promptOutcome(finishedId);
         }}
         className={clsx(
