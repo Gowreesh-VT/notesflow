@@ -20,6 +20,7 @@ import type { EditorMode, Item } from "@/lib/types";
 import { displayTitle, readingMinutes, wordCount } from "@/lib/utils";
 import { setPreferences, usePreferences } from "@/store/preferences";
 import { useUi } from "@/store/ui";
+import { trashWithUndo } from "@/store/undo";
 import { useWorkspace } from "@/store/workspace";
 import { askConfirm } from "@/store/dialog";
 import { CopyToListForm } from "./CopyToList";
@@ -32,15 +33,8 @@ export function NoteDetail({ item }: { item: Item }) {
   const { editorMode } = usePreferences();
   const setEditorMode = (mode: EditorMode) => setPreferences({ editorMode: mode });
   const selectItem = useUi((s) => s.selectItem);
-  const {
-    updateItem,
-    togglePin,
-    trashItem,
-    restoreItem,
-    deleteForever,
-    duplicateItem,
-    checklistToTasks,
-  } = useWorkspace.getState();
+  const { updateItem, togglePin, restoreItem, deleteForever, duplicateItem, checklistToTasks } =
+    useWorkspace.getState();
 
   const [notice, setNotice] = useState("");
   const trashed = item.deletedAt !== null;
@@ -166,7 +160,7 @@ export function NoteDetail({ item }: { item: Item }) {
               "Move to trash",
               <Trash2 size={17} />,
               () => {
-                trashItem(item.id);
+                trashWithUndo(item.id);
                 selectItem(null);
               },
               true,

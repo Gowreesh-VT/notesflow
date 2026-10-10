@@ -23,6 +23,7 @@ import { useToday } from "@/lib/hooks";
 import type { Item, Priority } from "@/lib/types";
 import { addDays, formatDueLabel, formatDueRange } from "@/lib/utils";
 import { useUi, type EditorMode } from "@/store/ui";
+import { toggleDoneWithUndo, trashWithUndo } from "@/store/undo";
 import { useWorkspace } from "@/store/workspace";
 import { askConfirm } from "@/store/dialog";
 import { CopyToList } from "./CopyToList";
@@ -84,16 +85,8 @@ export function TaskDetail({ item }: { item: Item }) {
   const selectItem = useUi((s) => s.selectItem);
   const promptOutcome = useUi((s) => s.promptOutcome);
   const [notice, setNotice] = useState("");
-  const {
-    updateItem,
-    setStatus,
-    toggleDone,
-    trashItem,
-    restoreItem,
-    deleteForever,
-    duplicateItem,
-    saveAsTemplate,
-  } = useWorkspace.getState();
+  const { updateItem, setStatus, restoreItem, deleteForever, duplicateItem, saveAsTemplate } =
+    useWorkspace.getState();
 
   const sections = useWorkspace((s) => s.lists.find((l) => l.id === item.listId)?.sections) ?? [];
   const trashed = item.deletedAt !== null;
@@ -152,7 +145,7 @@ export function TaskDetail({ item }: { item: Item }) {
             aria-label={item.status === "open" ? "Mark as done" : "Mark as not done"}
             disabled={trashed}
             onClick={() => {
-              const finishedId = toggleDone(item.id);
+              const finishedId = toggleDoneWithUndo(item.id);
               if (finishedId) promptOutcome(finishedId);
             }}
             className={clsx(
@@ -528,7 +521,7 @@ export function TaskDetail({ item }: { item: Item }) {
             aria-label="Delete"
             title="Delete"
             onClick={() => {
-              trashItem(item.id);
+              trashWithUndo(item.id);
               selectItem(null);
             }}
           >

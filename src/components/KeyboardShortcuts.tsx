@@ -6,6 +6,7 @@ import { INBOX_ID } from "@/lib/types";
 import { addDays, displayTitle, toDateKey } from "@/lib/utils";
 import { getPreferences } from "@/store/preferences";
 import { useUi } from "@/store/ui";
+import { toggleDoneWithUndo, trashWithUndo } from "@/store/undo";
 import { useWorkspace } from "@/store/workspace";
 import { openDailyNote } from "./CommandPalette";
 
@@ -109,7 +110,7 @@ function run(action: ShortcutAction): string | null {
       const rows = visibleRows();
       const next =
         rows[rows.indexOf(selected.id) + 1] ?? rows[rows.indexOf(selected.id) - 1] ?? null;
-      workspace.trashItem(selected.id);
+      trashWithUndo(selected.id);
       ui.selectItem(next);
       return `Moved “${title}” to the trash`;
     }
@@ -118,7 +119,7 @@ function run(action: ShortcutAction): string | null {
   if (selected.kind !== "task") return null;
   switch (action.type) {
     case "toggleDone": {
-      const finishedId = workspace.toggleDone(selected.id);
+      const finishedId = toggleDoneWithUndo(selected.id);
       if (finishedId) ui.promptOutcome(finishedId);
       return finishedId ? `Completed “${title}”` : `Reopened “${title}”`;
     }

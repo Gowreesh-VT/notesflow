@@ -4,7 +4,7 @@ import { Ban, Check } from "lucide-react";
 import clsx from "clsx";
 import type { Item, Priority } from "@/lib/types";
 import { useUi } from "@/store/ui";
-import { useWorkspace } from "@/store/workspace";
+import { toggleDoneWithUndo } from "@/store/undo";
 
 const PRIORITY_BOX: Record<Priority, string> = {
   none: "border-stone-300 dark:border-stone-600",
@@ -23,7 +23,6 @@ export function TaskCheckbox({
   disabled?: boolean;
   small?: boolean;
 }) {
-  const toggleDone = useWorkspace((s) => s.toggleDone);
   const promptOutcome = useUi((s) => s.promptOutcome);
   return (
     <button
@@ -33,7 +32,7 @@ export function TaskCheckbox({
       aria-label={`Mark “${item.title}” as ${item.status === "open" ? "done" : "not done"}`}
       disabled={disabled}
       onClick={() => {
-        const finishedId = toggleDone(item.id);
+        const finishedId = toggleDoneWithUndo(item.id);
         if (finishedId) promptOutcome(finishedId);
       }}
       className={clsx(
