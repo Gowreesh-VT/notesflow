@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { moveSectionTo } from "@/lib/board";
+import { applyUndo, type UndoSnapshot } from "@/lib/undo";
 import { itemTags, moveSectionBy } from "@/lib/items-logic";
 import {
   addTagToTitle,
@@ -244,6 +245,8 @@ type WorkspaceState = WorkspaceData & {
 
   /** Replaces the synced collections (used by sync and when signing out). */
   setData: (data: Partial<WorkspaceData>) => void;
+  /** Takes back an action: earlier item versions return, and items it created are deleted for good. */
+  undoItems: (snapshot: UndoSnapshot) => void;
   /** Forgets tombstones the server has acknowledged. */
   dropTombstones: (acknowledged: Tombstone[]) => void;
 };
@@ -1329,6 +1332,20 @@ export const useWorkspace = create<WorkspaceState>()(
       },
 
       setData: (data) => set(data),
+
+      undoItems: (snapshot) =>
+        set((s) => {
+          const now = Date.now();
+          const created = new Set(snapshot.remove);
+          const removed = s.items.filter((item) => created.has(item.id));
+          return {
+            items: applyUndo(s.items, snapshot, now),
+            tombstones: [
+              ...s.tombstones,
+              ...removed.map((item) => ({ collection: "item" as const, id: item.id, at: now })),
+            ],
+          };
+        }),
 
       dropTombstones: (acknowledged) =>
         set((s) => {
