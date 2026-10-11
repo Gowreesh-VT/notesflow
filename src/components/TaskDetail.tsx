@@ -27,6 +27,7 @@ import { toggleDoneWithUndo, trashWithUndo } from "@/store/undo";
 import { useWorkspace } from "@/store/workspace";
 import { askConfirm } from "@/store/dialog";
 import { CopyToList } from "./CopyToList";
+import { DatePicker } from "./DatePicker";
 import { ListSelect } from "./ListSelect";
 import { MarkdownEditor, ModeSwitch } from "./MarkdownEditor";
 import { EnergyField } from "./EnergyField";
@@ -213,16 +214,13 @@ export function TaskDetail({ item }: { item: Item }) {
                 </button>
               ))}
             </div>
-            <label className="grid grid-cols-[3.5rem_1fr] items-center gap-2">
-              <span className="text-stone-500 dark:text-stone-400">Due</span>
-              <input
-                type="date"
-                aria-label="Due date"
-                value={item.due ?? ""}
-                onChange={(e) => updateItem(item.id, { due: e.target.value || null })}
-                className="field py-1"
-              />
-            </label>
+            <DatePicker
+              label="Due date"
+              value={item.due ?? null}
+              today={today}
+              min={item.startDate}
+              onChange={(due) => updateItem(item.id, { due })}
+            />
             {item.due && (
               <>
                 <div className="grid grid-cols-[3.5rem_1fr] items-center gap-2">
