@@ -6,6 +6,7 @@ import { activeLists, viewTitle, type QuickAddPicks } from "@/lib/items-logic";
 import { INBOX_ID, type Priority } from "@/lib/types";
 import { addDays, formatDueWithTime } from "@/lib/utils";
 import { useWorkspace } from "@/store/workspace";
+import { DatePicker } from "./DatePicker";
 
 const PRIORITIES: { value: Priority; label: string; flag: string }[] = [
   { value: "high", label: "High", flag: "fill-red-500 text-red-500" },
@@ -133,15 +134,12 @@ export function QuickAddPickers({
               {d.label}
             </Option>
           ))}
-          <label className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-base text-stone-700 dark:text-stone-200">
-            Pick a date
-            <input
-              type="date"
-              value={resolved.due ?? ""}
-              onChange={(e) => onPick({ due: e.target.value || null })}
-              className="field ml-auto w-auto py-1"
-            />
-          </label>
+          <DatePicker
+            label="Pick a date"
+            value={resolved.due}
+            today={today}
+            onChange={(due) => onPick({ due })}
+          />
           {resolved.due && (
             <button
               type="button"

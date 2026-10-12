@@ -25,6 +25,7 @@ import { useUi } from "@/store/ui";
 import { useWorkspace, type BatchPatch } from "@/store/workspace";
 import { askConfirm } from "@/store/dialog";
 import { withUndo } from "@/store/undo";
+import { DatePicker } from "./DatePicker";
 import { EnergyIcon } from "./EnergyField";
 import { ListSelect } from "./ListSelect";
 
@@ -208,7 +209,6 @@ function Toolbar({ items, view }: { items: Item[]; view: View }) {
   const [panel, setPanel] = useState<Panel | null>(null);
   const [notice, setNotice] = useState("");
   const [tagDraft, setTagDraft] = useState("");
-  const [pickedDate, setPickedDate] = useState("");
   const [targetList, setTargetList] = useState(view.kind === "list" ? view.id : INBOX_ID);
   const panelRef = useRef<HTMLDivElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
@@ -305,33 +305,16 @@ function Toolbar({ items, view }: { items: Item[]; view: View }) {
                 {d.label}
               </Choice>
             ))}
-            <form
-              className="flex items-center gap-2 px-1.5 py-1"
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (pickedDate) {
-                  patchTasks(
-                    { due: pickedDate },
-                    `Set the date on ${plural(tasks.length, "task")}.`,
-                  );
+            <div className="px-1.5 py-1">
+              <DatePicker
+                label="Due date for the selected tasks"
+                value={null}
+                today={today}
+                onChange={(due) =>
+                  patchTasks({ due }, `Set the date on ${plural(tasks.length, "task")}.`)
                 }
-              }}
-            >
-              <input
-                type="date"
-                aria-label="Due date for the selected tasks"
-                value={pickedDate}
-                onChange={(e) => setPickedDate(e.target.value)}
-                className="field min-w-0 flex-1 py-1 text-sm"
               />
-              <button
-                type="submit"
-                className="btn btn-primary px-3 py-1 text-sm"
-                disabled={!pickedDate}
-              >
-                Set
-              </button>
-            </form>
+            </div>
             <Choice
               onClick={() =>
                 patchTasks({ due: null }, `Cleared the date on ${plural(tasks.length, "task")}.`)
