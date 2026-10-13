@@ -1,9 +1,9 @@
 "use client";
 
-import { useId } from "react";
 import clsx from "clsx";
 import { describeRepeat, MAX_REPEAT_EVERY, REPEAT_UNITS } from "@/lib/recurrence";
 import type { Repeat, RepeatUnit } from "@/lib/types";
+import { DateField } from "./DatePicker";
 
 const PRESETS: { id: string; label: string; rule: Repeat | null }[] = [
   { id: "none", label: "Doesn’t repeat", rule: null },
@@ -35,15 +35,16 @@ export function RepeatField({
   value,
   onChange,
   due = null,
+  today,
   disabled = false,
 }: {
   value: Repeat | null | undefined;
   onChange: (rule: Repeat | null) => void;
   /** The task's due date: the end date cannot be before it. */
   due?: string | null;
+  today: string;
   disabled?: boolean;
 }) {
-  const untilId = useId();
   const preset = PRESETS.find((p) => sameRule(value, p.rule))?.id ?? "custom";
   const after = Boolean(value?.afterCompletion);
   const until = value?.until;
@@ -164,21 +165,15 @@ export function RepeatField({
             Count the next date from when I complete it
           </label>
           <div className="flex flex-wrap items-center gap-2 text-sm">
-            <label htmlFor={untilId}>Ends</label>
-            <input
-              id={untilId}
-              type="date"
-              aria-label="Repeat ends on"
-              value={until ?? ""}
-              min={due ?? undefined}
+            <span>Ends</span>
+            <DateField
+              label="Repeat ends on"
+              empty="Never"
+              value={until ?? null}
+              today={today}
+              min={due}
               disabled={disabled}
-              onChange={(e) => {
-                const next: Repeat = { ...value };
-                if (e.target.value) next.until = e.target.value;
-                else delete next.until;
-                onChange(next);
-              }}
-              className="field w-auto py-1"
+              onChange={(day) => onChange({ ...value, until: day })}
             />
             {until ? (
               <button

@@ -95,3 +95,55 @@ export function DatePicker({
     </div>
   );
 }
+
+/** A button showing the chosen date that opens the month grid beneath it. */
+export function DateField({
+  value,
+  today,
+  onChange,
+  min,
+  max,
+  label,
+  empty,
+  disabled = false,
+}: {
+  value: string | null;
+  today: string;
+  onChange: (day: string) => void;
+  min?: string | null;
+  max?: string | null;
+  label: string;
+  empty: string;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="min-w-0 flex-1 space-y-1">
+      <button
+        type="button"
+        aria-label={label}
+        aria-expanded={open}
+        disabled={disabled}
+        onClick={() => setOpen((v) => !v)}
+        className="field w-full py-1 text-left"
+      >
+        {value
+          ? formatDate(toDate(value), { day: "numeric", month: "short", year: "numeric" })
+          : empty}
+      </button>
+      {open && (
+        <DatePicker
+          label={label}
+          value={value}
+          today={today}
+          min={min}
+          max={max}
+          onChange={(day) => {
+            onChange(day);
+            setOpen(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}

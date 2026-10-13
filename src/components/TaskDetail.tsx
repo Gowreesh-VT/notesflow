@@ -27,7 +27,7 @@ import { toggleDoneWithUndo, trashWithUndo } from "@/store/undo";
 import { useWorkspace } from "@/store/workspace";
 import { askConfirm } from "@/store/dialog";
 import { CopyToList } from "./CopyToList";
-import { DatePicker } from "./DatePicker";
+import { DateField, DatePicker } from "./DatePicker";
 import { ListSelect } from "./ListSelect";
 import { MarkdownEditor, ModeSwitch } from "./MarkdownEditor";
 import { EnergyField } from "./EnergyField";
@@ -251,21 +251,15 @@ export function TaskDetail({ item }: { item: Item }) {
                   </span>
                 </div>
                 <div className="grid grid-cols-[3.5rem_1fr] items-center gap-2">
-                  <label
-                    htmlFor={`start-date-${item.id}`}
-                    className="text-stone-500 dark:text-stone-400"
-                  >
-                    Starts
-                  </label>
+                  <span className="text-stone-500 dark:text-stone-400">Starts</span>
                   <span className="flex items-center gap-1.5">
-                    <input
-                      id={`start-date-${item.id}`}
-                      type="date"
-                      aria-label="Start date"
-                      value={item.startDate ?? ""}
+                    <DateField
+                      label="Start date"
+                      empty="Same day"
+                      value={item.startDate ?? null}
+                      today={today}
                       max={item.due}
-                      onChange={(e) => updateItem(item.id, { startDate: e.target.value || null })}
-                      className="field min-w-0 flex-1 py-1"
+                      onChange={(startDate) => updateItem(item.id, { startDate })}
                     />
                     {item.startDate ? (
                       <button
@@ -417,6 +411,7 @@ export function TaskDetail({ item }: { item: Item }) {
             <RepeatField
               value={item.repeat}
               due={item.due}
+              today={today}
               disabled={trashed}
               onChange={(repeat) => updateItem(item.id, { repeat })}
             />
