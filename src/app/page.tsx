@@ -86,7 +86,7 @@ const ALSO_INSIDE = [
 
 export default function Landing() {
   return (
-    <div className="min-h-dvh overflow-x-clip">
+    <div className="min-h-dvh overflow-x-clip pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
       <header className="sticky top-0 z-20 border-b border-stone-200/70 bg-stone-50/85 backdrop-blur dark:border-stone-800/70 dark:bg-stone-950/85">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
           <Link href="/" className="flex items-center gap-2" aria-label="Notesflow home">

@@ -56,7 +56,7 @@ export function AppShell() {
   }, []);
 
   return (
-    <div className="flex h-dvh overflow-hidden">
+    <div className="flex h-dvh overflow-hidden pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pt-[env(safe-area-inset-top)]">
       <ThemeSync />
       <a
         href="#main"

@@ -32,6 +32,10 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   // Declares that the app has its own dark theme, so browsers do not force-darken it (see globals.css).
   colorScheme: "light dark",
+  // Lets safe-area insets report the notch and home bar, and makes the page (and its bottom sheets) shrink when the
+  // on-screen keyboard opens instead of hiding behind it.
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: BRAND_PAPER },
     { media: "(prefers-color-scheme: dark)", color: BRAND_INK },
