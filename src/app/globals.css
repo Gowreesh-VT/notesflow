@@ -51,6 +51,8 @@
  */
 html {
   color-scheme: only light;
+  /* Swiping a task row must never trigger the browser's back gesture or pull-to-refresh. */
+  overscroll-behavior: none;
 }
 
 @media (prefers-color-scheme: dark) {
