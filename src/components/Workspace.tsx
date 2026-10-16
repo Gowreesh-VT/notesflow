@@ -9,21 +9,14 @@ import { isPlannerView } from "@/lib/items-logic";
 import type { PlannerViewKind } from "@/lib/types";
 import { canPin, pinnedList } from "@/lib/split";
 import { ItemList } from "./ItemList";
+import { LoadingRows } from "./LoadingRows";
 import { SplitPane } from "./SplitPane";
 import { NoteDetail } from "./NoteDetail";
 import { TaskDetail } from "./TaskDetail";
 
-function ViewLoading() {
-  return (
-    <p role="status" className="p-6 text-sm text-stone-500 dark:text-stone-400">
-      Loading…
-    </p>
-  );
-}
-
 // Whole-workspace views load on first use, keeping them out of the initial bundle.
 const lazyView = (load: () => Promise<React.ComponentType>) =>
-  dynamic(load, { loading: ViewLoading });
+  dynamic(load, { loading: () => <LoadingRows /> });
 
 const PLANNER_COMPONENTS: Record<PlannerViewKind, React.ComponentType> = {
   calendar: lazyView(() => import("./CalendarView").then((m) => m.CalendarView)),

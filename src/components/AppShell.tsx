@@ -7,6 +7,7 @@ import { usePreferences } from "@/store/preferences";
 import { useUi } from "@/store/ui";
 import { useSyncStore } from "@/store/sync";
 import { upgradeLegacyStorage, useWorkspace } from "@/store/workspace";
+import { LoadingRows } from "./LoadingRows";
 import { NavRail } from "./NavRail";
 import { OutcomePrompt } from "./Outcome";
 import { FocusBar } from "./FocusBar";
@@ -69,13 +70,7 @@ export function AppShell() {
       <div className="flex min-w-0 flex-1 flex-col">
         {ready && <SyncBanner />}
         <main id="main" className="min-h-0 flex-1 bg-white dark:bg-stone-900">
-          {!ready ? (
-            <p className="p-6 text-sm text-stone-500 dark:text-stone-400" role="status">
-              Loading your workspace…
-            </p>
-          ) : (
-            <Workspace key={localeKey} />
-          )}
+          {!ready ? <LoadingRows label="Loading your workspace" /> : <Workspace key={localeKey} />}
         </main>
         {ready && <MobileTabBar />}
       </div>
