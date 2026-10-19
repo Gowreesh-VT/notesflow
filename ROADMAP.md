@@ -123,6 +123,22 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 - [ ] Accessibility check with VoiceOver and TalkBack on phones, fixing what it finds
 - [ ] Consistent text sizes, icon sizes and 44px tap targets across every view, in light and dark mode
 
+### Phase 9 — Launch readiness: reliability and polish
+
+- [ ] When a new version of the app is ready, offer "Reload to update" instead of silently showing the old one
+- [ ] Sign in, sync and password reset say clearly when the device is offline, instead of failing with a generic error
+- [ ] Sign-in and sign-up screens: show or hide the password, clear error messages, and fields that password managers fill in
+- [ ] Sync status in Settings: when it last synced, a "Sync now" button, and what to do when it fails
+- [ ] Reminder settings open inside the Settings page instead of a separate dialog
+- [ ] Empty views offer a one-tap action (add a task, create a list, turn a view on) as well as a sentence
+- [ ] Quick add on desktop shows the same date, priority and list choices as the phone add sheet
+- [ ] Search from the Search tab looks across every list and note, and highlights what matched
+- [ ] Long-press and drag to reorder tasks on phones
+- [ ] The landing page shows current screenshots of the app on a phone and on a desktop, in light and dark mode
+- [ ] A size limit for the first load of the app, checked by a test, so it cannot quietly grow
+- [ ] [BIG] Automated browser tests for adding, completing, editing, deleting and undoing tasks on a phone-sized and a desktop-sized screen, run on every pull request
+- [ ] Screenshot checks of the main views in light and dark mode, so a visual regression is caught before release
+
 ## Ideas (not started — move up to "Next up" to approve)
 
 - Email verification for new accounts
@@ -135,7 +151,6 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 - Print-friendly export
 - Error tracking and privacy-friendly usage statistics (needs a provider choice from the owner)
 - Privacy policy and terms pages (needs text from the owner)
-- End-to-end tests and screenshot comparisons for the main flows on phone and desktop
 
 ## Not wanted
 
