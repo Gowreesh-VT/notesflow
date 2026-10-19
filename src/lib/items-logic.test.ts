@@ -457,14 +457,33 @@ describe("resolveQuickAdd", () => {
     expect(resolveQuickAdd(parsed, {}, defaults)).toEqual({
       due: "2026-10-07",
       dueTime: "17:00",
+      repeat: null,
       priority: "high",
       listId: "inbox",
     });
     expect(resolveQuickAdd(parseQuickAdd("Call Sam", "2026-10-06"), {}, defaults)).toEqual({
       due: "2026-10-06",
       dueTime: null,
+      repeat: null,
       priority: "none",
       listId: "inbox",
+    });
+  });
+
+  it("takes a picked time and repeat rule, and drops the time when there is no date", () => {
+    const parsed = parseQuickAdd("Standup tomorrow 5pm", "2026-10-06");
+    const weekdays = { unit: "week" as const, every: 1, weekdays: [1, 2, 3, 4, 5] };
+    expect(resolveQuickAdd(parsed, { dueTime: "09:30", repeat: weekdays }, defaults)).toMatchObject(
+      {
+        due: "2026-10-07",
+        dueTime: "09:30",
+        repeat: weekdays,
+      },
+    );
+    expect(resolveQuickAdd(parsed, { dueTime: null }, defaults).dueTime).toBeNull();
+    expect(resolveQuickAdd(parsed, { due: null, dueTime: "09:30" }, defaults)).toMatchObject({
+      due: null,
+      dueTime: null,
     });
   });
 
@@ -472,7 +491,13 @@ describe("resolveQuickAdd", () => {
     const parsed = parseQuickAdd("Call Sam tomorrow 5pm !high", "2026-10-06");
     expect(
       resolveQuickAdd(parsed, { due: "2026-10-09", priority: "low", listId: "work" }, defaults),
-    ).toEqual({ due: "2026-10-09", dueTime: "17:00", priority: "low", listId: "work" });
+    ).toEqual({
+      due: "2026-10-09",
+      dueTime: "17:00",
+      repeat: null,
+      priority: "low",
+      listId: "work",
+    });
     expect(resolveQuickAdd(parsed, { due: null }, defaults)).toMatchObject({
       due: null,
       dueTime: null,

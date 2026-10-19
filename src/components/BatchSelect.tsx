@@ -19,15 +19,26 @@ import { ENERGY_OPTIONS, itemTags } from "@/lib/items-logic";
 import { useToday } from "@/lib/hooks";
 import { normalizeTag } from "@/lib/selection";
 import { INBOX_ID, type Item, type Priority, type View } from "@/lib/types";
-import { addDays, displayTitle } from "@/lib/utils";
+import { displayTitle } from "@/lib/utils";
 import { useSelection } from "@/store/selection";
 import { useUi } from "@/store/ui";
 import { useWorkspace, type BatchPatch } from "@/store/workspace";
 import { askConfirm } from "@/store/dialog";
 import { withUndo } from "@/store/undo";
-import { DatePicker } from "./DatePicker";
+import { SchedulePicker, type SchedulePatch } from "./SchedulePicker";
 import { EnergyIcon } from "./EnergyField";
 import { ListSelect } from "./ListSelect";
+
+type ScheduleDraft = Pick<BatchPatch, "due" | "dueTime" | "repeat">;
+
+/** The fields of a schedule change that a batch edit can write (a start date belongs to one task's details). */
+function onlyBatchFields(patch: SchedulePatch): ScheduleDraft {
+  const fields: ScheduleDraft = {};
+  if (patch.due !== undefined) fields.due = patch.due;
+  if (patch.dueTime !== undefined) fields.dueTime = patch.dueTime;
+  if (patch.repeat !== undefined) fields.repeat = patch.repeat;
+  return fields;
+}
 
 /** Everything except the trash can be selected and edited together. */
 export const canSelectIn = (view: View): boolean => !(view.kind === "smart" && view.id === "trash");
@@ -209,6 +220,8 @@ function Toolbar({ items, view }: { items: Item[]; view: View }) {
   const [panel, setPanel] = useState<Panel | null>(null);
   const [notice, setNotice] = useState("");
   const [tagDraft, setTagDraft] = useState("");
+  // Date, time and repeat are chosen together and applied once; only the fields touched are written.
+  const [schedule, setSchedule] = useState<ScheduleDraft>({});
   const [targetList, setTargetList] = useState(view.kind === "list" ? view.id : INBOX_ID);
   const panelRef = useRef<HTMLDivElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
@@ -281,48 +294,35 @@ function Toolbar({ items, view }: { items: Item[]; view: View }) {
   };
   const tagName = normalizeTag(tagDraft);
 
-  const quickDates = [
-    { label: "Today", value: today },
-    { label: "Tomorrow", value: addDays(today, 1) },
-    { label: "Next week", value: addDays(today, 7) },
-  ];
-
   const renderPanel = () => {
     switch (panel) {
       case "date":
         return (
-          <>
-            {quickDates.map((d) => (
-              <Choice
-                key={d.label}
-                onClick={() =>
-                  patchTasks(
-                    { due: d.value },
-                    `Set ${plural(tasks.length, "task")} to ${d.label.toLowerCase()}.`,
-                  )
-                }
-              >
-                {d.label}
-              </Choice>
-            ))}
-            <div className="px-1.5 py-1">
-              <DatePicker
-                label="Due date for the selected tasks"
-                value={null}
-                today={today}
-                onChange={(due) =>
-                  patchTasks({ due }, `Set the date on ${plural(tasks.length, "task")}.`)
-                }
-              />
-            </div>
-            <Choice
-              onClick={() =>
-                patchTasks({ due: null }, `Cleared the date on ${plural(tasks.length, "task")}.`)
-              }
+          <div className="space-y-3 px-1.5 py-1">
+            <SchedulePicker
+              dateLabel="Date for the selected tasks"
+              value={{
+                due: schedule.due ?? null,
+                dueTime: schedule.dueTime ?? null,
+                repeat: schedule.repeat ?? null,
+              }}
+              today={today}
+              timeWithoutDate
+              alwaysClearable
+              onChange={(patch) => setSchedule({ ...schedule, ...onlyBatchFields(patch) })}
+            />
+            <button
+              type="button"
+              className="btn btn-primary w-full justify-center"
+              disabled={Object.keys(schedule).length === 0}
+              onClick={() => {
+                patchTasks(schedule, `Scheduled ${plural(tasks.length, "task")}.`);
+                setSchedule({});
+              }}
             >
-              <X size={14} aria-hidden /> Clear date
-            </Choice>
-          </>
+              Apply to {plural(tasks.length, "task")}
+            </button>
+          </div>
         );
       case "priority":
         return PRIORITIES.map((p) => (
@@ -459,7 +459,7 @@ function Toolbar({ items, view }: { items: Item[]; view: View }) {
   };
 
   const panelLabel: Record<Panel, string> = {
-    date: "Set date",
+    date: "Schedule",
     priority: "Set priority",
     list: "Move to list",
     tag: "Tags",
@@ -478,7 +478,7 @@ function Toolbar({ items, view }: { items: Item[]; view: View }) {
           {none ? "Select items" : `${selected.length} selected`}
         </p>
         <ToolButton
-          label="Set date"
+          label="Schedule"
           expanded={panel === "date"}
           disabled={noTasks}
           onClick={() => toggle("date")}

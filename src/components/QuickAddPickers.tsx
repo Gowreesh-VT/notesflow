@@ -1,12 +1,13 @@
 "use client";
 
-import { ArrowUp, CalendarDays, Check, Flag, ListTodo, X } from "lucide-react";
+import { ArrowUp, CalendarDays, Check, Flag, ListTodo, Repeat as RepeatIcon } from "lucide-react";
 import clsx from "clsx";
 import { activeLists, viewTitle, type QuickAddPicks } from "@/lib/items-logic";
-import { INBOX_ID, type Priority } from "@/lib/types";
-import { addDays, formatDueWithTime } from "@/lib/utils";
+import { describeRepeat } from "@/lib/recurrence";
+import { INBOX_ID, type Priority, type Repeat } from "@/lib/types";
+import { formatDueWithTime } from "@/lib/utils";
 import { useWorkspace } from "@/store/workspace";
-import { DatePicker } from "./DatePicker";
+import { SchedulePicker } from "./SchedulePicker";
 
 const PRIORITIES: { value: Priority; label: string; flag: string }[] = [
   { value: "high", label: "High", flag: "fill-red-500 text-red-500" },
@@ -60,10 +61,17 @@ export function QuickAddPickers({
   today,
   canSubmit,
 }: {
-  resolved: { due: string | null; dueTime: string | null; priority: Priority; listId: string };
+  resolved: {
+    due: string | null;
+    dueTime: string | null;
+    repeat: Repeat | null;
+    priority: Priority;
+    listId: string;
+  };
   picker: Picker | null;
   onPicker: (picker: Picker | null) => void;
-  onPick: (picks: QuickAddPicks) => void;
+  /** `keepOpen` leaves the panel up, for choices that come in several steps (date, then time, then repeat). */
+  onPick: (picks: QuickAddPicks, keepOpen?: boolean) => void;
   today: string;
   canSubmit: boolean;
 }) {
@@ -75,12 +83,6 @@ export function QuickAddPickers({
     active
       ? "bg-accent-50 text-accent-800 dark:bg-accent-950 dark:text-accent-200"
       : "bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300";
-  const dates = [
-    { label: "Today", value: today },
-    { label: "Tomorrow", value: addDays(today, 1) },
-    { label: "Next week", value: addDays(today, 7) },
-  ];
-
   return (
     <div className="md:hidden">
       <div className="mt-2 flex items-center gap-2">
@@ -88,10 +90,17 @@ export function QuickAddPickers({
           type="button"
           aria-expanded={picker === "date"}
           onClick={() => toggle("date")}
-          className={clsx(CHIP, chipTone(Boolean(resolved.due)))}
+          className={clsx(CHIP, chipTone(Boolean(resolved.due)), "shrink-0 whitespace-nowrap")}
         >
           <CalendarDays size={16} aria-hidden />
           {resolved.due ? formatDueWithTime(resolved.due, resolved.dueTime, today) : "Date"}
+          {resolved.repeat && (
+            <RepeatIcon
+              size={14}
+              aria-label={describeRepeat(resolved.repeat)}
+              className="shrink-0"
+            />
+          )}
         </button>
         <button
           type="button"
@@ -124,31 +133,20 @@ export function QuickAddPickers({
       </div>
 
       {picker === "date" && (
-        <div role="radiogroup" aria-label="Date" className="mt-3 space-y-1">
-          {dates.map((d) => (
-            <Option
-              key={d.label}
-              selected={resolved.due === d.value}
-              onClick={() => onPick({ due: d.value })}
-            >
-              {d.label}
-            </Option>
-          ))}
-          <DatePicker
-            label="Pick a date"
-            value={resolved.due}
+        <div className="mt-3 max-h-[55dvh] overflow-y-auto">
+          <SchedulePicker
+            dateLabel="Pick a date"
+            value={{ due: resolved.due, dueTime: resolved.dueTime, repeat: resolved.repeat }}
             today={today}
-            onChange={(due) => onPick({ due })}
+            onChange={(patch) => onPick(patch, true)}
           />
-          {resolved.due && (
-            <button
-              type="button"
-              onClick={() => onPick({ due: null })}
-              className="btn btn-ghost w-full justify-center"
-            >
-              <X size={14} aria-hidden /> No date
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => onPicker(null)}
+            className="btn btn-primary mt-3 w-full justify-center"
+          >
+            Done
+          </button>
         </div>
       )}
 
