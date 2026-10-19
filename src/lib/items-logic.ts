@@ -6,6 +6,7 @@ import {
   type ItemSort,
   type ListSection,
   type Priority,
+  type Repeat,
   type SavedFilter,
   type SmartViewId,
   type TaskList,
@@ -585,23 +586,39 @@ export function groupByTag(items: Item[]): ItemGroup[] {
 }
 
 /** Choices made with the add sheet's buttons; `undefined` means "not picked", `null` due means "no date". */
-export type QuickAddPicks = { due?: string | null; priority?: Priority; listId?: string };
+export type QuickAddPicks = {
+  due?: string | null;
+  /** `null` = all day. */
+  dueTime?: string | null;
+  repeat?: Repeat | null;
+  priority?: Priority;
+  listId?: string;
+};
 
 /**
  * The fields a quick-added task gets: a button pick wins over the typed words (the newer, more explicit choice),
- * and the typed words win over the view's defaults. A typed time is kept unless the picked date is cleared.
+ * and the typed words win over the view's defaults. A typed time is kept unless the picked date is cleared, and a
+ * task without a date has neither time nor repeat date to speak of (a repeat then counts from the day it is done).
  */
 export function resolveQuickAdd(
   parsed: QuickAdd,
   picks: QuickAddPicks,
   defaults: { listId: string; priority: Priority; due: string | null },
-): { due: string | null; dueTime: string | null; priority: Priority; listId: string } {
+): {
+  due: string | null;
+  dueTime: string | null;
+  repeat: Repeat | null;
+  priority: Priority;
+  listId: string;
+} {
   const due = picks.due !== undefined ? picks.due : (parsed.due ?? defaults.due);
   const priority =
     picks.priority ?? (parsed.priority !== "none" ? parsed.priority : defaults.priority);
+  const dueTime = picks.dueTime !== undefined ? picks.dueTime : (parsed.dueTime ?? null);
   return {
     due,
-    dueTime: due ? (parsed.dueTime ?? null) : null,
+    dueTime: due ? dueTime : null,
+    repeat: picks.repeat ?? null,
     priority,
     listId: picks.listId ?? parsed.listId ?? defaults.listId,
   };

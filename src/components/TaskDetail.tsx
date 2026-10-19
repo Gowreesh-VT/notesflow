@@ -12,6 +12,7 @@ import {
   LayoutTemplate,
   ListTodo,
   MoreHorizontal,
+  Repeat,
   RotateCcw,
   Rows3,
   Trash2,
@@ -21,13 +22,13 @@ import clsx from "clsx";
 import { dueBucket, itemTags } from "@/lib/items-logic";
 import { useToday } from "@/lib/hooks";
 import type { Item, Priority } from "@/lib/types";
-import { addDays, formatDueLabel, formatDueRange } from "@/lib/utils";
+import { formatDueRange } from "@/lib/utils";
+import { describeRepeat } from "@/lib/recurrence";
 import { useUi, type EditorMode } from "@/store/ui";
 import { toggleDoneWithUndo, trashWithUndo } from "@/store/undo";
 import { useWorkspace } from "@/store/workspace";
 import { askConfirm } from "@/store/dialog";
 import { CopyToList } from "./CopyToList";
-import { DateField, DatePicker } from "./DatePicker";
 import { ListSelect } from "./ListSelect";
 import { MarkdownEditor, ModeSwitch } from "./MarkdownEditor";
 import { EnergyField } from "./EnergyField";
@@ -36,7 +37,7 @@ import { MakeSubtask } from "./MakeSubtask";
 import { OutcomeField } from "./Outcome";
 import { Popover } from "./Popover";
 import { RemindersField } from "./RemindersField";
-import { RepeatField } from "./RepeatField";
+import { SchedulePicker } from "./SchedulePicker";
 import { SubtaskTree } from "./SubtaskTree";
 import { TimeTracker } from "./TimeTracker";
 import { TitleField } from "./TitleField";
@@ -93,11 +94,6 @@ export function TaskDetail({ item }: { item: Item }) {
   const trashed = item.deletedAt !== null;
   const tags = itemTags(item);
   const bucket = dueBucket(item, today);
-  const quickDates = [
-    { label: "Today", value: today },
-    { label: "Tomorrow", value: addDays(today, 1) },
-    { label: "Next week", value: addDays(today, 7) },
-  ];
 
   return (
     <div className="@container flex h-full flex-col">
@@ -193,95 +189,24 @@ export function TaskDetail({ item }: { item: Item }) {
                 {item.due
                   ? formatDueRange(item.due, item.dueTime, item.startDate, today)
                   : "Add date"}
+                {item.repeat && (
+                  <Repeat size={13} aria-label={describeRepeat(item.repeat)} className="shrink-0" />
+                )}
               </>
             }
-            panelClassName="w-72 space-y-3"
+            panelClassName="max-h-[min(36rem,calc(100dvh-9rem))] w-72 overflow-y-auto"
           >
-            <div className="flex flex-wrap gap-1">
-              {quickDates.map((d) => (
-                <button
-                  key={d.label}
-                  type="button"
-                  onClick={() => updateItem(item.id, { due: d.value })}
-                  className={clsx(
-                    "btn flex-1 justify-center px-2 py-1 text-xs",
-                    item.due === d.value
-                      ? "bg-accent-100 text-accent-800 dark:bg-accent-950 dark:text-accent-200"
-                      : "btn-ghost bg-stone-100 dark:bg-stone-800",
-                  )}
-                >
-                  {d.label}
-                </button>
-              ))}
-            </div>
-            <DatePicker
-              label="Due date"
-              value={item.due ?? null}
+            <SchedulePicker
+              value={{
+                due: item.due ?? null,
+                dueTime: item.dueTime ?? null,
+                repeat: item.repeat ?? null,
+                startDate: item.startDate ?? null,
+              }}
               today={today}
-              min={item.startDate}
-              onChange={(due) => updateItem(item.id, { due })}
+              withStartDate
+              onChange={(patch) => updateItem(item.id, patch)}
             />
-            {item.due && (
-              <>
-                <div className="grid grid-cols-[3.5rem_1fr] items-center gap-2">
-                  <label
-                    htmlFor={`due-time-${item.id}`}
-                    className="text-stone-500 dark:text-stone-400"
-                  >
-                    Time
-                  </label>
-                  <span className="flex items-center gap-1.5">
-                    <input
-                      id={`due-time-${item.id}`}
-                      type="time"
-                      aria-label="Due time"
-                      value={item.dueTime ?? ""}
-                      onChange={(e) => updateItem(item.id, { dueTime: e.target.value || null })}
-                      className="field min-w-0 flex-1 py-1"
-                    />
-                    {item.dueTime ? (
-                      <button
-                        type="button"
-                        className="btn btn-ghost shrink-0 px-2 py-1 text-xs"
-                        onClick={() => updateItem(item.id, { dueTime: null })}
-                      >
-                        All day
-                      </button>
-                    ) : null}
-                  </span>
-                </div>
-                <div className="grid grid-cols-[3.5rem_1fr] items-center gap-2">
-                  <span className="text-stone-500 dark:text-stone-400">Starts</span>
-                  <span className="flex items-center gap-1.5">
-                    <DateField
-                      label="Start date"
-                      empty="Same day"
-                      value={item.startDate ?? null}
-                      today={today}
-                      max={item.due}
-                      onChange={(startDate) => updateItem(item.id, { startDate })}
-                    />
-                    {item.startDate ? (
-                      <button
-                        type="button"
-                        className="btn btn-ghost shrink-0 px-2 py-1 text-xs"
-                        onClick={() => updateItem(item.id, { startDate: null })}
-                      >
-                        Same day
-                      </button>
-                    ) : null}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  className="btn btn-ghost w-full justify-center py-1 text-xs"
-                  onClick={() => updateItem(item.id, { due: null })}
-                >
-                  <X size={12} aria-hidden /> Clear date
-                  <span className="sr-only"> ({formatDueLabel(item.due, today)})</span>
-                </button>
-              </>
-            )}
           </Popover>
 
           <Popover
@@ -405,17 +330,6 @@ export function TaskDetail({ item }: { item: Item }) {
               </dd>
             </>
           )}
-
-          <dt className="self-start pt-1.5 text-stone-500 dark:text-stone-400">Repeat</dt>
-          <dd>
-            <RepeatField
-              value={item.repeat}
-              due={item.due}
-              today={today}
-              disabled={trashed}
-              onChange={(repeat) => updateItem(item.id, { repeat })}
-            />
-          </dd>
 
           <dt className="self-start pt-1.5 text-stone-500 dark:text-stone-400">Estimate</dt>
           <dd>

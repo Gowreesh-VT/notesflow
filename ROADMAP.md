@@ -105,7 +105,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 
 - [x] Renaming and deleting lists, sections, folders and tags uses in-app dialogs instead of browser pop-ups
 - [x] Undo after completing, deleting, swiping or batch-editing tasks, offered in a short message at the bottom
-- [ ] [BIG] One calendar sheet for picking a date, time, repeat and end date, used in task details, the add sheet and batch edit
+- [x] [BIG] One calendar sheet for picking a date, time, repeat and end date, used in task details, the add sheet and batch edit
 - [x] On phones, the add sheet and other bottom sheets stay above the keyboard, and the layout clears the notch and home bar
 - [x] Swiping a task row never triggers the browser's back gesture or pull-to-refresh
 - [x] Placeholder rows while the workspace loads, instead of a "Loading" message

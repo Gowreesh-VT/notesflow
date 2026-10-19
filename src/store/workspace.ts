@@ -89,7 +89,9 @@ type ItemPatch = Partial<
 >;
 
 /** Fields a batch edit can set on many items at once; date, priority and energy only apply to tasks. */
-export type BatchPatch = Partial<Pick<Item, "listId" | "priority" | "due" | "energy">>;
+export type BatchPatch = Partial<
+  Pick<Item, "listId" | "priority" | "due" | "dueTime" | "repeat" | "energy">
+>;
 
 export type WorkspaceData = {
   items: Item[];
@@ -372,7 +374,7 @@ const batchTargets = (items: Item[], ids: string[]): Set<string> => {
 };
 
 /** Task-only fields a batch edit leaves alone on notes. */
-const TASK_ONLY_FIELDS = ["priority", "due", "energy"] as const;
+const TASK_ONLY_FIELDS = ["priority", "due", "dueTime", "repeat", "energy"] as const;
 
 export const useWorkspace = create<WorkspaceState>()(
   persist(

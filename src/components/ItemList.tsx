@@ -1516,8 +1516,9 @@ export function ItemList() {
               resolved={resolved}
               picker={picker}
               onPicker={setPicker}
-              onPick={(next) => {
+              onPick={(next, keepOpen) => {
                 setPicks({ ...picks, ...next });
+                if (keepOpen) return;
                 setPicker(null);
                 document.getElementById("quick-add")?.focus();
               }}

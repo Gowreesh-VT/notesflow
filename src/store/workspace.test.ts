@@ -836,6 +836,23 @@ describe("batch edits", () => {
     expect(item(b)).not.toHaveProperty("energy");
   });
 
+  it("sets a time and a repeat rule on many tasks, and clears them again", () => {
+    const a = state().addItem({ kind: "task", title: "A", due: "2026-04-01" });
+    const b = state().addItem({ kind: "task", title: "B", due: "2026-04-02", dueTime: "08:00" });
+    const n = state().addItem({ kind: "note", title: "N" });
+    const rule = { unit: "week" as const, every: 1, weekdays: [1, 3], until: "2026-05-31" };
+    state().updateItems([a, b, n], { dueTime: "09:30", repeat: rule });
+    expect(item(a)).toMatchObject({ dueTime: "09:30", repeat: rule });
+    expect(item(b)).toMatchObject({ dueTime: "09:30", repeat: rule });
+    expect(item(n)).not.toHaveProperty("repeat");
+    expect(item(n)).not.toHaveProperty("dueTime");
+
+    state().updateItems([a, b], { dueTime: null, repeat: null });
+    expect(item(a)).not.toHaveProperty("dueTime");
+    expect(item(a)).not.toHaveProperty("repeat");
+    expect(item(b)).not.toHaveProperty("repeat");
+  });
+
   it("only bumps updatedAt on items that change", () => {
     const a = state().addItem({ kind: "task", title: "A", priority: "high" });
     const b = state().addItem({ kind: "task", title: "B" });
