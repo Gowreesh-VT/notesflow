@@ -109,7 +109,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 - [x] On phones, the add sheet and other bottom sheets stay above the keyboard, and the layout clears the notch and home bar
 - [x] Swiping a task row never triggers the browser's back gesture or pull-to-refresh
 - [x] Placeholder rows while the workspace loads, instead of a "Loading" message
-- [ ] The sync bar only appears while changes are waiting, when syncing fails, or when the device is offline
+- [x] The sync bar only appears while changes are waiting, when syncing fails, or when the device is offline
 
 ### Phase 8 — Launch readiness: first run and trust
 
