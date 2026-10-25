@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertTriangle, CloudOff, GitMerge, Loader2, RefreshCw, X } from "lucide-react";
+import { AlertTriangle, CloudOff, Loader2, RefreshCw } from "lucide-react";
 import clsx from "clsx";
 import { runSync } from "@/lib/sync-client";
 import { useSyncStore } from "@/store/sync";
@@ -39,7 +39,7 @@ function Banner({
   children,
   action,
 }: {
-  tone: "neutral" | "warning" | "error" | "info";
+  tone: "neutral" | "warning" | "error";
   icon: React.ReactNode;
   children: React.ReactNode;
   action?: React.ReactNode;
@@ -56,8 +56,6 @@ function Banner({
           "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/50 dark:text-amber-100",
         tone === "error" &&
           "border-red-200 bg-red-50 text-red-900 dark:border-red-900/60 dark:bg-red-950/50 dark:text-red-100",
-        tone === "info" &&
-          "border-accent-200 bg-accent-50 text-accent-900 dark:border-accent-900 dark:bg-accent-950/60 dark:text-accent-100",
       )}
     >
       <span aria-hidden className="shrink-0">
@@ -69,14 +67,13 @@ function Banner({
   );
 }
 
-/** One-line status above the list: offline, a slow sync, a failed sync, or conflicts that were resolved. */
+/** One-line status above the list, only while changes are waiting to sync, after a failed sync, or offline. */
 export function SyncBanner() {
   const online = useOnline();
-  const { userId, status, error, conflictsResolved, conflictsAt } = useSyncStore();
+  const { userId, status, error } = useSyncStore();
   // The sync store knows the signed-in account once sync has started; signing out clears it.
   const signedIn = userId !== null;
   const slowSync = useDelayed(signedIn && status === "syncing", 1500);
-  const [dismissedConflictsAt, setDismissedConflictsAt] = useState<number | null>(null);
 
   if (!online || (signedIn && status === "offline")) {
     return (
@@ -109,27 +106,6 @@ export function SyncBanner() {
     return (
       <Banner tone="neutral" icon={<Loader2 size={16} className="animate-spin" />}>
         Syncing your changes…
-      </Banner>
-    );
-  }
-  if (signedIn && conflictsResolved > 0 && conflictsAt && conflictsAt !== dismissedConflictsAt) {
-    return (
-      <Banner
-        tone="info"
-        icon={<GitMerge size={16} />}
-        action={
-          <button
-            type="button"
-            className="btn btn-ghost px-1.5 py-1"
-            aria-label="Dismiss"
-            onClick={() => setDismissedConflictsAt(conflictsAt)}
-          >
-            <X size={14} />
-          </button>
-        }
-      >
-        {conflictsResolved === 1 ? "1 item was" : `${conflictsResolved} items were`} changed on this
-        and another device. The most recent change was kept.
       </Banner>
     );
   }
