@@ -13,6 +13,7 @@ import { OutcomePrompt } from "./Outcome";
 import { FocusBar } from "./FocusBar";
 import { ReminderRunner } from "./ReminderRunner";
 import { ReminderSettings } from "./ReminderSettings";
+import { SignInNudge } from "./SignInNudge";
 import { SyncBanner } from "./SyncBanner";
 import { DialogHost } from "./DialogHost";
 import { UndoToast } from "./UndoToast";
@@ -69,6 +70,7 @@ export function AppShell() {
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         {ready && <SyncBanner />}
+        {ready && <SignInNudge />}
         <main id="main" className="min-h-0 flex-1 bg-white dark:bg-stone-900">
           {!ready ? <LoadingRows label="Loading your workspace" /> : <Workspace key={localeKey} />}
         </main>
