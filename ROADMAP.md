@@ -115,7 +115,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 
 - [ ] [BIG] First run: a few example tasks that teach quick add and swipes, with advanced views hidden until turned on in Settings
 - [x] A gentle prompt to sign in and sync after a new user has added a few tasks
-- [ ] When the first reminder is added, offer to turn on reminders that arrive while the app is closed, with steps for the user's phone
+- [x] When the first reminder is added, offer to turn on reminders that arrive while the app is closed, with steps for the user's phone
 - [x] Push reminders re-register this device on every start, so closed-app reminders recover on their own
 - [ ] A "Send feedback" item in the menu and a short "What's new" note after an update
 - [ ] A help page with short answers about sync, reminders, installing the app and privacy
