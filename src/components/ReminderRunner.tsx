@@ -7,6 +7,7 @@ import { showNotification } from "@/lib/notifications";
 import { updatePushSettings } from "@/lib/push-client";
 import { isQuietTime, SNOOZE_OPTIONS } from "@/lib/reminders";
 import { useAlarms } from "@/store/alarms";
+import { useSyncStore } from "@/store/sync";
 import { useUi } from "@/store/ui";
 import { useWorkspace } from "@/store/workspace";
 
@@ -98,6 +99,16 @@ export function ReminderRunner() {
       }, 1000);
     });
 
+    // Re-register this device on every start (once signed in), so a subscription the server dropped recovers.
+    const reregister = () => {
+      const { defaultReminderTime, quietHours } = useUi.getState();
+      void updatePushSettings({ defaultReminderTime, quietHours }).catch(() => {});
+    };
+    if (useSyncStore.getState().userId) reregister();
+    const unsubscribeUser = useSyncStore.subscribe((state, previous) => {
+      if (state.userId && state.userId !== previous.userId) reregister();
+    });
+
     check();
     const interval = window.setInterval(check, CHECK_MS);
     const onVisible = () => document.visibilityState === "visible" && check();
@@ -133,6 +144,7 @@ export function ReminderRunner() {
       navigator.serviceWorker?.removeEventListener("message", onMessage);
       unsubscribe();
       unsubscribeSettings();
+      unsubscribeUser();
       window.clearTimeout(settingsTimer);
     };
   }, []);

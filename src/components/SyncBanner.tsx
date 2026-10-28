@@ -67,7 +67,7 @@ function Banner({
   );
 }
 
-/** One-line status above the list: offline, changes still syncing, or a failed sync. */
+/** One-line status above the list, only while changes are waiting to sync, after a failed sync, or offline. */
 export function SyncBanner() {
   const online = useOnline();
   const { userId, status, error } = useSyncStore();
