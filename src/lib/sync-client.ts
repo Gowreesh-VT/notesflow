@@ -85,7 +85,7 @@ async function syncRound(): Promise<void> {
   sync.setState({ status: "syncing", error: null });
   try {
     const workspace = useWorkspace;
-    const result = await syncOnce({
+    await syncOnce({
       getData: () => {
         const { items, lists, folders, filters, habits, countdowns, settings, tombstones } =
           workspace.getState();
@@ -101,7 +101,6 @@ async function syncRound(): Promise<void> {
       status: "synced",
       lastSyncedAt: Date.now(),
       error: null,
-      ...(result.conflicts ? { conflictsResolved: result.conflicts, conflictsAt: Date.now() } : {}),
     });
   } catch (error) {
     if (error instanceof TypeError || navigator.onLine === false) {
