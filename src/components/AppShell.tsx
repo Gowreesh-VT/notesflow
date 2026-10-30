@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { EXAMPLE_TASKS, FIRST_RUN_KEY, shouldSeedExamples } from "@/lib/first-run";
 import { SMART_VIEWS } from "@/lib/items-logic";
+import { addDays, toDateKey } from "@/lib/utils";
 import { setLocalePrefs } from "@/lib/locale";
 import { usePreferences } from "@/store/preferences";
 import { useUi } from "@/store/ui";
@@ -25,6 +27,34 @@ import { ShortcutHelp } from "./ShortcutHelp";
 import { Sidebar } from "./Sidebar";
 import { Workspace } from "./Workspace";
 import { ThemeSync } from "./ThemeSync";
+
+/** Gives a brand-new, empty device a few example tasks, once. */
+function seedExamples() {
+  try {
+    const ws = useWorkspace.getState();
+    const seed = shouldSeedExamples({
+      items: ws.items,
+      listCount: ws.lists.length,
+      signedIn: useSyncStore.getState().userId !== null,
+      alreadySeeded: window.localStorage.getItem(FIRST_RUN_KEY) !== null,
+    });
+    window.localStorage.setItem(FIRST_RUN_KEY, "1");
+    if (!seed) return;
+    const today = toDateKey(new Date());
+    // New items go to the top, so add the last example first.
+    for (const task of [...EXAMPLE_TASKS].reverse()) {
+      ws.addItem({
+        kind: "task",
+        title: task.title,
+        body: task.body,
+        priority: task.priority,
+        due: task.dueInDays === undefined ? null : addDays(today, task.dueInDays),
+      });
+    }
+  } catch {
+    // Storage unavailable: start empty.
+  }
+}
 
 export function AppShell() {
   const [ready, setReady] = useState(false);
@@ -50,6 +80,7 @@ export function AppShell() {
       // Home-screen shortcuts open a specific smart view, e.g. /?view=today
       const requested = new URLSearchParams(window.location.search).get("view");
       const smart = SMART_VIEWS.find((v) => v.id === requested);
+      seedExamples();
       if (smart) useUi.getState().setView({ kind: "smart", id: smart.id });
       setReady(true);
     });
