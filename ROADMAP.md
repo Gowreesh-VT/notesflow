@@ -126,7 +126,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 ### Phase 9 — Launch readiness: reliability and polish
 
 - [ ] When a new version of the app is ready, offer "Reload to update" instead of silently showing the old one
-- [ ] Sign in, sync and password reset say clearly when the device is offline, instead of failing with a generic error
+- [x] Sign in, sync and password reset say clearly when the device is offline, instead of failing with a generic error
 - [ ] Sign-in and sign-up screens: show or hide the password, clear error messages, and fields that password managers fill in
 - [ ] Sync status in Settings: when it last synced, a "Sync now" button, and what to do when it fails
 - [ ] Reminder settings open inside the Settings page instead of a separate dialog

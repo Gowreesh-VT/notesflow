@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useModalFocus } from "@/lib/hooks";
 import { createPortal } from "react-dom";
 import { signIn } from "next-auth/react";
-import { authErrorMessage } from "./auth-errors";
+import { authErrorMessage, networkErrorMessage, offlineMessage } from "./auth-errors";
 
 type Mode = "signin" | "signup" | "forgot";
 
@@ -37,9 +37,14 @@ export function AuthDialog({
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
+    setNotice(null);
+    const offline = offlineMessage();
+    if (offline) {
+      setError(offline);
+      return;
+    }
     setBusy(true);
     setError(null);
-    setNotice(null);
     try {
       if (mode === "forgot") {
         const response = await fetch("/api/password-reset", {
@@ -74,7 +79,7 @@ export function AuthDialog({
       }
       onClose();
     } catch {
-      setError("Could not reach the server. Check your connection and try again.");
+      setError(networkErrorMessage());
     } finally {
       setBusy(false);
     }

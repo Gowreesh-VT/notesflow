@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useModalFocus } from "@/lib/hooks";
 import { createPortal } from "react-dom";
 import { signIn } from "next-auth/react";
+import { networkErrorMessage, offlineMessage } from "./auth-errors";
 
 /** Opened from the link in a password reset email (/app?reset=…): choose a new password, then sign in. */
 export function ResetPasswordDialog({ token, onClose }: { token: string; onClose: () => void }) {
@@ -37,6 +38,11 @@ export function ResetPasswordDialog({ token, onClose }: { token: string; onClose
               setError("The passwords don’t match.");
               return;
             }
+            const offline = offlineMessage();
+            if (offline) {
+              setError(offline);
+              return;
+            }
             setBusy(true);
             setError(null);
             try {
@@ -56,7 +62,7 @@ export function ResetPasswordDialog({ token, onClose }: { token: string; onClose
               await signIn("credentials", { email: body.email, password, redirect: false });
               onClose();
             } catch {
-              setError("Could not reach the server. Check your connection and try again.");
+              setError(networkErrorMessage());
             } finally {
               setBusy(false);
             }
