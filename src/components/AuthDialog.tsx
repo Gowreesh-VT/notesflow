@@ -26,6 +26,7 @@ export function AuthDialog({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(initialError ?? null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -151,6 +152,9 @@ export function AuthDialog({
             <input
               ref={emailInput}
               type="email"
+              name="email"
+              autoCapitalize="none"
+              spellCheck={false}
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -159,18 +163,32 @@ export function AuthDialog({
             />
           </label>
           {mode !== "forgot" && (
-            <label className="block text-sm">
-              Password
-              <input
-                type="password"
-                required
-                minLength={mode === "signup" ? 10 : 1}
-                maxLength={128}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete={mode === "signup" ? "new-password" : "current-password"}
-                className="field mt-1"
-              />
+            <div className="text-sm">
+              <label htmlFor="auth-password">Password</label>
+              <div className="relative mt-1">
+                <input
+                  id="auth-password"
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  required
+                  minLength={mode === "signup" ? 10 : 1}
+                  maxLength={128}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  className="field pr-16"
+                />
+                <button
+                  type="button"
+                  aria-pressed={showPassword}
+                  className="absolute inset-y-0 right-0 rounded-xl px-3 text-xs font-medium text-accent-600 hover:underline dark:text-accent-400"
+                  onClick={() => setShowPassword((shown) => !shown)}
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
               {mode === "signup" && (
                 <span className="mt-1 block text-xs text-stone-500 dark:text-stone-400">
                   At least 10 characters.
@@ -188,7 +206,7 @@ export function AuthDialog({
                   Forgot your password?
                 </button>
               )}
-            </label>
+            </div>
           )}
 
           <p
