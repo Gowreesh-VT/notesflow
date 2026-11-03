@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { signIn, signOut } from "next-auth/react";
-import { KeyRound, Trash2 } from "lucide-react";
+import { KeyRound, RefreshCw, Trash2 } from "lucide-react";
 import { disablePush } from "@/lib/push-client";
-import { wipeLocalAccountData } from "@/lib/sync-client";
+import { runSync, wipeLocalAccountData } from "@/lib/sync-client";
+import { summarizeSync } from "@/lib/sync-status";
 import { useSyncStore } from "@/store/sync";
 import { SettingsSection } from "./SettingsView";
 
@@ -189,7 +190,33 @@ function DeleteAccount({ info }: { info: Info }) {
   );
 }
 
-/** Password and account deletion for the signed-in account. Hidden when not signed in. */
+function SyncStatusBlock() {
+  const { status, lastSyncedAt, error } = useSyncStore();
+  const summary = summarizeSync(status, lastSyncedAt, error);
+  return (
+    <div className="space-y-2">
+      <h3 className="flex items-center gap-1.5 text-sm font-semibold">
+        <RefreshCw size={14} aria-hidden /> Sync
+      </h3>
+      <p role="status" aria-live="polite" className="text-sm text-stone-700 dark:text-stone-300">
+        {summary.headline}
+      </p>
+      {summary.advice && (
+        <p className="text-xs text-stone-500 dark:text-stone-400">{summary.advice}</p>
+      )}
+      <button
+        type="button"
+        className="btn"
+        disabled={status === "syncing"}
+        onClick={() => void runSync()}
+      >
+        {status === "syncing" ? "Syncing…" : "Sync now"}
+      </button>
+    </div>
+  );
+}
+
+/** Sync status, password and account deletion for the signed-in account. Hidden when not signed in. */
 export function AccountSettings() {
   const userId = useSyncStore((s) => s.userId);
   const [info, setInfo] = useState<Info | null>(null);
@@ -212,6 +239,7 @@ export function AccountSettings() {
   if (!userId || !info) return null;
   return (
     <SettingsSection title="Account" description={`Signed in as ${info.email}.`}>
+      <SyncStatusBlock />
       <ChangePassword info={info} onChanged={() => setVersion((v) => v + 1)} />
       <div className="pt-2">
         <DeleteAccount info={info} />
