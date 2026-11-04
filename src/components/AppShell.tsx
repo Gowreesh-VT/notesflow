@@ -14,6 +14,7 @@ import { FocusBar } from "./FocusBar";
 import { ReminderRunner } from "./ReminderRunner";
 import { ReminderSettings } from "./ReminderSettings";
 import { PushOffer } from "./PushOffer";
+import { UpdatePrompt } from "./UpdatePrompt";
 import { SignInNudge } from "./SignInNudge";
 import { SyncBanner } from "./SyncBanner";
 import { DialogHost } from "./DialogHost";
@@ -73,6 +74,7 @@ export function AppShell() {
         {ready && <SyncBanner />}
         {ready && <SignInNudge />}
         {ready && <PushOffer />}
+        <UpdatePrompt />
         <main id="main" className="min-h-0 flex-1 bg-white dark:bg-stone-900">
           {!ready ? <LoadingRows label="Loading your workspace" /> : <Workspace key={localeKey} />}
         </main>
