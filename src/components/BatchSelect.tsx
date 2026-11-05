@@ -244,7 +244,6 @@ function Toolbar({ items, view }: { items: Item[]; view: View }) {
         isTypingTarget(event.target) ||
         ui.paletteOpen ||
         ui.helpOpen ||
-        ui.settingsOpen ||
         ui.outcomePromptId
       ) {
         return;

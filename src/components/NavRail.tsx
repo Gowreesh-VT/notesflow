@@ -53,8 +53,7 @@ function RailButton({
 export function NavRail() {
   const view = useUi((s) => s.view);
   const collapsed = useUi((s) => s.sidebarCollapsed);
-  const { setView, setPaletteOpen, setHelpOpen, setSettingsOpen, toggleSidebarCollapsed } =
-    useUi.getState();
+  const { setView, setPaletteOpen, setHelpOpen, toggleSidebarCollapsed } = useUi.getState();
 
   return (
     <nav
@@ -103,7 +102,7 @@ export function NavRail() {
         >
           {collapsed ? <PanelLeftOpen size={19} /> : <PanelLeftClose size={19} />}
         </RailButton>
-        <RailButton label="Reminder settings" onClick={() => setSettingsOpen(true)}>
+        <RailButton label="Reminder settings" onClick={() => setView({ kind: "settings" })}>
           <BellRing size={19} />
         </RailButton>
         <RailButton

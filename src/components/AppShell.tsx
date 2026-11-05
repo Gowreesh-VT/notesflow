@@ -12,7 +12,6 @@ import { NavRail } from "./NavRail";
 import { OutcomePrompt } from "./Outcome";
 import { FocusBar } from "./FocusBar";
 import { ReminderRunner } from "./ReminderRunner";
-import { ReminderSettings } from "./ReminderSettings";
 import { PushOffer } from "./PushOffer";
 import { UpdatePrompt } from "./UpdatePrompt";
 import { SignInNudge } from "./SignInNudge";
@@ -86,7 +85,6 @@ export function AppShell() {
       {ready && <OutcomePrompt />}
       {ready && <ReminderRunner />}
       {ready && <FocusBar />}
-      {ready && <ReminderSettings />}
       <UndoToast />
       <DialogHost />
     </div>

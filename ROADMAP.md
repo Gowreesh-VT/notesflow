@@ -129,7 +129,7 @@ Keep items small and concrete: one sentence, user-visible outcome, no implementa
 - [x] Sign in, sync and password reset say clearly when the device is offline, instead of failing with a generic error
 - [x] Sign-in and sign-up screens: show or hide the password, clear error messages, and fields that password managers fill in
 - [x] Sync status in Settings: when it last synced, a "Sync now" button, and what to do when it fails
-- [ ] Reminder settings open inside the Settings page instead of a separate dialog
+- [x] Reminder settings open inside the Settings page instead of a separate dialog
 - [ ] Empty views offer a one-tap action (add a task, create a list, turn a view on) as well as a sentence
 - [ ] Quick add on desktop shows the same date, priority and list choices as the phone add sheet
 - [ ] Search from the Search tab looks across every list and note, and highlights what matched
