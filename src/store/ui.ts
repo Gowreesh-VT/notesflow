@@ -40,7 +40,6 @@ type UiState = {
   defaultReminderTime: string;
   /** No reminders ring during these hours on this device; they ring when quiet hours end. */
   quietHours: QuietHours | null;
-  settingsOpen: boolean;
   calendarLayout: CalendarLayout;
   /** Day the calendar is showing (null = today); not persisted, so the calendar opens on today. */
   calendarDate: string | null;
@@ -63,7 +62,6 @@ type UiState = {
   setEnergyFilter: (energy: Energy | null) => void;
   setDefaultReminderTime: (time: string) => void;
   setQuietHours: (quiet: QuietHours | null) => void;
-  setSettingsOpen: (open: boolean) => void;
   setCalendarLayout: (layout: CalendarLayout) => void;
   setCalendarDate: (date: string | null) => void;
   setCalendarShowDone: (show: boolean) => void;
@@ -90,7 +88,6 @@ export const useUi = create<UiState>()(
       energyFilter: null,
       defaultReminderTime: DEFAULT_REMINDER_TIME,
       quietHours: null,
-      settingsOpen: false,
       calendarLayout: "month",
       calendarDate: null,
       calendarShowDone: false,
@@ -130,7 +127,6 @@ export const useUi = create<UiState>()(
       setQuietHours: (quiet) => {
         if (!quiet || (isClock(quiet.start) && isClock(quiet.end))) set({ quietHours: quiet });
       },
-      setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
       setCalendarLayout: (layout) => {
         if (isCalendarLayout(layout)) set({ calendarLayout: layout });
       },

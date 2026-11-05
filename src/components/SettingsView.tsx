@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { BellRing } from "lucide-react";
 import clsx from "clsx";
 import { PLANNER_VIEWS } from "@/lib/items-logic";
 import { DEFAULT_PREFERENCES, HIDEABLE_VIEWS, type PreferenceValues } from "@/lib/preferences";
@@ -12,6 +11,7 @@ import { useUi } from "@/store/ui";
 import { AccentPicker } from "./AccentPicker";
 import { AccountSettings } from "./AccountSettings";
 import { DataSettings } from "./DataSettings";
+import { ReminderSettings } from "./ReminderSettings";
 import { ViewHeader } from "./ViewHeader";
 
 export function SettingsSection({
@@ -299,13 +299,7 @@ export function SettingsView() {
           title="Reminders"
           description="Notifications, push reminders, the default reminder time and quiet hours are set per device."
         >
-          <button
-            type="button"
-            className="btn btn-ghost border border-stone-200 dark:border-stone-700"
-            onClick={() => useUi.getState().setSettingsOpen(true)}
-          >
-            <BellRing size={15} aria-hidden /> Reminder settings for this device
-          </button>
+          <ReminderSettings />
         </SettingsSection>
 
         <AccountSettings />
