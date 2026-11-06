@@ -1579,6 +1579,12 @@ export function ItemList() {
                 />
               </svg>
               <p className="text-sm text-stone-500 dark:text-stone-400">{emptyMessage}</p>
+              {!isReadOnlyView && !query.trim() && !energyFilter && (
+                <button type="button" onClick={openAddSheet} className="btn btn-primary">
+                  <Plus size={16} aria-hidden />
+                  {kind === "task" ? "Add a task" : "Add a note"}
+                </button>
+              )}
             </div>
           )}
           {finished.length > 0 && (
