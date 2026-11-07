@@ -95,10 +95,19 @@ export function QuickView() {
         </div>
 
         {picks.length === 0 ? (
-          <p className="rounded-2xl bg-stone-100 px-4 py-8 text-center text-sm text-stone-500 dark:bg-stone-900 dark:text-stone-400">
-            Nothing fits yet. Add estimates (like “~15m” in quick add) or tag tasks as quick wins,
-            and they’ll show up here.
-          </p>
+          <div className="flex flex-col items-center gap-3 rounded-2xl bg-stone-100 px-4 py-8 text-center dark:bg-stone-900">
+            <p className="text-sm text-stone-500 dark:text-stone-400">
+              Nothing fits yet. Add estimates (like “~15m” in quick add) or tag tasks as quick wins,
+              and they’ll show up here.
+            </p>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => setView({ kind: "smart", id: "inbox" })}
+            >
+              Go to Inbox
+            </button>
+          </div>
         ) : (
           <ul className="space-y-1" aria-label={`Tasks that fit in ${formatDuration(minutes)}`}>
             {picks.map((item) => (
